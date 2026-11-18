@@ -84,23 +84,26 @@ form button:disabled { opacity: .5; cursor: default; }
     <textarea id="q" rows="1" maxlength="1000" placeholder="Ask about LearningChain…" required></textarea>
     <button id="send" type="submit">Send</button>
   </form>
-  <div class="foot">Answers come only from published LearningChain content. Please verify important details with our team.</div>
+  <div class="foot">Answers come only from published Sapphirus and LearningChain content. Please verify important details with our team.</div>
 </div>
 <script>
 (() => {
   const params = new URLSearchParams(location.search);
-  const locked = "products";                              // this chatbot answers LearningChain questions only
+  const locked = "all";                                   // one chatbot: LearningChain product help + Sapphirus company info
   const API = "";                                         // same origin as this page
   const store = {
     get(k, d) { try { return JSON.parse(sessionStorage.getItem(k)) ?? d; } catch { return d; } },
     set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} }
   };
-  let assistant = locked || store.get("assistant", "products");
+  let assistant = locked || store.get("assistant", "all");
   const state = store.get("chat:" + assistant, { session: null, messages: [] });
   const log = document.getElementById("log"), form = document.getElementById("form");
   const input = document.getElementById("q"), send = document.getElementById("send");
-  const SUBTITLE = { products: "LearningChain product help - features, certificates, verification, how-to guides" };
+  const SUBTITLE = { all: "Sapphirus Systems & LearningChain - company, services, products and how-to guides",
+                     products: "LearningChain product help - features, certificates, verification, how-to guides" };
   const SUGGEST = {
+    all: ["What is LearningChain?", "What services does Sapphirus provide?", "How do I verify a student certificate?",
+          "How can I contact Sapphirus?"],
     products: ["What is LearningChain?", "How do I verify a student certificate?", "How do I revoke a certificate?",
                "How is a blockchain QR code safer than a normal QR code?"] };
 

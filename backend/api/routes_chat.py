@@ -30,7 +30,7 @@ def suggestions(user: AuthenticatedUser = Depends(current_user)) -> dict:
 
 
 # This deployment answers LearningChain questions only - every assistant value maps to the products KB.
-ASSISTANT_KBS = {"all": ["products"], "company": ["products"], "products": ["products"]}
+ASSISTANT_KBS = {"all": ["products", "company"], "company": ["company"], "products": ["products"]}
 
 
 @router.post("/chat/stream")

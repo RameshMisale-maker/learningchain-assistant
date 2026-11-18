@@ -46,10 +46,10 @@ _load_config()
 
 st.set_page_config(page_title="LearningChain Assistant", page_icon="🎓", layout="centered")
 
-ASSISTANT_KBS = ["products"]            # same scope as the website's product assistant
+ASSISTANT_KBS = ["products", "company"]   # LearningChain product help + Sapphirus company information
 MAX_QUESTIONS_PER_MINUTE = 10           # per browser session - protects the shared LLM quota
 EXAMPLES = ["What is LearningChain?", "How do I verify a student certificate?",
-            "What are the key features of LearningChain?", "How do I revoke a certificate?"]
+            "What services does Sapphirus provide?", "How can I contact Sapphirus?"]
 
 
 @st.cache_resource(show_spinner=False)
@@ -114,7 +114,7 @@ def _ask(question: str, service) -> None:
         with st.spinner("Searching the LearningChain documentation..."):
             resp = service.answer(question, _user(), session_id=st.session_state.session_id, persist=False,
                                   history=history, allowed_kbs=ASSISTANT_KBS, channel="streamlit",
-                                  assistant="products", record_metrics=False)
+                                  assistant="all", record_metrics=False)
         st.markdown(resp.answer)
         _render_sources(resp.citations)
         st.caption(f"{resp.route.get('conversation_intent', resp.answer_type)} · {resp.latency_ms / 1000:.1f}s")
@@ -129,7 +129,7 @@ def main() -> None:
 
     with st.sidebar:
         st.markdown("### 🎓 LearningChain Assistant")
-        st.caption("Answers come only from the approved LearningChain knowledge base, with sources.")
+        st.caption("Answers come only from approved Sapphirus and LearningChain content, with sources.")
         st.markdown("**Try asking**")
         for q in EXAMPLES:
             if st.button(q, use_container_width=True):
@@ -154,15 +154,16 @@ def main() -> None:
 
     if not st.session_state.messages:
         with st.chat_message("assistant"):
-            st.markdown("Hello! I'm the LearningChain Assistant. Ask me about issuing, sharing or verifying "
-                        "blockchain certificates, the admin and user portals, or LearningChain features.")
+            st.markdown("Hello! I'm the Sapphirus & LearningChain Assistant. Ask me about Sapphirus - our company, "
+                        "services and products - or LearningChain: issuing, sharing and verifying blockchain "
+                        "certificates and the admin and user portals.")
     for m in st.session_state.messages:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
             if m["role"] == "assistant":
                 _render_sources(m.get("citations") or [])
 
-    question = st.chat_input("Ask a question about LearningChain...")
+    question = st.chat_input("Ask about Sapphirus or LearningChain...")
     question = question or st.session_state.pop("pending", None)
     if question:
         _ask(question.strip()[:2000], service)

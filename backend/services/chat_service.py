@@ -50,7 +50,7 @@ CLOSING_RE = re.compile(r"^\s*(no|nope|nah|no\s*,?\s*thanks?|no\s*,?\s*thank\s*(
                         r"nothing(\s+else)?|that'?s\s+(all|it)|that\s+is\s+(all|it)|i'?m\s+done|im\s+done|"
                         r"all\s+good|i'?m\s+good|bye+|goodbye|good\s*bye|see\s+(you|ya)|take\s+care)\s*[!.?]*\s*$",
                         re.IGNORECASE)
-CLOSING_TEXT = ("Thank you for chatting with the LearningChain Assistant! Before you go, please rate this conversation "
+CLOSING_TEXT = ("Thank you for chatting with the Sapphirus Assistant! Before you go, please rate this conversation "
                 "below - your feedback helps us improve. Have a nice day!")
 
 
@@ -64,26 +64,27 @@ def small_talk_reply(text: str, roles: set[str]) -> str:
     t = text.strip().lower()
     if is_closing(t):
         return CLOSING_TEXT
-    topics = "LearningChain - features, issuing and verifying blockchain certificates, and how-to guides"
+    topics = ("Sapphirus Systems - our company, services and products - and LearningChain - features, issuing and "
+              "verifying blockchain certificates, and how-to guides")
     examples = ("e.g. *\"How do I verify a student certificate?\"*, *\"What are the key features of LearningChain?\"* "
                 "or *\"How do I revoke a certificate?\"*")
     if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)", t):
         return f"Great! What would you like to know? You can ask me about {topics}."
     if re.match(r"^(thanks|thank|thx|ty|great|cool|nice|awesome|perfect|ok|okay|got it)", t):
-        return "You're welcome! Is there anything else you'd like to know about LearningChain?"
+        return "You're welcome! Is there anything else you'd like to know about Sapphirus or LearningChain?"
     if re.match(r"^(bye|goodbye|good\s*bye|see you|see ya|take care)", t):
-        return ("Thank you for visiting LearningChain! Have a great day. If you need anything later, reach us at "
+        return ("Thank you for visiting Sapphirus! Have a great day. If you need anything later, reach us at "
                 "info@sapphirus.in or +91 96531 57225.")
     if re.match(r"^how are you", t):
         return f"I'm doing great, thank you for asking! How can I help you today? You can ask me about {topics}."
     if re.match(r"^(who are you|what are you|what is your name|are you)", t):
-        return ("I'm the LearningChain Assistant - a virtual assistant from Sapphirus Systems. I answer questions about "
+        return ("I'm the Sapphirus Assistant - a virtual assistant from Sapphirus Systems. I answer questions about "
                 f"{topics}, using Sapphirus's approved information and showing the sources.")
     if re.match(r"^(what can you do|how can you help|help)", t):
         return f"I can answer questions about {topics}. Try asking, {examples}."
     m = re.match(r"^good\s+(morning|afternoon|evening|day)", t)
     hello = f"Good {m.group(1)}!" if m else "Hello!"
-    return f"{hello} Welcome to LearningChain. I'm the LearningChain Assistant. How can I help you today? You can ask me about {topics}."
+    return f"{hello} Welcome to Sapphirus Systems. I'm the Sapphirus Assistant. How can I help you today? You can ask me about {topics}."
 CONTACT_HINT = (" Our team will be happy to help - please contact us at info@sapphirus.in, call +91 96531 57225, "
                 "or use https://sapphirus.in/contacts/.")
 AMBIGUOUS_MIN_SCORE = 0.35

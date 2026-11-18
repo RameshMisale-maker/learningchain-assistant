@@ -20,7 +20,7 @@ knowledge_bases:
   company:
     display_name: "Sapphirus Company Information"
     description: "Company profile, services, contact details, processes, projects, internal procedures and approved FAQs."
-    enabled: false          # company information is served by a separate chatbot; files kept for it
+    enabled: true           # Sapphirus company website (sapphirus.in) + curated company pages
     allowed_roles: [public, employee, hr, admin]          # who may query this KB at all
     default_document_roles: [public, employee, hr, admin] # default per-document ACL (override in _access.yaml or on upload)
     default_category: "Company"
@@ -113,7 +113,7 @@ knowledge_bases:
 # ---------------------------------------------------------------------
 routing:
   min_route_score: 0.30        # below this for every KB -> out of scope (0.30 suits BAAI/bge-small semantic embeddings; use 0.12 with local_hash)
-  multi_kb_ratio: 0.75         # other KBs scoring >= ratio * best score are also searched
+  multi_kb_ratio: 0.70         # other KBs scoring >= ratio * best score are also searched (0.70: close calls between company and products search both)
   ambiguity_margin: 0.06       # top-2 scores closer than this (and weak) -> ask a clarification question
   weak_score: 0.30             # "weak" threshold used with ambiguity_margin
   weights: {keywords: 0.30, examples: 0.30, corpus: 0.40}
