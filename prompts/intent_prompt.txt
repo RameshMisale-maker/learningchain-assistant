@@ -1,0 +1,19 @@
+Classify the user's latest message to a customer-support chatbot for LearningChain (a blockchain certificate
+platform by Sapphirus Systems). Choose exactly one intent:
+
+- GREETING: a greeting (hi, hello, good morning), including misspelt greetings
+- SMALL_TALK: thanks, how are you, ok, bye and similar conversational remarks
+- TYPO_OR_INCOMPLETE_INPUT: a misspelt or cut-off question word or phrase ("ho", "wht", "how t", "tell m")
+- CLARIFICATION_REQUIRED: a vague question that cannot be answered without more detail ("what?", "which one?")
+- FOLLOW_UP_QUERY: refers to the previous turn of the conversation ("tell me more", "the second one")
+- KNOWLEDGE_QUERY: a real question about LearningChain, Sapphirus, certificates or their use
+- OUT_OF_SCOPE_QUERY: a request unrelated to LearningChain or Sapphirus
+- UNKNOWN_OR_GIBBERISH: random characters or meaningless text
+
+If the message is a misspelt word, put the most likely intended word in "suggestion" (else "").
+Return JSON only: {{"intent": "<INTENT>", "suggestion": "<word or empty>"}}
+
+Conversation so far:
+{history}
+
+Latest message: {message}

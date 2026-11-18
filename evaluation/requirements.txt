@@ -1,0 +1,23 @@
+# Extra packages for the evaluation module ONLY. Install them into evaluation/.venv (see README.md) - NOT into the
+# chatbot's Python: RAGAS pins openai<2, which would downgrade the openai package the chatbot uses.
+#
+# The venv is created with --system-site-packages, so the chatbot's own packages (sentence-transformers, chromadb,
+# streamlit, pandas ...) are reused read-only from the main environment.
+#
+# ragas is installed with --no-deps because its scikit-network dependency (only used for test-set generation, not
+# for metrics) has no wheel for Python 3.14 on Windows.
+ragas==0.4.3
+langchain<1
+langchain-core<1
+langchain-community<0.4
+langchain-openai<1
+datasets>=4.0.0
+instructor
+tiktoken
+nest-asyncio
+appdirs
+diskcache>=5.6.3
+typer
+rich
+networkx
+pillow>=10.4.0

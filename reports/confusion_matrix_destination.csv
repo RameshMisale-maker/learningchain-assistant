@@ -1,0 +1,4 @@
+,actual_company,actual_products,actual_refuse
+expected_company,17,0,1
+expected_products,0,52,4
+expected_refuse,0,0,14

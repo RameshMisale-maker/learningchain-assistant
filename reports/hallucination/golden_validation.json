@@ -1,0 +1,361 @@
+{
+  "summary": {
+    "golden_source": "https://learningchain.in/",
+    "questions": 20,
+    "judge": "nli:nli-deberta-v3-base",
+    "answer_model": "openai/gpt-oss-120b",
+    "behaviour_accuracy": 0.85,
+    "answer_accuracy_key_facts": 0.694,
+    "negative_controls_declined": "2/2",
+    "total_claims": 43,
+    "unsupported_claims": 16,
+    "hallucination_rate_pct": 37.21,
+    "hallucination_rate_vs_golden_page_only_pct": 79.07,
+    "fabricated_urls": 0,
+    "seconds": 359.7
+  },
+  "results": [
+    {
+      "id": "H01",
+      "question": "What is LearningChain?",
+      "answer_type": "golden_direct",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 1,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/faqs/"
+      ],
+      "answer": "LearningChain is an innovative online platform designed for educational institutions to issue tamper-proof and instantly verifiable digital certificates based on blockchain technology.",
+      "latency_ms": 3461.4
+    },
+    {
+      "id": "H02",
+      "question": "How does LearningChain work?",
+      "answer_type": "golden_direct",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 3,
+      "unsupported": [],
+      "unsupported_vs_page_only": 3,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/faqs/"
+      ],
+      "answer": "Institution administrators upload scanned certificates in PDF format to the LearningChain portal. The system creates a unique hash value for the data, which is then recorded into a unique QR code. When scanned, the QR code allows verifiers to access and cross-check the original document's content with the blockchain-stamped data.",
+      "latency_ms": 152.9
+    },
+    {
+      "id": "H03",
+      "question": "What does an institution do in the issuance step?",
+      "answer_type": "refusal",
+      "behaviour_ok": false,
+      "fact_coverage": 0.0,
+      "claims": 0,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [],
+      "answer": "I couldn't find sufficient verified information in the Sapphirus knowledge base to answer this question accurately. Please contact the appropriate Sapphirus team.",
+      "latency_ms": 2916.3
+    },
+    {
+      "id": "H04",
+      "question": "How is the QR code for a certificate created?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 6,
+      "unsupported": [
+        "When configuring a certificate type, an admin must enable the QR\u2011code feature",
+        "In the certificate\u2011type settings, check \u201cEnable Blockchain QR Code Generation\u201d (with or without templates)\u202f",
+        "Optionally, the admin can select \u201cLogo in QR code\u201d to embed a logo\u202f",
+        "If the \u201cBlockchain QR code generation without Templates\u201d option is left unchecked, the QR code will be generated based on the selected template configuration\u202f",
+        "Once enabled, the platform automatically generates the QR code and attaches it to the certificate (either embedded in the digital document or placed on a pre\u2011printed template)"
+      ],
+      "unsupported_vs_page_only": 5,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/",
+        "https://learningchainai.zendesk.com/hc/en-gb/articles/45460175940377-How-do-I-Configure-Certificate-Type-without-Template",
+        "https://learningchainai.zendesk.com/hc/en-gb/articles/45453932825881-How-do-I-Configure-Certificate-Type-with-Pre-Printed-and-Customer-supplied"
+      ],
+      "answer": "The system creates a unique QR code for each certificate by using blockchain technology\u202f[S1].  \n\nWhen configuring a certificate type, an admin must enable the QR\u2011code feature:\n\n* In the certificate\u2011type settings, check **\u201cEnable Blockchain QR Code Generation\u201d** (with or without templates)\u202f[S2][S3][S5].  \n* Optionally, the admin can select **\u201cLogo in QR code\u201d** to embed a logo\u202f[S2].  \n* If the \u201cBlockchain QR code generation without Templates\u201d option is left unchecked, the QR code will be generated based on the selected template configuration\u202f[S2].  \n\nOnce enabled, the platform automatically gen",
+      "latency_ms": 2609.4
+    },
+    {
+      "id": "H05",
+      "question": "How can an employer verify a certificate?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 6,
+      "unsupported": [
+        "Employers can verify a LearningChain certificate by using the platform\u2019s verification tools",
+        "Log in to the LearningChain web application and go to the dashboard, where the Verification URL is displayed",
+        "Click the Verification URL to open the verification page and select the certificate type to start the 4\u2011step process",
+        "Enter the required details (student name, email, certificate type, certification name, issue month/year, academic reference number, plus verifier name, email, and mobile)",
+        "Complete the remaining steps as prompted (the guide continues beyond Step\u202f2)",
+        "Alternatively, the certificate includes a unique QR code generated on the blockchain; scanning this QR code allows instant verification of the certificate\u2019s authenticity"
+      ],
+      "unsupported_vs_page_only": 6,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchainai.zendesk.com/hc/en-gb/articles/26476529810713-How-do-I-Verify-the-Student-Certificates",
+        "https://learningchain.in/"
+      ],
+      "answer": "Employers can verify a LearningChain certificate by using the platform\u2019s verification tools:\n\n1. **Log in to the LearningChain web application** and go to the dashboard, where the **Verification URL** is displayed[S2].  \n2. Click the Verification URL to open the verification page and **select the certificate type** to start the 4\u2011step process[S2].  \n3. **Enter the required details** (student name, email, certificate type, certification name, issue month/year, academic reference number, plus verifier name, email, and mobile)[S2].  \n4. Complete the remaining steps as prompted (the guide continue",
+      "latency_ms": 2781.9
+    },
+    {
+      "id": "H06",
+      "question": "Does LearningChain protect printed physical certificates?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/",
+        "https://learningchain.in/how-it-works/"
+      ],
+      "answer": "Yes. LearningChain protects printed physical certificates by integrating with security printers that embed blockchain\u2011based QR codes, adding an extra layer of security to the physical documents[S1][S3].",
+      "latency_ms": 2429.4
+    },
+    {
+      "id": "H07",
+      "question": "What are the key features of LearningChain?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 0.5,
+      "claims": 5,
+      "unsupported": [],
+      "unsupported_vs_page_only": 5,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchainai.zendesk.com/hc/en-gb/articles/26475641556505-Key-Features-of-LearningChain"
+      ],
+      "answer": "- **Immutable** \u2013 Un\u2011fakable, unalterable and time\u2011stamped digital certificates[S1]  \n- **Instantly Verifiable** \u2013 Scan the blockchain\u2011powered QR code to validate the certificate in seconds[S1]  \n- **100\u202f% Data Secured** \u2013 Decentralisation of data on blockchain makes it highly secured[S1]  \n- **Easily Shareable** \u2013 Digital certificates can be shared on social\u2011media platforms easily[S1]  \n- **Globally Acceptable** \u2013 Blockchain\u2011powered certificates are accepted and recognised worldwide[S1]",
+      "latency_ms": 2349.3
+    },
+    {
+      "id": "H08",
+      "question": "What are the benefits of blockchain for digital certificates?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 10,
+      "unsupported": [
+        "Builds trust and transparency among employers, institutions, and students"
+      ],
+      "unsupported_vs_page_only": 5,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/how-it-works/",
+        "https://learningchain.in/educational-institutions/",
+        "https://learningchain.in/"
+      ],
+      "answer": "**Benefits of blockchain for digital certificates**\n\n- **Verifiable and tamper\u2011proof** \u2013 blockchain makes certificates verifiable and prevents alteration or tampering[S1].  \n- **Builds trust and transparency** among employers, institutions, and students[S1].  \n- **Enhances brand visibility** \u2013 students can share blockchain credentials on social media, increasing the institution\u2019s visibility[S2].  \n- **Secures institutional reputation** \u2013 certificates cannot be forged, making the institution\u2019s brand \u201cuntouchable\u201d[S2].  \n- **Unique QR codes** \u2013 each certificate includes a blockchain QR code that",
+      "latency_ms": 2483.9
+    },
+    {
+      "id": "H09",
+      "question": "Can a certificate secured with LearningChain be altered?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/",
+        "https://learningchain.in/how-it-works/"
+      ],
+      "answer": "Certificates secured with LearningChain cannot be altered; they are tamper\u2011proof and immutable once recorded on the blockchain[S1][S2].",
+      "latency_ms": 1843.9
+    },
+    {
+      "id": "H10",
+      "question": "Can LearningChain certificates be verified from another country?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 1,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/how-it-works/",
+        "https://learningchain.in/"
+      ],
+      "answer": "Yes. LearningChain\u2019s blockchain\u2011powered certificates are globally verifiable, allowing students to present and verify their credentials from anywhere in the world\u202f[S5][S1].",
+      "latency_ms": 2223.5
+    },
+    {
+      "id": "H11",
+      "question": "What kind of data storage does LearningChain use?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [
+        "LearningChain uses decentralized storage on Microsoft\u202fAzure, with data kept across multiple nodes to provide secure, tamper\u2011proof storage"
+      ],
+      "unsupported_vs_page_only": 1,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/faqs/",
+        "https://learningchain.in/faqs/"
+      ],
+      "answer": "LearningChain uses decentralized storage on Microsoft\u202fAzure, with data kept across multiple nodes to provide secure, tamper\u2011proof storage[S2][S4].",
+      "latency_ms": 1797.6
+    },
+    {
+      "id": "H12",
+      "question": "Who issues certificates with LearningChain?",
+      "answer_type": "refusal",
+      "behaviour_ok": false,
+      "fact_coverage": 0.0,
+      "claims": 0,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [],
+      "answer": "I couldn't find sufficient verified information in the Sapphirus knowledge base to answer this question accurately. Please contact the appropriate Sapphirus team.",
+      "latency_ms": 2257.6
+    },
+    {
+      "id": "H13",
+      "question": "How does LearningChain help students share their achievements?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 2,
+      "unsupported": [
+        "The platform\u2019s blockchain\u2011secured credentials are always verifiable, giving students confidence when presenting their qualifications to employers or other institutions"
+      ],
+      "unsupported_vs_page_only": 2,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/features/",
+        "https://learningchain.in/"
+      ],
+      "answer": "LearningChain enables students to share their achievements through its dedicated mobile app, which lets them easily distribute digital certificates for interviews, verifications, and social\u2011media posting[S1]. The platform\u2019s blockchain\u2011secured credentials are always verifiable, giving students confidence when presenting their qualifications to employers or other institutions[S4].",
+      "latency_ms": 2221.6
+    },
+    {
+      "id": "H14",
+      "question": "For how long are LearningChain credentials verifiable?",
+      "answer_type": "refusal",
+      "behaviour_ok": false,
+      "fact_coverage": 0.0,
+      "claims": 0,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [],
+      "answer": "I couldn't find sufficient verified information in the Sapphirus knowledge base to answer this question accurately. Please contact the appropriate Sapphirus team.",
+      "latency_ms": 2105.0
+    },
+    {
+      "id": "H15",
+      "question": "How does adopting LearningChain help an institution?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 0.0,
+      "claims": 3,
+      "unsupported": [
+        "Adopting LearningChain enables an institution to",
+        "Encourage students to share these secure credentials on social media, which enhances the institution\u2019s visibility and expands its reach"
+      ],
+      "unsupported_vs_page_only": 3,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/faqs/"
+      ],
+      "answer": "Adopting LearningChain enables an institution to:\n\n- Provide blockchain\u2011based digital certificates, demonstrating a commitment to students\u2019 futures.  \n- Encourage students to share these secure credentials on social media, which enhances the institution\u2019s visibility and expands its reach.  \n\n[S2]",
+      "latency_ms": 2105.4
+    },
+    {
+      "id": "H16",
+      "question": "Are LearningChain QR codes easy to use?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/"
+      ],
+      "answer": "Yes. LearningChain\u2019s QR codes are described as \u201ceasy to use\u201d while also providing secure verification\u202f[S1].",
+      "latency_ms": 2239.1
+    },
+    {
+      "id": "H17",
+      "question": "How quickly can a LearningChain certificate be verified?",
+      "answer_type": "generated",
+      "behaviour_ok": true,
+      "fact_coverage": 1.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 1,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/faqs/"
+      ],
+      "answer": "LearningChain certificates can be verified **instantly** by uploading the key file and original document, eliminating the delays of traditional manual verification[S4].",
+      "latency_ms": 5546.5
+    },
+    {
+      "id": "H18",
+      "question": "What does LearningChain describe itself as?",
+      "answer_type": "golden_direct",
+      "behaviour_ok": true,
+      "fact_coverage": 0.0,
+      "claims": 1,
+      "unsupported": [],
+      "unsupported_vs_page_only": 1,
+      "fabricated_urls": [],
+      "citations": [
+        "https://learningchain.in/faqs/"
+      ],
+      "answer": "LearningChain is an innovative online platform designed for educational institutions to issue tamper-proof and instantly verifiable digital certificates based on blockchain technology.",
+      "latency_ms": 57.9
+    },
+    {
+      "id": "H19",
+      "question": "Does LearningChain mint certificates as NFTs on Ethereum?",
+      "answer_type": "refusal",
+      "behaviour_ok": true,
+      "fact_coverage": null,
+      "claims": 0,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [],
+      "answer": "I couldn't find sufficient verified information in the Sapphirus knowledge base to answer this question accurately. Please contact the appropriate Sapphirus team.",
+      "latency_ms": 1617.7
+    },
+    {
+      "id": "H20",
+      "question": "Does LearningChain offer a free mobile app for students on the Play Store?",
+      "answer_type": "refusal",
+      "behaviour_ok": true,
+      "fact_coverage": null,
+      "claims": 0,
+      "unsupported": [],
+      "unsupported_vs_page_only": 0,
+      "fabricated_urls": [],
+      "citations": [],
+      "answer": "I couldn't find sufficient verified information in the Sapphirus knowledge base to answer this question accurately. Please contact the appropriate Sapphirus team.",
+      "latency_ms": 1195.2
+    }
+  ]
+}

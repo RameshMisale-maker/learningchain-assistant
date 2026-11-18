@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapphirus Assistant Admin</title>
+<style>
+/* Layout: top bar + tab strip; each tab is a stack of panels (summary tiles first, detail tables after). */
+:root { --sapphire:#0f52ba; --ink:#142033; --muted:#5a6780; --line:#dfe5ef; --bg:#f4f7fc; --surface:#fff;
+  --ok:#1b7a4b; --ok-soft:#e3f4ea; --warn:#9a5b00; --warn-soft:#fbf0dc; --bad:#a3293a; --bad-soft:#fbe9ec;
+  --font:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; --mono:Consolas,"Cascadia Mono",monospace; }
+@media (prefers-color-scheme: dark) { :root { --ink:#e6ecf5; --muted:#9aa8bf; --line:#26324a; --bg:#0d1420; --surface:#141d2c;
+  --ok:#6fd3a0; --ok-soft:#12301f; --warn:#f0b860; --warn-soft:#33260f; --bad:#f2a0ab; --bad-soft:#3a1820; } }
+* { box-sizing:border-box } body { margin:0; font-family:var(--font); color:var(--ink); background:var(--bg); font-size:14px; }
+.top { background:var(--sapphire); color:#fff; padding:12px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.top h1 { font-size:17px; margin:0; flex:1; }
+.top button { background:rgba(255,255,255,.18); color:#fff; border:0; border-radius:6px; padding:6px 12px; cursor:pointer; font:inherit; }
+nav { display:flex; gap:4px; padding:0 20px; background:var(--surface); border-bottom:1px solid var(--line); overflow-x:auto; }
+nav button { border:0; background:none; padding:12px 14px; font:inherit; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; }
+nav button[aria-selected="true"] { color:var(--sapphire); border-bottom-color:var(--sapphire); font-weight:600; }
+.wrap { padding:20px; display:grid; gap:16px; max-width:1300px; margin:0 auto; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; min-width:0; }
+.panel h2 { font-size:15px; margin:0 0 12px; } .panel h3 { font-size:13px; margin:14px 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.tile { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+.tile .k { font-size:12px; color:var(--muted); } .tile .v { font-size:22px; font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; }
+.tile .s { font-size:11px; color:var(--muted); margin-top:2px; }
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+label { font-size:12px; color:var(--muted); display:grid; gap:4px; }
+input, select { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); }
+button.primary { background:var(--sapphire); color:#fff; border:0; border-radius:6px; padding:8px 14px; font:inherit; cursor:pointer; }
+button.small { border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:6px; padding:3px 9px; font:inherit; font-size:12px; cursor:pointer; }
+button.danger { color:var(--bad); }
+.tablewrap { overflow-x:auto; } table { border-collapse:collapse; width:100%; font-size:13px; }
+th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--muted); font-weight:600; font-size:12px; }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+.pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+.pill.ok { background:var(--ok-soft); color:var(--ok);} .pill.warn{ background:var(--warn-soft); color:var(--warn);} .pill.bad{ background:var(--bad-soft); color:var(--bad);}
+.muted { color:var(--muted); font-size:12px; } .mono { font-family:var(--mono); font-size:12px; }
+.msg { padding:10px 12px; border-radius:8px; margin-top:10px; } .msg.ok{ background:var(--ok-soft); color:var(--ok);} .msg.bad{ background:var(--bad-soft); color:var(--bad);}
+.login { max-width:420px; margin:80px auto; } svg text { fill:var(--muted); font-size:10px; }
+.grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(380px,1fr)); gap:16px; }
+.cm td, .cm th { text-align:center; } .cm td.diag { font-weight:700; color:var(--ok); }
+</style>
+</head>
+<body>
+<div id="login" class="wrap login" hidden>
+  <div class="panel"><h2>Administrator sign-in</h2>
+    <p class="muted">Paste an administrator API token (create one with <span class="mono">python -m backend.security.manage_users create --username you --roles admin</span>). It is kept only in this browser tab.</p>
+    <form id="loginForm" class="row"><label style="flex:1">API token<input id="token" type="password" autocomplete="off" required></label><button class="primary">Sign in</button></form>
+    <div id="loginMsg"></div></div>
+</div>
+<div id="app" hidden>
+  <div class="top"><h1>Sapphirus Assistant · Admin</h1><span id="who" class="muted" style="color:#dbe6fb"></span><button id="logout">Sign out</button></div>
+  <nav id="tabs" role="tablist">
+    <button data-tab="dashboard" aria-selected="true">Dashboard</button><button data-tab="documents">Documents</button>
+    <button data-tab="upload">Upload</button><button data-tab="websites">Websites</button>
+    <button data-tab="jobs">Ingestion jobs</button><button data-tab="feedback">Feedback</button>
+  </nav>
+  <div class="wrap" id="view"></div>
+</div>
+<script>
+(() => {
+  const S = { get: k => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch {} } };
+  let token = S.get("adminToken");
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const fmt = (v, d = 1) => v === null || v === undefined ? "–" : (typeof v === "number" ? (Number.isInteger(v) ? v.toLocaleString() : v.toFixed(d)) : esc(v));
+  const pct = v => v === null || v === undefined ? "–" : (100 * v).toFixed(1) + "%";
+  const usd = v => v === null || v === undefined ? "–" : "$" + Number(v).toFixed(v < 0.01 ? 5 : 2);
+  async function api(path, opts = {}) {
+    const r = await fetch(path, { ...opts, headers: { ...(opts.headers || {}), Authorization: "Bearer " + token } });
+    if (r.status === 401 || r.status === 403) { signOut("Your token is not valid for the admin console."); throw new Error("unauthorised"); }
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || ("HTTP " + r.status));
+    return data;
+  }
+  function signOut(msg) { token = null; S.set("adminToken", null); show(false); if (msg) document.getElementById("loginMsg").innerHTML = `<div class="msg bad">${esc(msg)}</div>`; }
+  function show(app) { document.getElementById("app").hidden = !app; document.getElementById("login").hidden = app; }
+  document.getElementById("loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    // tolerate pasted extras: "Bearer " prefix, quotes/backticks, spaces or line breaks around the token
+    token = document.getElementById("token").value.trim().replace(/^bearer\s+/i, "").replace(/[`'"\s]/g, "");
+    try {
+      const r = await fetch("/api/v1/me", { headers: { Authorization: "Bearer " + token } });
+      if (r.status === 401) return signOut("This token was not recognised. Check that you pasted the whole token (it starts with sap_) and nothing else.");
+      if (!r.ok) return signOut("The server could not check the token (HTTP " + r.status + "). Try again.");
+      const me = await r.json();
+      if (!me.authenticated) return signOut("No token was received. Paste your admin token and try again.");
+      if (!me.is_admin) return signOut("This token is valid but does not have the admin role.");
+      S.set("adminToken", token); start(me);
+    } catch (err) { signOut("Could not reach the assistant API: " + err.message); }
+  });
+  document.getElementById("logout").onclick = () => signOut();
+  const view = document.getElementById("view");
+  document.getElementById("tabs").addEventListener("click", e => { const t = e.target.dataset.tab; if (!t) return;
+    document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t))); render(t); });
+  const fail = err => view.innerHTML = `<div class="panel"><div class="msg bad">${esc(err.message)}</div></div>`;
+  const render = t => ({ dashboard, documents, upload, websites, jobs, feedback }[t]().catch(fail));
+
+  // ------------------------------------------------------------------ dashboard
+  function lineChart(series, key, label) {
+    if (!series.length) return `<p class="muted">No requests in this window.</p>`;
+    const W = 640, H = 170, P = 34, vals = series.map(s => s[key] || 0), max = Math.max(...vals, 1);
+    const x = i => P + (series.length === 1 ? (W - 2 * P) / 2 : i * (W - 2 * P) / (series.length - 1)), y = v => H - P + 6 - (v / max) * (H - 2 * P);
+    const pts = vals.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+    const ticks = [0, max / 2, max].map(v => `<text x="2" y="${y(v) + 3}">${Math.round(v)}</text><line x1="${P}" x2="${W - 8}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" stroke-opacity=".12"/>`).join("");
+    const xl = [0, series.length - 1].map(i => `<text x="${x(i) - 30}" y="${H - 4}">${esc(series[i].bucket.replace("T", " "))}</text>`).join("");
+    return `<div class="tablewrap"><svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;color:var(--ink)" role="img" aria-label="${esc(label)}">${ticks}<polyline fill="none" stroke="#0f52ba" stroke-width="2" points="${pts}"/>${vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="#0f52ba"/>`).join("")}${xl}</svg></div>`;
+  }
+  function cmTable(cm) {
+    if (!cm) return "";
+    const L = cm.labels, M = cm.matrix;
+    return `<div class="tablewrap"><table class="cm"><tr><th>Expected \\ Actual</th>${L.map(l => `<th>${esc(l)}</th>`).join("")}</tr>${M.map((r, i) => `<tr><th>${esc(L[i])}</th>${r.map((v, j) => `<td class="${i === j ? "diag" : ""}">${v}</td>`).join("")}</tr>`).join("")}</table></div>`;
+  }
+  async function dashboard() {
+    const f = window.__dash || (window.__dash = { start: new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10), assistant: "", channel: "" });
+    view.innerHTML = `<div class="panel"><form id="flt" class="row">
+      <label>From<input type="date" name="start" value="${f.start}"></label><label>To<input type="date" name="end" value="${f.end}"></label>
+      <label>Chatbot<select name="assistant"><option value="">All</option><option value="products">LearningChain (products)</option><option value="company">Company</option><option value="all">Combined</option></select></label>
+      <label>Channel<select name="channel"><option value="">All</option><option value="widget">Website widget</option><option value="openai">Open WebUI</option><option value="api">REST API</option><option value="eval">Evaluation</option></select></label>
+      <button class="primary">Apply</button></form></div><div id="dash"><div class="panel muted">Loading…</div></div>`;
+    const form = document.getElementById("flt"); form.assistant.value = f.assistant; form.channel.value = f.channel;
+    form.onsubmit = e => { e.preventDefault(); Object.assign(f, Object.fromEntries(new FormData(form))); dashboard().catch(fail); };
+    const q = `start=${f.start}T00:00:00Z&end=${f.end}T23:59:59Z&assistant=${encodeURIComponent(f.assistant)}&channel=${encodeURIComponent(f.channel)}`;
+    const [sum, ts, ev] = await Promise.all([api(`/api/v1/admin/metrics/summary?${q}`), api(`/api/v1/admin/metrics/timeseries?${q}&bucket=day`), api("/api/v1/admin/evaluations?limit=20")]);
+    const o = sum.overall, rag = ev.runs.find(r => r.run_type === "rag"), prev = ev.runs.filter(r => r.run_type === "rag")[1];
+    const ov = rag && rag.summary.by_category.overall, pv = prev && prev.summary.by_category.overall;
+    const hv = ev.reports.hallucination_system, jv = ev.reports.hallucination;
+    const delta = (a, b) => (a === null || a === undefined || b === null || b === undefined) ? "" : ` (${a >= b ? "+" : ""}${(100 * (a - b)).toFixed(1)} pts vs previous)`;
+    const best = jv && Object.entries(jv.judges || {}).filter(([k, v]) => !v.error).sort((a, b) => b[1].f1 - a[1].f1)[0];
+    document.getElementById("dash").innerHTML = `
+      <div class="tiles">
+        <div class="tile"><div class="k">Requests</div><div class="v">${fmt(o.requests)}</div><div class="s">${fmt(o.successful)} ok · ${fmt(o.failed)} failed</div></div>
+        <div class="tile"><div class="k">End-to-end p50 / p95</div><div class="v">${fmt(o.end_to_end_ms.p50, 0)} ms</div><div class="s">p95 ${fmt(o.end_to_end_ms.p95, 0)} ms</div></div>
+        <div class="tile"><div class="k">TTFT p50 (user)</div><div class="v">${fmt(o.ttft_ms.p50, 0)} ms</div><div class="s">LLM first token p50 ${fmt(o.llm_ttft_ms.p50, 0)} ms</div></div>
+        <div class="tile"><div class="k">Tokens / second</div><div class="v">${fmt(o.tokens_per_second.avg)}</div><div class="s">${fmt(o.llm_requests)} LLM requests</div></div>
+        <div class="tile"><div class="k">Throughput</div><div class="v">${fmt(o.throughput_rpm, 2)}/min</div><div class="s">${fmt(o.throughput_rps, 3)} req/s over active span</div></div>
+        <div class="tile"><div class="k">Avg cost / request</div><div class="v">${usd(o.avg_cost_per_request_usd)}</div><div class="s">Total ${usd(o.total_cost_usd)}</div></div>
+        <div class="tile"><div class="k">Retrieval p50</div><div class="v">${fmt(o.retrieval_ms.p50, 0)} ms</div><div class="s">rerank p50 ${fmt(o.rerank_ms.p50, 0)} ms</div></div>
+        <div class="tile"><div class="k">Answer correctness</div><div class="v">${ov ? pct(ov.correctness) : "–"}</div><div class="s">${ov ? "latest evaluation" + delta(ov.correctness, pv && pv.correctness) : "run an evaluation"}</div></div>
+        <div class="tile"><div class="k">Relevance (Recall@5)</div><div class="v">${ov ? pct(ov.recall_at_k) : "–"}</div><div class="s">MRR ${ov ? fmt(ov.mrr, 3) : "–"} · NDCG ${ov ? fmt(ov.ndcg_at_k, 3) : "–"}</div></div>
+        <div class="tile"><div class="k">Faithfulness</div><div class="v">${ov ? pct(ov.faithfulness) : "–"}</div><div class="s">lexical grounding, per answer</div></div>
+        <div class="tile"><div class="k">Hallucination rate</div><div class="v">${hv ? fmt(hv.totals.hallucination_rate_pct, 2) + "%" : "–"}</div><div class="s">${hv ? esc(hv.judge) + " · " + fmt(hv.totals.claims) + " claims" : "run evaluate_claims.py"}</div></div>
+        <div class="tile"><div class="k">Precision / Recall / F1</div><div class="v">${rag ? fmt(rag.summary.confusion.answer_decision.f1, 3) : "–"}</div><div class="s">${rag ? "P " + fmt(rag.summary.confusion.answer_decision.precision, 3) + " · R " + fmt(rag.summary.confusion.answer_decision.recall, 3) + " (answer vs refuse)" : ""}</div></div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h2>Requests per day</h2>${lineChart(ts.series, "requests", "requests per day")}</div>
+        <div class="panel"><h2>End-to-end latency p50 (ms)</h2>${lineChart(ts.series, "p50_ms", "p50 latency per day")}</div>
+      </div>
+      <div class="panel"><h2>Latency breakdown</h2><div class="tablewrap"><table><tr><th>Stage</th><th class="num">avg ms</th><th class="num">p50</th><th class="num">p95</th><th class="num">samples</th></tr>
+        ${["end_to_end_ms","ttft_ms","retrieval_ms","vector_search_ms","bm25_search_ms","rerank_ms","context_ms","llm_ttft_ms","llm_generation_ms","llm_total_ms"].map(k => `<tr><td class="mono">${k}</td><td class="num">${fmt(o[k].avg)}</td><td class="num">${fmt(o[k].p50)}</td><td class="num">${fmt(o[k].p95)}</td><td class="num">${fmt(o[k].n)}</td></tr>`).join("")}</table></div>
+        <p class="muted">TTFT (user) = request received → first answer byte. LLM TTFT = model call → first generated token. Rows with no samples mean that stage did not run (e.g. no LLM key configured).</p></div>
+      <div class="grid2">
+        <div class="panel"><h2>By chatbot</h2>${aggTable(sum.by_assistant)}</div>
+        <div class="panel"><h2>By knowledge base</h2>${aggTable(sum.by_knowledge_base)}</div>
+      </div>
+      <div class="panel"><h2>Evaluation history</h2><div class="tablewrap"><table><tr><th>Run</th><th>Date</th><th>Model / config</th><th class="num">Correctness</th><th class="num">Recall@5</th><th class="num">Routing</th><th class="num">Faithfulness</th><th class="num">Questions</th></tr>
+        ${ev.runs.filter(r => r.run_type === "rag").map(r => { const x = r.summary.by_category.overall || {}; return `<tr><td>${esc(r.label)}</td><td>${esc(r.created_at.slice(0, 16).replace("T", " "))}</td><td class="mono">${esc(r.config.llm)} · ${esc(r.config.embedding)} · ${esc(r.config.reranker)}</td><td class="num">${pct(x.correctness)}</td><td class="num">${pct(x.recall_at_k)}</td><td class="num">${pct(x.routing_accuracy)}</td><td class="num">${pct(x.faithfulness)}</td><td class="num">${fmt(x.questions)}</td></tr>`; }).join("") || `<tr><td colspan="8" class="muted">No evaluation runs recorded yet - run python -m backend.evaluation.run_evaluation</td></tr>`}</table></div></div>
+      ${rag ? `<div class="grid2"><div class="panel"><h2>Confusion matrix - destination (latest run)</h2>${cmTable(rag.summary.confusion.destination)}
+        <p class="muted">Accuracy ${fmt(rag.summary.confusion.destination_report.accuracy, 3)} · Macro F1 ${fmt(rag.summary.confusion.destination_report.macro_f1, 3)}</p></div>
+        <div class="panel"><h2>Answer vs refuse</h2>${(() => { const a = rag.summary.confusion.answer_decision; return `<div class="tablewrap"><table class="cm"><tr><th></th><th>Answered</th><th>Refused</th></tr><tr><th>Should answer</th><td class="diag">TP ${a.tp}</td><td>FN ${a.fn}</td></tr><tr><th>Should refuse</th><td>FP ${a.fp}</td><td class="diag">TN ${a.tn}</td></tr></table></div><p class="muted">Precision ${fmt(a.precision, 3)} · Recall ${fmt(a.recall, 3)} · F1 ${fmt(a.f1, 3)} · Specificity ${fmt(a.specificity, 3)}</p>`; })()}</div></div>` : ""}
+      ${jv ? `<div class="panel"><h2>Hallucination judges (claim-level confusion matrix vs labelled claims)</h2><div class="tablewrap"><table><tr><th>Judge</th><th class="num">TP</th><th class="num">FN</th><th class="num">FP</th><th class="num">TN</th><th class="num">Accuracy</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">F1</th><th class="num">Specificity</th></tr>
+        ${Object.entries(jv.judges).map(([k, v]) => v.error ? `<tr><td>${esc(k)}</td><td colspan="9" class="muted">${esc(v.error)}</td></tr>` : `<tr><td>${esc(k)}</td><td class="num">${v.tp}</td><td class="num">${v.fn}</td><td class="num">${v.fp}</td><td class="num">${v.tn}</td><td class="num">${fmt(v.accuracy, 3)}</td><td class="num">${fmt(v.precision, 3)}</td><td class="num">${fmt(v.recall, 3)}</td><td class="num">${fmt(v.f1, 3)}</td><td class="num">${fmt(v.specificity, 3)}</td></tr>`).join("")}</table></div>
+        <p class="muted">${esc(jv.label_origin)}. ${best ? "Best judge: " + esc(best[0]) : ""}</p></div>` : ""}
+      ${benchPanel(ev.reports)}`;
+  }
+  function aggTable(groups) {
+    const rows = Object.entries(groups || {});
+    if (!rows.length) return `<p class="muted">No data.</p>`;
+    return `<div class="tablewrap"><table><tr><th>Name</th><th class="num">Requests</th><th class="num">Failed</th><th class="num">p50 ms</th><th class="num">Avg cost</th></tr>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${fmt(v.requests)}</td><td class="num">${fmt(v.failed)}</td><td class="num">${fmt(v.end_to_end_ms.p50, 0)}</td><td class="num">${usd(v.avg_cost_per_request_usd)}</td></tr>`).join("")}</table></div>`;
+  }
+  function benchPanel(rep) {
+    const suites = ["bench_chunking", "bench_embedding", "bench_reranker", "bench_retrieval"].filter(k => rep[k]);
+    if (!suites.length) return "";
+    return `<div class="panel"><h2>Benchmarks (before / after configuration comparison)</h2>${suites.map(k => `<h3>${esc(k.replace("bench_", ""))}</h3><div class="tablewrap"><table><tr><th>Configuration</th><th class="num">Recall@5</th><th class="num">MRR</th><th class="num">Dest. acc.</th><th class="num">Answer correct.</th><th class="num">Retrieval p50 ms</th><th class="num">Chunks</th></tr>${rep[k].map(r => r.error ? `<tr><td>${esc(r.config.name)}</td><td colspan="6" class="muted">error</td></tr>` : `<tr><td>${esc(r.config.name)}</td><td class="num">${fmt(r.recall_at_5, 3)}</td><td class="num">${fmt(r.mrr, 3)}</td><td class="num">${fmt(r.destination_accuracy, 3)}</td><td class="num">${fmt(r.answer_correctness, 3)}</td><td class="num">${fmt(r.retrieval_p50_ms, 0)}</td><td class="num">${fmt(r.chunks)}</td></tr>`).join("")}</table></div>`).join("")}</div>`;
+  }
+
+  // ------------------------------------------------------------------ documents
+  async function documents() {
+    const data = await api("/api/v1/admin/documents?include_deleted=true");
+    view.innerHTML = `<div class="panel"><h2>Indexed documents</h2><p class="muted">Replacing a document keeps its id and increments its version; old chunks are removed only after the new version is indexed.</p><div class="tablewrap"><table>
+      <tr><th>Document</th><th>Knowledge base</th><th class="num">Version</th><th class="num">Chunks</th><th>Status</th><th>Updated</th><th>Access</th><th></th></tr>
+      ${data.documents.map(d => `<tr><td>${esc(d.doc_name)}<div class="muted mono">${esc(d.source_path)}</div></td><td>${esc(d.kb)}</td><td class="num">${d.version}</td><td class="num">${d.num_chunks}</td>
+        <td><span class="pill ${d.status === "active" ? "ok" : "warn"}">${esc(d.status)}</span></td><td>${esc((d.updated_at || "").slice(0, 16).replace("T", " "))}</td><td class="muted">${esc(d.access_roles)}</td>
+        <td>${d.status === "active" ? `<label class="small" style="display:inline-flex"><input type="file" data-replace="${esc(d.doc_id)}" hidden><span class="small" style="border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer">Replace</span></label> <button class="small danger" data-del="${esc(d.doc_id)}">Delete</button>` : ""}</td></tr>`).join("")}
+      </table></div><div id="docMsg"></div></div>`;
+    view.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+      if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Confirm delete"; return; }
+      try { const r = await api(`/api/v1/admin/documents/${b.dataset.del}`, { method: "DELETE" }); note("docMsg", `Deletion queued (job #${r.job.id}).`, true); } catch (e) { note("docMsg", e.message, false); } });
+    view.querySelectorAll("[data-replace]").forEach(inp => inp.onchange = async () => {
+      const fd = new FormData(); fd.append("file", inp.files[0]);
+      try { const r = await api(`/api/v1/admin/documents/${inp.dataset.replace}`, { method: "PUT", body: fd }); note("docMsg", `New version queued (job #${r.job.id}). Track it under Ingestion jobs.`, true); } catch (e) { note("docMsg", e.message, false); } });
+  }
+  const note = (id, text, ok) => { const el = document.getElementById(id); if (el) el.innerHTML = `<div class="msg ${ok ? "ok" : "bad"}">${esc(text)}</div>`; };
+
+  // ------------------------------------------------------------------ upload
+  async function upload() {
+    view.innerHTML = `<div class="panel"><h2>Upload a document</h2><p class="muted">PDF, DOCX, XLSX, CSV, TXT, MD, JSON or HTML. The file is validated and stored, then indexed in the background - you can leave this page.</p>
+      <form id="up" class="row"><label>Knowledge base<select name="kb"><option value="products">LearningChain product help</option><option value="company">Company information</option></select></label>
+      <label>File<input type="file" name="file" required></label><label>Category (optional)<input name="category" placeholder="e.g. Product sheet"></label>
+      <label><span><input type="checkbox" name="is_golden" value="true"> Approved Q&amp;A dataset</span></label><button class="primary">Upload</button></form><div id="upMsg"></div></div>`;
+    document.getElementById("up").onsubmit = async e => {
+      e.preventDefault(); const fd = new FormData(e.target); if (!fd.get("is_golden")) fd.delete("is_golden");
+      try { const r = await api("/api/v1/admin/documents", { method: "POST", body: fd }); note("upMsg", `${r.status === "queued" ? "Queued" : "Already queued"}: job #${r.job.id}. Status updates appear under Ingestion jobs.`, true); pollJob(r.job.id, "upMsg"); }
+      catch (err) { note("upMsg", err.message, false); } };
+  }
+  async function pollJob(id, target) {
+    for (let i = 0; i < 120; i++) { await new Promise(r => setTimeout(r, 2000));
+      const j = await api(`/api/v1/admin/jobs/${id}`).catch(() => null); if (!j) return;
+      if (["succeeded", "dead"].includes(j.status)) { note(target, j.status === "succeeded" ? `Indexed: ${j.result.status || ""} · version ${j.result.version ?? ""} · ${j.result.chunks ?? ""} chunks. It is now searchable.` : `Failed after ${j.attempts} attempts: ${j.error}`, j.status === "succeeded"); return; } }
+  }
+
+  // ------------------------------------------------------------------ websites
+  async function websites() {
+    const data = await api("/api/v1/admin/web-sources");
+    view.innerHTML = `<div class="panel"><h2>Monitored websites</h2><p class="muted">Allowed domains: <span class="mono">${esc(data.allowed_domains.join(", "))}</span>. Pages are checked on their interval; only changed content is re-indexed. Use a webhook for instant updates where your CMS supports it.</p>
+      <form id="addSrc" class="row"><label style="flex:1;min-width:260px">URL<input name="url" type="url" required placeholder="https://learningchain.in/faqs/"></label>
+      <label>Type<select name="source_type"><option value="page">Web page</option><option value="sitemap">Sitemap</option><option value="zendesk">Zendesk help centre</option><option value="faq">LearningChain FAQ page</option></select></label>
+      <label>Knowledge base<select name="kb"><option value="products">products</option><option value="company">company</option></select></label>
+      <label>Check every (min)<input name="interval_minutes" type="number" min="5" value="360" style="width:110px"></label><button class="primary">Add &amp; crawl</button></form><div id="srcMsg"></div>
+      <div class="tablewrap" style="margin-top:12px"><table><tr><th>URL</th><th>Type</th><th>KB</th><th>Every</th><th>Last check</th><th>Status</th><th></th></tr>
+      ${data.sources.map(s => `<tr><td class="mono">${esc(s.url)}</td><td>${esc(s.source_type)}</td><td>${esc(s.kb)}</td><td>${s.interval_minutes} min</td><td>${esc((s.last_checked_at || "never").slice(0, 16).replace("T", " "))}</td>
+        <td><span class="pill ${s.last_status === "failed" ? "bad" : s.last_status === "changed" ? "ok" : "warn"}">${esc(s.last_status)}</span>${s.last_error ? `<div class="muted">${esc(s.last_error)}</div>` : ""}</td>
+        <td><button class="small" data-crawl="${s.id}">Check now</button> <button class="small" data-toggle="${s.id}" data-en="${s.enabled}">${s.enabled ? "Pause" : "Resume"}</button> <button class="small danger" data-rm="${s.id}">Remove</button></td></tr>`).join("") || `<tr><td colspan="7" class="muted">No monitored sources yet.</td></tr>`}</table></div></div>`;
+    document.getElementById("addSrc").onsubmit = async e => { e.preventDefault(); const b = Object.fromEntries(new FormData(e.target)); b.interval_minutes = Number(b.interval_minutes);
+      try { await api("/api/v1/admin/web-sources", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); websites().catch(fail); } catch (err) { note("srcMsg", err.message, false); } };
+    view.querySelectorAll("[data-crawl]").forEach(b => b.onclick = async () => { try { const r = await api(`/api/v1/admin/web-sources/${b.dataset.crawl}/crawl?force=false`, { method: "POST" }); note("srcMsg", `Check queued (job #${r.job.id}).`, true); } catch (e) { note("srcMsg", e.message, false); } });
+    view.querySelectorAll("[data-toggle]").forEach(b => b.onclick = async () => { await api(`/api/v1/admin/web-sources/${b.dataset.toggle}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: b.dataset.en !== "true" }) }); websites().catch(fail); });
+    view.querySelectorAll("[data-rm]").forEach(b => b.onclick = async () => { if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Confirm"; return; } await api(`/api/v1/admin/web-sources/${b.dataset.rm}`, { method: "DELETE" }); websites().catch(fail); });
+  }
+
+  // ------------------------------------------------------------------ jobs
+  async function jobs() {
+    const data = await api("/api/v1/admin/jobs?limit=200"), w = data.worker;
+    view.innerHTML = `<div class="tiles">${["queued","running","succeeded","dead"].map(s => `<div class="tile"><div class="k">${s}</div><div class="v">${data.counts[s] || 0}</div></div>`).join("")}
+      <div class="tile"><div class="k">Worker</div><div class="v" style="font-size:16px">${w.alive ? `<span class="pill ok">running</span>` : `<span class="pill bad">stopped</span>`}</div><div class="s">${fmt(w.processed)} processed</div></div></div>
+      <div class="panel"><h2>Ingestion jobs</h2><div id="jobMsg"></div><div class="tablewrap"><table><tr><th>#</th><th>Type</th><th>KB</th><th>Status</th><th class="num">Attempts</th><th>Requested by</th><th>Created</th><th>Result / error</th><th></th></tr>
+      ${data.jobs.map(j => `<tr><td>${j.id}</td><td>${esc(j.job_type)}</td><td>${esc(j.kb)}</td><td><span class="pill ${j.status === "succeeded" ? "ok" : j.status === "dead" ? "bad" : "warn"}">${esc(j.status)}</span></td><td class="num">${j.attempts}/${j.max_attempts}</td><td>${esc(j.requested_by)}</td><td>${esc((j.created_at || "").slice(0, 16).replace("T", " "))}</td>
+        <td class="muted">${esc(j.error || (j.result && (j.result.status || "") + (j.result.chunks !== undefined ? " · " + j.result.chunks + " chunks" : "")) || "")}</td><td>${["dead", "failed"].includes(j.status) ? `<button class="small" data-retry="${j.id}">Retry</button>` : ""}</td></tr>`).join("")}</table></div></div>`;
+    view.querySelectorAll("[data-retry]").forEach(b => b.onclick = async () => { await api(`/api/v1/admin/jobs/${b.dataset.retry}/retry`, { method: "POST" }); jobs().catch(fail); });
+  }
+
+  // ------------------------------------------------------------------ feedback
+  async function feedback() {
+    const data = await api("/api/v1/admin/feedback?limit=200");
+    view.innerHTML = `<div class="panel"><h2>User feedback</h2><p class="muted">${esc(JSON.stringify(data.summary))}</p><div class="tablewrap"><table><tr><th>When</th><th>Rating</th><th>Question</th><th>Answer</th><th>Comment</th></tr>
+      ${(data.items || []).map(f => `<tr><td>${esc((f.created_at || "").slice(0, 16).replace("T", " "))}</td><td><span class="pill ${f.rating === "helpful" ? "ok" : "bad"}">${esc(f.rating)}</span></td><td>${esc(f.question || "")}</td><td class="muted">${esc((f.answer || "").slice(0, 220))}</td><td>${esc(f.comment || "")}</td></tr>`).join("")}</table></div></div>`;
+  }
+
+  async function start(me) { show(true); document.getElementById("who").textContent = me.display_name || me.username; render("dashboard"); }
+  if (token) api("/api/v1/me").then(me => me.is_admin ? start(me) : signOut()).catch(() => {}); else show(false);
+})();
+</script>
+</body>
+</html>

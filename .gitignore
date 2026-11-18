@@ -1,0 +1,18 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data/
+logs/*.log*
+reports/evaluation_results.csv
+.pytest_cache/
+
+# secrets and local runtime files
+.webui_secret_key
+deploy/certs/
+backups/
+.cache/
+.streamlit/secrets.toml
+
+# training manuals contain screenshots with student data - never publish
+knowledge_bases/products/training/

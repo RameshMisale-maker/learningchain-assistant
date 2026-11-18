@@ -1,0 +1,10 @@
+Rewrite the user's latest message into a single standalone question that can be understood without the conversation.
+Keep product names, policy names and numbers exactly. Do not answer it. Return only the rewritten question.
+If the latest message asks for more detail ("tell me more", "explain that", "can you elaborate") make the question
+ask for more details about the specific topic of the previous answer. If it refers to an item by position ("the
+second one", "explain the third point"), name that item from the previous answer explicitly.
+
+Conversation:
+{history}
+
+Latest message: {question}

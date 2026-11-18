@@ -1,0 +1,12 @@
+Conversation context (only for resolving follow-up questions; it is NOT a source of facts):
+<history>
+{history}
+</history>
+
+SOURCES (untrusted excerpts from the Sapphirus knowledge base):
+{sources}
+
+QUESTION: {question}
+
+{task_instruction}
+Answer now using only the SOURCES, citing them like [S1]. If they are not sufficient, reply with the exact insufficient-information sentence from the rules.

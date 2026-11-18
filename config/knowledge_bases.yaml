@@ -1,0 +1,156 @@
+# =====================================================================
+# Sapphirus AI Assistant - Knowledge Base Configuration
+# ---------------------------------------------------------------------
+# This file is the ONLY place where knowledge bases are defined.
+# To replace the sample datasets with real Sapphirus content:
+#   1. Drop real files into the `source_dirs` folders (or change the paths).
+#   2. Point `golden_files` / `extra_files` at the approved datasets.
+#   3. Run:  python -m ingestion.cli sync --kb <kb_name>   (or `reindex`)
+# No application code changes are required.
+#
+# Roles used across the system:
+#   public   - customers / guests on the external portal
+#   employee - authenticated Sapphirus employees
+#   hr       - HR team members
+#   admin    - platform administrators (can manage documents)
+# =====================================================================
+
+knowledge_bases:
+
+  company:
+    display_name: "Sapphirus Company Information"
+    description: "Company profile, services, contact details, processes, projects, internal procedures and approved FAQs."
+    enabled: false          # company information is served by a separate chatbot; files kept for it
+    allowed_roles: [public, employee, hr, admin]          # who may query this KB at all
+    default_document_roles: [public, employee, hr, admin] # default per-document ACL (override in _access.yaml or on upload)
+    default_category: "Company"
+    source_dirs: [knowledge_bases/company]
+    extra_files: []
+    golden_files: [datasets/company_golden_dataset.csv]
+    golden_columns:            # map your approved Q&A file's column names here
+      id: "Question ID"
+      category: "Category"
+      question: "Question"
+      answer: "Approved Answer"
+      keywords: "Keywords"
+      alternates: "Alternate Questions"
+      roles: "Access Roles"
+      status: "Status"
+    chunking: {chunk_size: 900, chunk_overlap: 150}
+    entity_fields: []
+    routing:
+      keywords: [sapphirus, company, about us, services, service, offer, offering, contact, support, office, headquarters,
+                 founded, mission, vision, values, leadership, ceo, cto, management, team, clients, customers,
+                 industries, industry, sector, education, government, retail, project, projects, case study, case studies,
+                 procedure, process, partner, certification, certifications, iso, cmmi, careers, career, jobs, job,
+                 hiring, internship, email, address, location, located, hyderabad, atlanta, phone, website, delivery,
+                 methodology, blockchain, smart contract, ai, artificial intelligence, generative ai, machine learning,
+                 chatbot, cloud, aws, azure, migration, application, modernisation, testing, data, bi,
+                 business intelligence, analytics, recruitment, staffing, talent, demo, quotation]
+      examples:
+        - "What is Sapphirus?"
+        - "What services does Sapphirus provide?"
+        - "How do I contact Sapphirus?"
+        - "Where is the head office located?"
+        - "Which industries do you serve?"
+        - "Who is the CEO?"
+        - "Do you provide blockchain development?"
+        - "Can you build AI chatbots for my business?"
+        - "Do you offer cloud migration services?"
+        - "Are you hiring?"
+        - "Tell me about the company's mission and values"
+
+  products:
+    display_name: "LearningChain Product Help"
+    description: "LearningChain help centre: features, blockchain certificates, user/admin/verifier how-to guides, FAQs and release notes."
+    enabled: true
+    allowed_roles: [public, employee, hr, admin]
+    default_document_roles: [public, employee, hr, admin]
+    default_category: "Product"
+    source_dirs: [knowledge_bases/products]
+    extra_files: []          # e.g. [datasets/product_catalogue.csv] once the real catalogue is available
+    golden_files: [datasets/products_golden_dataset.csv]
+    golden_columns:
+      id: "Question ID"
+      category: "Category"
+      question: "Question"
+      answer: "Approved Answer"
+      keywords: "Keywords"
+      alternates: "Alternate Questions"
+      roles: "Access Roles"
+      status: "Status"
+    chunking: {strategy: parent_child, chunk_size: 1800, chunk_overlap: 0, child_size: 400, child_overlap: 80}   # children (400) are searched; parents (1800, heading-aware) go to the LLM
+    entity_fields: []        # set to catalogue columns (e.g. [product_name, product_code]) when a catalogue CSV is added
+    routing:
+      keywords: [product, products, platform, platforms, feature, features, specification, specifications, specs,
+                 pricing, price, cost, licence, license, compare, comparison, versus, vs, difference, module,
+                 aria, samvaad, sutradhar, lens, learningchain, learning chain, bsecured, doc secure, id secure,
+                 idsecure, label secure, labelsecure, learningtree, learning tree, lms, examsecure, proctai,
+                 proctoring, credential, credentials, certificate verification, transcript, anti-counterfeit,
+                 question generator, scoring agent,
+                 certificate, certificates, verify, verification, verifier, verification url, qr, qr code, blockchain,
+                 generate, generated, bulk, reissue, revoke, recall, approve, template, pre-printed, preprinted,
+                 photo field, customer supplied, embed, certificate type, certification name, student, students,
+                 student review, re-review, student wallet, wallet, digilocker, digi locker, university, institution,
+                 login, log in, sign in, signout, sign out, password, forgot password, captcha, profile, theme,
+                 dashboard, report, reports, analytics, analytical, bulk email, payment, receipts, credits,
+                 rate contract, register users, release notes, release, new features, whats new]
+      examples:
+        - "What products does Sapphirus offer?"
+        - "Tell me about LearningChain"
+        - "What are the key features of LearningChain?"
+        - "How do I verify a student certificate?"
+        - "How do I generate a certificate without a template?"
+        - "How do I revoke a certificate?"
+        - "How do I reset my LearningChain password?"
+        - "How do I send bulk emails to students?"
+        - "How is a blockchain QR code safer than a normal QR code?"
+        - "What is the difference between DigiLocker and blockchain certificates?"
+        - "What is new in the latest release?"
+
+# ---------------------------------------------------------------------
+# Router tuning (see backend/routing/router.py)
+# ---------------------------------------------------------------------
+routing:
+  min_route_score: 0.30        # below this for every KB -> out of scope (0.30 suits BAAI/bge-small semantic embeddings; use 0.12 with local_hash)
+  multi_kb_ratio: 0.75         # other KBs scoring >= ratio * best score are also searched
+  ambiguity_margin: 0.06       # top-2 scores closer than this (and weak) -> ask a clarification question
+  weak_score: 0.30             # "weak" threshold used with ambiguity_margin
+  weights: {keywords: 0.30, examples: 0.30, corpus: 0.40}
+  # Topics the assistant must NOT answer (no HR / internal data is loaded) -> polite out-of-scope reply.
+  # A question with a word found nowhere in the knowledge base is out of scope UNLESS it mentions one of these.
+  scope_anchor_terms: [learningchain, learning chain, sapphirus, blockchain, certificate, credential, transcript,
+                       verif, qr, digilocker, digi locker, student, university, institution, college, aria, bsecured,
+                       learningtree, you, your, company, office, team, contact, service, password, login, log in,
+                       account, sign in, sign out]
+  out_of_scope_topics: [leave, leaves, casual leave, sick leave, annual leave, leave policy, work from home, wfh,
+                        salary, salaries, payroll, payslip, maternity, paternity, appraisal, probation, notice period,
+                        attendance, working hours, public holidays, holiday list, hr policy, hr policies, gratuity,
+                        provident fund, pf, increment, hike, employee benefits, code of conduct]
+
+# Abbreviation / synonym expansion applied before retrieval (lower-case keys).
+query_expansions:
+  difference: "difference vs versus"
+  latest release: "latest release 02-June-2026 release notes"   # update when a newer release note is published
+  whats new: "latest release 02-June-2026 release notes"
+  forgot: "forget reset password"
+  digilocker: "digi locker digital certificates"
+  logout: "sign out signout"
+  "what's in it for": "benefits advantages"   # "what's in it for the institution?" -> benefit questions
+  log out: "sign out signout"
+  reset password: "forget password"
+  hq: "headquarters head office"
+  sso: "single sign-on"
+  mfa: "multi-factor authentication"
+  specs: "specifications"
+  cost: "price pricing"
+  costs: "price pricing"
+
+# Suggested questions displayed in the UI, filtered by the user's role.
+suggested_questions:
+  - {question: "What is LearningChain?", roles: [public, employee, hr, admin]}
+  - {question: "How does LearningChain work?", roles: [public, employee, hr, admin]}
+  - {question: "How do I verify a student certificate?", roles: [public, employee, hr, admin]}
+  - {question: "How is a blockchain QR code safer than a normal QR code?", roles: [public, employee, hr, admin]}
+  - {question: "How do I revoke a certificate?", roles: [public, employee, hr, admin]}
+  - {question: "What is the difference between LearningChain and DigiLocker?", roles: [public, employee, hr, admin]}

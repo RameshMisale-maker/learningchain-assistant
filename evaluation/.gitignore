@@ -1,0 +1,7 @@
+# isolated evaluation environment
+.venv/
+__pycache__/
+# evaluation outputs (keep the folders, not the generated runs)
+results/*
+!results/.gitkeep
+dataset_history/

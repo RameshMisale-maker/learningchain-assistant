@@ -1,0 +1,154 @@
+{
+  "knowledge_bases": {
+    "company": {
+      "documents": 4,
+      "chunks": 41,
+      "golden_qa_chunks": 19,
+      "chunk_chars": {
+        "min": 199,
+        "median": 526.0,
+        "max": 885,
+        "mean": 532
+      },
+      "chunk_tokens_approx": {
+        "median": 131.5,
+        "max": 221
+      },
+      "duplicate_chunks": 0,
+      "tiny_chunks_lt_25_words": 1,
+      "tiny_examples": [
+        "ification, document integrity, product authentication, trusted digital records and secure "
+      ],
+      "chunks_missing_metadata": {
+        "content_hash": 41
+      },
+      "chunks_without_section": 0,
+      "embedding_model": null,
+      "files": [
+        {
+          "file": "datasets/company_golden_dataset.csv",
+          "chunks": 19,
+          "version": 2
+        },
+        {
+          "file": "knowledge_bases/company/Sapphirus_Company_Overview.md",
+          "chunks": 9,
+          "version": 1,
+          "headings": 11,
+          "headings_missing": [],
+          "sentence_coverage": 1.0
+        },
+        {
+          "file": "knowledge_bases/company/Sapphirus_Contact_and_Offices.md",
+          "chunks": 4,
+          "version": 1,
+          "headings": 6,
+          "headings_missing": [],
+          "sentence_coverage": 1.0
+        },
+        {
+          "file": "knowledge_bases/company/Sapphirus_Services.md",
+          "chunks": 9,
+          "version": 1,
+          "headings": 7,
+          "headings_missing": [],
+          "sentence_coverage": 1.0
+        }
+      ]
+    },
+    "products": {
+      "documents": 9,
+      "chunks": 239,
+      "golden_qa_chunks": 21,
+      "chunk_chars": {
+        "min": 230,
+        "median": 757.0,
+        "max": 899,
+        "mean": 689
+      },
+      "chunk_tokens_approx": {
+        "median": 189.5,
+        "max": 225
+      },
+      "duplicate_chunks": 0,
+      "tiny_chunks_lt_25_words": 0,
+      "tiny_examples": [],
+      "chunks_missing_metadata": {
+        "content_hash": 239
+      },
+      "chunks_without_section": 0,
+      "embedding_model": null,
+      "files": [
+        {
+          "file": "datasets/products_golden_dataset.csv",
+          "chunks": 21,
+          "version": 2
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_00_Website_FAQ.md",
+          "chunks": 14,
+          "version": 1,
+          "headings": 19,
+          "headings_missing": [],
+          "sentence_coverage": 1.0
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_01_Introduction.md",
+          "chunks": 5,
+          "version": 1,
+          "headings": 5,
+          "headings_missing": [],
+          "sentence_coverage": 1.0
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_02_Blockchain_Technology.md",
+          "chunks": 13,
+          "version": 1,
+          "headings": 5,
+          "headings_missing": [],
+          "sentence_coverage": 0.959
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_03_Getting_Started.md",
+          "chunks": 4,
+          "version": 1,
+          "headings": 4,
+          "headings_missing": [],
+          "sentence_coverage": 1.0
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_04_User_Guide.md",
+          "chunks": 33,
+          "version": 1,
+          "headings": 21,
+          "headings_missing": [],
+          "sentence_coverage": 0.945
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_05_Admin_Guide.md",
+          "chunks": 59,
+          "version": 1,
+          "headings": 31,
+          "headings_missing": [],
+          "sentence_coverage": 0.941
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_06_Verifier_Guide.md",
+          "chunks": 4,
+          "version": 1,
+          "headings": 3,
+          "headings_missing": [],
+          "sentence_coverage": 0.92
+        },
+        {
+          "file": "knowledge_bases/products/LearningChain_07_FAQ_and_Release_Notes.md",
+          "chunks": 86,
+          "version": 1,
+          "headings": 23,
+          "headings_missing": [],
+          "sentence_coverage": 0.964
+        }
+      ]
+    }
+  }
+}

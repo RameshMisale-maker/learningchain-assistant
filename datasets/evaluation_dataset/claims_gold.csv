@@ -1,0 +1,51 @@
+claim_id,source_match,claim,label,error_type,origin
+C001,FAQ: Where does LearningChain store my data,LearningChain stores data on Microsoft Azure.,supported,none,assistant-authored; pending human review
+C002,FAQ: Where does LearningChain store my data,LearningChain stores its data on Amazon Web Services.,unsupported,wrong_entity,assistant-authored; pending human review
+C003,FAQ: Does LearningChain support different file formats,LearningChain currently supports only PDF files for uploading certificates.,supported,none,assistant-authored; pending human review
+C004,FAQ: Does LearningChain support different file formats,LearningChain accepts DOCX and JPG files for securing certificates.,unsupported,fabricated_feature,assistant-authored; pending human review
+C005,FAQ: What is the validity of the data,Data uploaded to the blockchain through LearningChain stays valid for a lifetime.,supported,none,assistant-authored; pending human review
+C006,FAQ: What is the validity of the data,Blockchain records in LearningChain expire after 10 years.,unsupported,wrong_number,assistant-authored; pending human review
+C007,FAQ: Does the institution need to pay repeatedly,Institutions only need to pay for the initial upload of a certificate.,supported,none,assistant-authored; pending human review
+C008,FAQ: Does the institution need to pay repeatedly,Institutions pay an annual renewal fee for every certificate kept on the blockchain.,unsupported,fabricated_policy,assistant-authored; pending human review
+C009,FAQ: Can we integrate LearningChain,LearningChain can be integrated with other applications using APIs.,supported,none,assistant-authored; pending human review
+C010,FAQ: Can we integrate LearningChain,LearningChain includes a ready-made SAP SuccessFactors connector.,unsupported,fabricated_feature,assistant-authored; pending human review
+C011,FAQ: Does LearningChain have control over the data,LearningChain does not have access to or control over client data.,supported,none,assistant-authored; pending human review
+C012,FAQ: Does LearningChain have control over the data,LearningChain staff can edit client records when a customer requests it.,unsupported,contradiction,assistant-authored; pending human review
+C013,FAQ: What is the difference between LearningChain and DigiLocker,DigiLocker uses a centralized architecture for data storage and verification.,supported,none,assistant-authored; pending human review
+C014,FAQ: What is the difference between LearningChain and DigiLocker,DigiLocker stores certificates on a decentralized blockchain network.,unsupported,contradiction,assistant-authored; pending human review
+C015,FAQ: How will students access and share their records,Students receive QR codes by email and in their mobile digital wallet.,supported,none,assistant-authored; pending human review
+C016,FAQ: How will students access and share their records,Students receive their certificates as printed copies sent by courier.,unsupported,fabricated_feature,assistant-authored; pending human review
+C017,FAQ: How is a Blockchain QR Code safer,A blockchain QR code contains a unique hash value that is cross-checked with the blockchain when scanned.,supported,none,assistant-authored; pending human review
+C018,FAQ: How does LearningChain work,Institution administrators upload scanned certificates in PDF format to the LearningChain portal.,supported,none,assistant-authored; pending human review
+C019,FAQ: How does LearningChain work,The system creates a unique hash value for the data and records it in a QR code.,supported,none,assistant-authored; pending human review
+C020,FAQ: How does LearningChain work,Students must buy a LearningChain subscription before their certificates can be verified.,unsupported,fabricated_policy,assistant-authored; pending human review
+C021,Admin: How do I Revoke the Certificates,To revoke a certificate the admin opens the Reports module and then the Generated Certificates tab.,supported,none,assistant-authored; pending human review
+C022,Admin: How do I Revoke the Certificates,After a certificate is revoked it can no longer be verified.,supported,none,assistant-authored; pending human review
+C023,Admin: How do I Revoke the Certificates,Revoked certificates are automatically reissued after 30 days.,unsupported,fabricated_feature,assistant-authored; pending human review
+C024,Admin: How do I Recall the Certificates,To recall a certificate select the student and click Recall under Actions and then Go.,supported,none,assistant-authored; pending human review
+C025,Admin: How do I Edit or Change My Password,A new password must contain at least 6 characters with an upper case letter and a lower case letter and a number.,supported,none,assistant-authored; pending human review
+C026,Admin: How do I Edit or Change My Password,A new password must be at least 12 characters long.,unsupported,wrong_number,assistant-authored; pending human review
+C027,If You Forget Your Password,To reset a forgotten password click the Forget password option on the login page.,supported,none,assistant-authored; pending human review
+C028,If You Forget Your Password,A password reset link is sent to your email.,supported,none,assistant-authored; pending human review
+C029,If You Forget Your Password,Password resets can only be done by phoning Sapphirus support.,unsupported,contradiction,assistant-authored; pending human review
+C030,Admin: How do I Register the Users,Admins register new users from the Registration module.,supported,none,assistant-authored; pending human review
+C031,Admin: How do I Register the Users,Registering a user requires the user's Aadhaar number.,unsupported,fabricated_feature,assistant-authored; pending human review
+C032,Verifier: How do I Verify the Student Certificates,Verifying a certificate is a 4-step process.,supported,none,assistant-authored; pending human review
+C033,Verifier: How do I Verify the Student Certificates,The amount a verifier pays is credited to the University or College.,supported,none,assistant-authored; pending human review
+C034,Verifier: How do I Verify the Student Certificates,Certificate verification is free of charge for every verifier.,unsupported,contradiction,assistant-authored; pending human review
+C035,Admin: How Do I View all the Payment Receipts,Only admins can view all the payment receipts.,supported,none,assistant-authored; pending human review
+C036,Admin: How Do I View all the Payment Receipts,Students can view all payment receipts from their dashboard.,unsupported,contradiction,assistant-authored; pending human review
+C037,Key Features of LearningChain,LearningChain issues time-stamped digital certificates that cannot be altered.,supported,none,assistant-authored; pending human review
+C038,Key Features of LearningChain,LearningChain certificates are officially accredited by the UGC.,unsupported,unsupported_claim,assistant-authored; pending human review
+C039,Q005,The Sapphirus head office is in Hyderabad.,supported,none,assistant-authored; pending human review
+C040,Q005,Sapphirus has a regional office in London.,unsupported,unsupported_company_info,assistant-authored; pending human review
+C041,Q006,Kiran Athota is the Chief Executive Officer of Sapphirus.,supported,none,assistant-authored; pending human review
+C042,Q006,Sapphirus was founded by Kiran Athota in 2005.,unsupported,unsupported_company_info,assistant-authored; pending human review
+C043,Q017,Sapphirus is ISO certified and holds CMMI ML3.,supported,none,assistant-authored; pending human review
+C044,Q017,Sapphirus holds SOC 2 Type II certification.,unsupported,unsupported_company_info,assistant-authored; pending human review
+C045,Q004,You can email Sapphirus at info@sapphirus.in.,supported,none,assistant-authored; pending human review
+C046,Q004,You can call Sapphirus on +91 80000 00000.,unsupported,wrong_number,assistant-authored; pending human review
+C047,Q002,Sapphirus offers cloud services including cloud migration.,supported,none,assistant-authored; pending human review
+C048,Q002,Sapphirus offers 24x7 cybersecurity operations center monitoring.,unsupported,unsupported_company_info,assistant-authored; pending human review
+C049,Release notes: 02-June-2026 Release notes,A verification instruction manual link was added to the certificate verification page.,supported,none,assistant-authored; pending human review
+C050,Release notes: 02-June-2026 Release notes,The June 2026 release removed the certificate verification page.,unsupported,contradiction,assistant-authored; pending human review

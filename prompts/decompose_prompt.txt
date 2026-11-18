@@ -1,0 +1,11 @@
+Split the user's question into the separate questions it asks, so each part can be looked up on its own.
+
+Rules:
+- Return 2 or 3 sub-questions, each a complete, standalone question.
+- Replace pronouns ("it", "they", "that") with what they refer to in the original question.
+- Keep product names, document names and numbers exactly as written.
+- Do not answer anything and do not add questions the user did not ask.
+
+Return JSON only: {"sub_questions": ["...", "..."]}
+
+Question: {question}

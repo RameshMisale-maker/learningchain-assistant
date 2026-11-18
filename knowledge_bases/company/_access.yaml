@@ -1,0 +1,25 @@
+# Access control and metadata for files in this folder (read by the ingestion pipeline)
+defaults:
+  roles:
+  - public
+  - employee
+  - hr
+  - admin
+  category: Company
+  confidentiality: public
+  sample: false
+files:
+- pattern: Operational_Procedures*
+  roles:
+  - employee
+  - hr
+  - admin
+  category: Internal Procedure
+  confidentiality: internal
+- pattern: Projects_Portfolio*
+  roles:
+  - employee
+  - hr
+  - admin
+  category: Projects
+  confidentiality: internal

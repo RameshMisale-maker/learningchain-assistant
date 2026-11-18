@@ -1,0 +1,271 @@
+{
+  "judge": "nli:nli-deberta-v3-base",
+  "model": "extractive (no LLM key)",
+  "totals": {
+    "answers": 84,
+    "claims": 260,
+    "unsupported": 47,
+    "fabricated_urls": 40,
+    "invalid_citations": 0,
+    "hallucination_rate_pct": 18.08
+  },
+  "by_category": {
+    "ambiguous": {
+      "answers": 1,
+      "claims": 11,
+      "unsupported": 0,
+      "fabricated_urls": 2,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 0.0
+    },
+    "company": {
+      "answers": 17,
+      "claims": 30,
+      "unsupported": 6,
+      "fabricated_urls": 3,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 20.0
+    },
+    "comparison": {
+      "answers": 2,
+      "claims": 5,
+      "unsupported": 2,
+      "fabricated_urls": 0,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 40.0
+    },
+    "exact_detail": {
+      "answers": 5,
+      "claims": 30,
+      "unsupported": 8,
+      "fabricated_urls": 8,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 26.67
+    },
+    "faq_exact": {
+      "answers": 18,
+      "claims": 31,
+      "unsupported": 3,
+      "fabricated_urls": 0,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 9.68
+    },
+    "faq_paraphrase": {
+      "answers": 16,
+      "claims": 26,
+      "unsupported": 0,
+      "fabricated_urls": 0,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 0.0
+    },
+    "misleading": {
+      "answers": 1,
+      "claims": 2,
+      "unsupported": 1,
+      "fabricated_urls": 0,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 50.0
+    },
+    "multi_article": {
+      "answers": 2,
+      "claims": 13,
+      "unsupported": 3,
+      "fabricated_urls": 2,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 23.08
+    },
+    "multi_part": {
+      "answers": 4,
+      "claims": 14,
+      "unsupported": 5,
+      "fabricated_urls": 3,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 35.71
+    },
+    "products": {
+      "answers": 18,
+      "claims": 98,
+      "unsupported": 19,
+      "fabricated_urls": 22,
+      "invalid_citations": 0,
+      "hallucination_rate_pct": 19.39
+    }
+  },
+  "examples": [
+    {
+      "eval_id": "C01",
+      "question": "Give me a short introduction to Sapphirus.",
+      "answer_type": "golden_semantic",
+      "claim": "Sapphirus Systems Pvt Ltd is a technology solutions company that turns emerging and enterprise technologies into practical solutions for real-world challenges",
+      "score": 0.001
+    },
+    {
+      "eval_id": "C01",
+      "question": "Give me a short introduction to Sapphirus.",
+      "answer_type": "golden_semantic",
+      "claim": "Blockchain is its core capability, complemented by Artificial Intelligence, Cloud, Data & Analytics and application engineering",
+      "score": 0.001
+    },
+    {
+      "eval_id": "C03",
+      "question": "What's your email address?",
+      "answer_type": "golden_semantic",
+      "claim": "You can reach Sapphirus by email at info@sapphirus.in, by phone at +91 96531 57225 or +91 86396 42312, or through the contact form at",
+      "score": 0.0
+    },
+    {
+      "eval_id": "C16",
+      "question": "Where can I see current job openings?",
+      "answer_type": "extractive",
+      "claim": "Current openings at Sapphirus (full time, internship, part time and remote roles when available) are listed at",
+      "score": 0.003
+    },
+    {
+      "eval_id": "C18",
+      "question": "Do you provide business intelligence dashboards?",
+      "answer_type": "extractive",
+      "claim": "Business Intelligence: reports, dashboards and performance views",
+      "score": 0.006
+    },
+    {
+      "eval_id": "P04",
+      "question": "Why is a blockchain QR code more secure than an ordinary QR code?",
+      "answer_type": "golden_semantic",
+      "claim": "Blockchain QR codes contain a unique hash value that is cross-checked with the blockchain when scanned",
+      "score": 0.042
+    },
+    {
+      "eval_id": "P04",
+      "question": "Why is a blockchain QR code more secure than an ordinary QR code?",
+      "answer_type": "golden_semantic",
+      "claim": "This ensures that the data is incorruptible and immutable",
+      "score": 0.267
+    },
+    {
+      "eval_id": "P05",
+      "question": "How does an employer check a student's certificate?",
+      "answer_type": "extractive",
+      "claim": "Double-check the entered information to avoid errors",
+      "score": 0.171
+    },
+    {
+      "eval_id": "P05",
+      "question": "How does an employer check a student's certificate?",
+      "answer_type": "extractive",
+      "claim": "Double-check all fields for correctness before generating the certificate",
+      "score": 0.003
+    },
+    {
+      "eval_id": "P06",
+      "question": "Where do I find the verification link?",
+      "answer_type": "extractive",
+      "claim": "Where I can find the Verification URL?",
+      "score": 0.034
+    },
+    {
+      "eval_id": "P07",
+      "question": "Steps to revoke a certificate?",
+      "answer_type": "extractive",
+      "claim": "Admin: How do I Revoke the Certificates",
+      "score": 0.002
+    },
+    {
+      "eval_id": "P10",
+      "question": "How do I change my password in settings?",
+      "answer_type": "extractive",
+      "claim": "How do I Edit or Change My Password?",
+      "score": 0.108
+    },
+    {
+      "eval_id": "P10",
+      "question": "How do I change my password in settings?",
+      "answer_type": "extractive",
+      "claim": "To Edit/Change my password, Click on Settings Module and then click on Change Password",
+      "score": 0.221
+    },
+    {
+      "eval_id": "P12",
+      "question": "How do I generate a single certificate without a template?",
+      "answer_type": "extractive",
+      "claim": "How do I Secure the Student Digital Certificate without Template?",
+      "score": 0.011
+    },
+    {
+      "eval_id": "P12",
+      "question": "How do I generate a single certificate without a template?",
+      "answer_type": "extractive",
+      "claim": "To secure the student digital certificate",
+      "score": 0.122
+    },
+    {
+      "eval_id": "P13",
+      "question": "How do I reissue one certificate?",
+      "answer_type": "extractive",
+      "claim": "Step2: Access User Module",
+      "score": 0.01
+    },
+    {
+      "eval_id": "P13",
+      "question": "How do I reissue one certificate?",
+      "answer_type": "extractive",
+      "claim": "Step3: Select the Certificate type and click on \"Actions\" Icon to reissue the Certificate you wish to proceed",
+      "score": 0.072
+    },
+    {
+      "eval_id": "P17",
+      "question": "Where can admins see payment receipts?",
+      "answer_type": "extractive",
+      "claim": "After Login click on the \"Reports\" module, Then we can see the \"Receipts\" option",
+      "score": 0.494
+    },
+    {
+      "eval_id": "P17",
+      "question": "Where can admins see payment receipts?",
+      "answer_type": "extractive",
+      "claim": "Here after clicking on Receipts we can view all the details like Verifier Name, Payment ID, Transfer ID, etc., as shown in the below image",
+      "score": 0.014
+    },
+    {
+      "eval_id": "P18",
+      "question": "Is a blockchain certificate better than DigiLocker?",
+      "answer_type": "extractive",
+      "claim": "The use of digital signatures requires the participation of third-party providers that guarantee the integrity of the transaction; they exert control on every aspect of the certification and verification processes, which can lead to abuses",
+      "score": 0.037
+    },
+    {
+      "eval_id": "F07x",
+      "question": "How is a Blockchain QR Code safer than a normal QR code?",
+      "answer_type": "golden_direct",
+      "claim": "Blockchain QR codes contain a unique hash value that is cross-checked with the blockchain when scanned",
+      "score": 0.042
+    },
+    {
+      "eval_id": "F07x",
+      "question": "How is a Blockchain QR Code safer than a normal QR code?",
+      "answer_type": "golden_direct",
+      "claim": "This ensures that the data is incorruptible and immutable",
+      "score": 0.267
+    },
+    {
+      "eval_id": "F18x",
+      "question": "Does the institution need to pay repeatedly to maintain records for a lifetime?",
+      "answer_type": "golden_direct",
+      "claim": "No, once a certificate is uploaded and pushed to the blockchain network, it remains there for a lifetime",
+      "score": 0.022
+    },
+    {
+      "eval_id": "MP2",
+      "question": "Who can download bulk original certificates, and who can view payment receipts?",
+      "answer_type": "extractive",
+      "claim": "Now select all the student's details as per the certificate type and below the left corner there will be an \"Action menu dropdown\" as shown in the below image",
+      "score": 0.103
+    },
+    {
+      "eval_id": "MP2",
+      "question": "Who can download bulk original certificates, and who can view payment receipts?",
+      "answer_type": "extractive",
+      "claim": "Select all the required student's details",
+      "score": 0.143
+    }
+  ]
+}

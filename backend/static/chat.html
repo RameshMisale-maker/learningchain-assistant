@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LearningChain Assistant</title>
+<style>
+/* Layout: full-height chat column - header with assistant switch, scrolling transcript, composer. */
+:root {
+  --sapphire: #0f52ba; --sapphire-dark: #0a3d8c; --ink: #142033; --muted: #5a6780; --line: #dfe5ef;
+  --bg: #f4f7fc; --surface: #ffffff; --user: #e8f0fd; --error: #a3293a; --error-soft: #fbe9ec;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #e6ecf5; --muted: #9aa8bf; --line: #26324a; --bg: #0d1420; --surface: #141d2c; --user: #1b2a46;
+          --error-soft: #3a1820; --error: #f2a0ab; }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font-family: var(--font); color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.5; }
+.app { height: 100%; display: flex; flex-direction: column; max-width: 860px; margin: 0 auto; background: var(--surface); }
+header { background: var(--sapphire); color: #fff; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+header .logo { width: 34px; height: 34px; border-radius: 8px; background: rgba(255,255,255,.18); display: grid; place-items: center; font-weight: 700; }
+header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+header p { margin: 0; font-size: 12px; opacity: .85; }
+header .titles { flex: 1; min-width: 160px; }
+.switch { display: flex; background: rgba(255,255,255,.15); border-radius: 8px; padding: 3px; }
+.switch button { background: none; border: 0; color: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; }
+.switch button[aria-pressed="true"] { background: #fff; color: var(--sapphire-dark); font-weight: 600; }
+.icon-btn { background: rgba(255,255,255,.15); border: 0; color: #fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+main { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.msg { max-width: 92%; padding: 10px 14px; border-radius: 12px; overflow-wrap: anywhere; }
+.msg.user { align-self: flex-end; background: var(--user); border-bottom-right-radius: 4px; white-space: pre-wrap; }
+.msg.bot { align-self: flex-start; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.bot.error { background: var(--error-soft); color: var(--error); border-color: transparent; }
+.msg.bot p { margin: 0 0 8px; } .msg.bot p:last-child { margin-bottom: 0; }
+.msg.bot ul, .msg.bot ol { margin: 4px 0 8px; padding-left: 20px; }
+.msg.bot table { border-collapse: collapse; margin: 6px 0; font-size: 13px; display: block; overflow-x: auto; }
+.msg.bot th, .msg.bot td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.msg.bot a { color: var(--sapphire); }
+@media (prefers-color-scheme: dark) { .msg.bot a { color: #8db4f5; } }
+.sources { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 13px; }
+.sources b { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.sources ul { margin: 4px 0 0; padding-left: 18px; }
+.actions { display: flex; gap: 6px; margin-top: 8px; }
+.actions button { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+.actions button[aria-pressed="true"] { border-color: var(--sapphire); color: var(--sapphire); }
+.typing { display: inline-flex; gap: 4px; }
+.typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .6; } }
+.welcome { color: var(--muted); font-size: 14px; }
+.rate { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); display: grid; gap: 8px; }
+.rate .stars { display: flex; gap: 4px; }
+.rate .stars button { background: none; border: 0; font-size: 26px; line-height: 1; cursor: pointer; color: var(--line); padding: 0 2px; }
+.rate .stars button.on { color: #f2b01e; }
+.rate textarea { min-height: 54px; }
+.rate .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.rate .row button { border: 0; border-radius: 8px; padding: 7px 14px; font: inherit; cursor: pointer; background: var(--sapphire); color: #fff; }
+.rate .row button.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.rate .thanks { color: var(--muted); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chips button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+.chips button:hover { border-color: var(--sapphire); }
+form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--surface); }
+textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; color: var(--ink); background: var(--bg); max-height: 140px; min-height: 44px; }
+textarea:focus, button:focus-visible { outline: 2px solid var(--sapphire); outline-offset: 1px; }
+form button { background: var(--sapphire); color: #fff; border: 0; border-radius: 10px; padding: 0 18px; font: inherit; font-weight: 600; cursor: pointer; }
+form button:disabled { opacity: .5; cursor: default; }
+.foot { text-align: center; font-size: 11px; color: var(--muted); padding: 0 16px 8px; background: var(--surface); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo" aria-hidden="true">S</div>
+    <div class="titles"><h1>LearningChain Assistant</h1><p id="subtitle">LearningChain product help</p></div>
+    <button type="button" class="icon-btn" id="clear" title="Clear conversation">Clear</button>
+  </header>
+  <main id="log" aria-live="polite"></main>
+  <form id="form">
+    <label for="q" style="position:absolute;left:-9999px">Your question</label>
+    <textarea id="q" rows="1" maxlength="1000" placeholder="Ask about LearningChain…" required></textarea>
+    <button id="send" type="submit">Send</button>
+  </form>
+  <div class="foot">Answers come only from published LearningChain content. Please verify important details with our team.</div>
+</div>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const locked = "products";                              // this chatbot answers LearningChain questions only
+  const API = "";                                         // same origin as this page
+  const store = {
+    get(k, d) { try { return JSON.parse(sessionStorage.getItem(k)) ?? d; } catch { return d; } },
+    set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
+  let assistant = locked || store.get("assistant", "products");
+  const state = store.get("chat:" + assistant, { session: null, messages: [] });
+  const log = document.getElementById("log"), form = document.getElementById("form");
+  const input = document.getElementById("q"), send = document.getElementById("send");
+  const SUBTITLE = { products: "LearningChain product help - features, certificates, verification, how-to guides" };
+  const SUGGEST = {
+    products: ["What is LearningChain?", "How do I verify a student certificate?", "How do I revoke a certificate?",
+               "How is a blockchain QR code safer than a normal QR code?"] };
+
+
+  // ---------- minimal, safe Markdown (escape first, then format)
+  const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const safeUrl = u => /^https:\/\//i.test(u) ? u : null;
+  function inline(t) {
+    t = esc(t);
+    t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (m, txt, url) => safeUrl(url) ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${txt}</a>` : txt);
+    t = t.replace(/(^|[\s(])(https:\/\/[^\s<)]+)/g, (m, pre, url) => `${pre}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+    t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\[S\d+\]/g, "");
+    return t;
+  }
+  function md(text) {
+    const lines = text.split("\n"); let html = "", list = null, table = [];
+    const flushTable = () => { if (!table.length) return;
+      html += "<table>" + table.map((r, i) => "<tr>" + r.replace(/^\||\|$/g, "").split("|").map(c => i === 0 ? `<th>${inline(c.trim())}</th>` : `<td>${inline(c.trim())}</td>`).join("") + "</tr>").join("") + "</table>";
+      table = []; };
+    const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+    for (const raw of lines) {
+      const l = raw.trim();
+      if (l.startsWith("|")) { closeList(); if (!/^\|[\s:|-]+\|?$/.test(l)) table.push(l); continue; } else flushTable();
+      let m;
+      if ((m = l.match(/^[-*•]\s+(.*)/))) { if (list !== "ul") { closeList(); html += "<ul>"; list = "ul"; } html += `<li>${inline(m[1])}</li>`; }
+      else if ((m = l.match(/^(?:\d+[.)]|Step \d+:)\s+(.*)/))) { if (list !== "ol") { closeList(); html += "<ol>"; list = "ol"; } html += `<li>${inline(m[1])}</li>`; }
+      else if (!l) { closeList(); }
+      else if (l === "---") { closeList(); }
+      else { closeList(); html += `<p>${inline(l.replace(/^#+\s*/, ""))}</p>`; }
+    }
+    closeList(); flushTable(); return html;
+  }
+
+  // ---------- rendering
+  function bubble(role, cls = "") { const d = document.createElement("div"); d.className = `msg ${role} ${cls}`; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+  function renderBot(el, m) {
+    el.innerHTML = md(m.text || "");
+    if (m.sources && m.sources.length) {
+      const seen = new Set(), items = [];
+      for (const s of m.sources) { const key = s.url || s.title; if (seen.has(key)) continue; seen.add(key);
+        const label = esc(s.title + (s.section && !s.title.includes(s.section) ? " – " + s.section : ""));
+        items.push(s.url && safeUrl(s.url) ? `<li><a href="${s.url}" target="_blank" rel="noopener noreferrer">${label}</a></li>` : `<li>${label}</li>`); }
+      el.insertAdjacentHTML("beforeend", `<div class="sources"><b>Sources</b><ul>${items.join("")}</ul></div>`);
+    }
+    if (m.done && m.answerType === "closing") { renderRating(el, m); return; }
+    if (m.done) {
+      const a = document.createElement("div"); a.className = "actions";
+      const rateable = m.messageId && !["greeting", "closing"].includes(m.answerType);
+      a.innerHTML = `<button type="button" data-act="copy">Copy</button>` + (rateable ? `<button type="button" data-act="helpful" aria-pressed="${m.rating === "helpful"}">Helpful</button><button type="button" data-act="not_helpful" aria-pressed="${m.rating === "not_helpful"}">Not helpful</button>` : "");
+      a.addEventListener("click", ev => onAction(ev, m, a)); el.appendChild(a);
+    }
+  }
+  function renderRating(el, m) {
+    const box = document.createElement("div"); box.className = "rate";
+    if (m.stars) { box.innerHTML = `<div class="thanks">Thank you for your feedback (${m.stars}/5). Have a nice day!</div>`; }
+    else {
+      box.innerHTML = `<b>How was your experience?</b><div class="stars" role="radiogroup" aria-label="Rate this conversation">` +
+        [1, 2, 3, 4, 5].map(n => `<button type="button" data-star="${n}" aria-label="${n} star${n > 1 ? "s" : ""}">&#9733;</button>`).join("") +
+        `</div><label for="rc" style="position:absolute;left:-9999px">Comment</label><textarea id="rc" maxlength="2000" placeholder="Anything we could improve? (optional)"></textarea>` +
+        `<div class="row"><button type="button" data-send="1">Submit feedback</button><button type="button" class="ghost" data-skip="1">Skip</button></div><div class="err"></div>`;
+      let stars = 0;
+      const paint = () => box.querySelectorAll("[data-star]").forEach(b => b.classList.toggle("on", Number(b.dataset.star) <= stars));
+      box.querySelectorAll("[data-star]").forEach(b => b.onclick = () => { stars = Number(b.dataset.star); paint(); });
+      box.querySelector("[data-skip]").onclick = () => { m.stars = "skipped"; finish(); };
+      box.querySelector("[data-send]").onclick = async () => {
+        if (!stars) { box.querySelector(".err").textContent = "Please choose 1 to 5 stars."; return; }
+        try {
+          const r = await fetch(API + "/api/v1/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message_id: m.messageId, rating: "conversation", stars, comment: box.querySelector("textarea").value }) });
+          if (!r.ok) throw new Error();
+          m.stars = stars; finish();
+        } catch { box.querySelector(".err").textContent = "Could not send your feedback. Please try again."; }
+      };
+    }
+    function finish() {
+      box.innerHTML = m.stars === "skipped" ? `<div class="thanks">Thank you for visiting. Have a nice day!</div>`
+        : `<div class="thanks">Thank you for your feedback (${m.stars}/5). Have a nice day!</div>`;
+      addRestart(box); save();
+    }
+    if (m.stars) addRestart(box);
+    el.appendChild(box);
+  }
+  function addRestart(box) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "ghost"; b.textContent = "Start a new chat";
+    b.style.cssText = "justify-self:start;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer";
+    b.onclick = () => { state.session = null; state.messages = []; save(); renderAll(); input.focus(); };
+    box.appendChild(b);
+  }
+  function renderAll() {
+    log.innerHTML = "";
+    document.getElementById("subtitle").textContent = SUBTITLE[assistant];
+    if (!state.messages.length) {
+      const w = bubble("bot"); w.innerHTML = `<div class="welcome">Hi! I'm the LearningChain Assistant. Ask me about LearningChain features, issuing and verifying blockchain certificates, or how to do something in the platform.</div><div class="chips"></div>`;
+      const chips = w.querySelector(".chips");
+      SUGGEST[assistant].forEach(q => { const b = document.createElement("button"); b.type = "button"; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
+      return;
+    }
+    for (const m of state.messages) { if (m.role === "user") bubble("user").textContent = m.text; else renderBot(bubble("bot", m.error ? "error" : ""), m); }
+  }
+  async function onAction(ev, m, bar) {
+    const act = ev.target.dataset.act; if (!act) return;
+    if (act === "copy") {
+      try { await navigator.clipboard.writeText(m.text); ev.target.textContent = "Copied"; } catch { ev.target.textContent = "Select text to copy"; }
+      setTimeout(() => ev.target.textContent = "Copy", 1500); return;
+    }
+    try {
+      const r = await fetch(API + "/api/v1/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message_id: m.messageId, rating: act }) });
+      if (!r.ok) throw new Error();
+      m.rating = act; save(); bar.querySelectorAll("[data-act]").forEach(b => b.dataset.act !== "copy" && b.setAttribute("aria-pressed", String(b.dataset.act === act)));
+    } catch { ev.target.textContent = "Try again"; }
+  }
+  const save = () => store.set("chat:" + assistant, state);
+
+  // ---------- streaming request (server-sent events over fetch)
+  async function ask(text) {
+    text = text.trim(); if (!text) return;
+    if (!state.messages.length) log.innerHTML = "";
+    state.messages.push({ role: "user", text }); bubble("user").textContent = text;
+    const m = { role: "bot", text: "", sources: [], done: false }; state.messages.push(m);
+    const el = bubble("bot"); el.innerHTML = `<span class="typing" aria-label="Assistant is typing"><span></span><span></span><span></span></span>`;
+    send.disabled = true; input.value = ""; save();
+    try {
+      const resp = await fetch(API + "/api/v1/chat/stream", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, session_id: state.session, assistant }) });
+      if (resp.status === 429) throw new Error("You're sending messages too quickly. Please wait a moment and try again.");
+      if (!resp.ok || !resp.body) throw new Error("The assistant is unavailable right now. Please try again shortly.");
+      const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) >= 0) {
+          const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
+          const ev = (block.match(/^event: (.*)$/m) || [])[1], data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
+          if (ev === "meta") { state.session = data.session_id; m.answerType = data.answer_type; }
+          else if (ev === "delta") { m.text += data.text; renderBot(el, m); log.scrollTop = log.scrollHeight; }
+          else if (ev === "sources") { m.sources = data.citations || []; }
+          else if (ev === "done") { m.messageId = data.message_id; }
+          else if (ev === "error") { throw new Error(data.message); }
+        }
+      }
+      if (!m.text) throw new Error("No answer was returned. Please try again.");
+      m.done = true; renderBot(el, m);
+    } catch (err) {
+      m.text = err.message || "Something went wrong. Please try again."; m.error = true; m.done = false;
+      el.className = "msg bot error"; el.textContent = m.text;
+    } finally { send.disabled = false; save(); input.focus(); log.scrollTop = log.scrollHeight; }
+  }
+
+  form.addEventListener("submit", e => { e.preventDefault(); if (!send.disabled) ask(input.value); });
+  input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+  input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; });
+  document.getElementById("clear").addEventListener("click", () => { state.session = null; state.messages = []; save(); renderAll(); input.focus(); });
+  renderAll();
+})();
+</script>
+</body>
+</html>

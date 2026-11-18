@@ -1,0 +1,233 @@
+{
+  "claims": 50,
+  "context_missing": [
+    "C001",
+    "C002",
+    "C003",
+    "C004",
+    "C011",
+    "C012"
+  ],
+  "label_origin": "assistant-authored; pending human review",
+  "judges": {
+    "lexical": {
+      "tp": 25,
+      "fp": 5,
+      "fn": 3,
+      "tn": 17,
+      "precision": 0.8333333333333334,
+      "recall": 0.8928571428571429,
+      "f1": 0.8620689655172413,
+      "accuracy": 0.84,
+      "specificity": 0.7727272727272727,
+      "ms_per_claim": 0.2,
+      "hallucination_detection_rate": 0.7727272727272727,
+      "detected_by_error_type": {
+        "wrong_entity": "1/1",
+        "fabricated_feature": "4/5",
+        "wrong_number": "3/3",
+        "fabricated_policy": "2/2",
+        "contradiction": "2/6",
+        "unsupported_claim": "1/1",
+        "unsupported_company_info": "4/4"
+      },
+      "errors": [
+        {
+          "claim_id": "C001",
+          "claim": "LearningChain stores data on Microsoft Azure.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.0
+        },
+        {
+          "claim_id": "C003",
+          "claim": "LearningChain currently supports only PDF files for uploading certificates.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.0
+        },
+        {
+          "claim_id": "C011",
+          "claim": "LearningChain does not have access to or control over client data.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.0
+        },
+        {
+          "claim_id": "C014",
+          "claim": "DigiLocker stores certificates on a decentralized blockchain network.",
+          "label": "unsupported",
+          "judged_supported": true,
+          "score": 0.5
+        },
+        {
+          "claim_id": "C031",
+          "claim": "Registering a user requires the user's Aadhaar number.",
+          "label": "unsupported",
+          "judged_supported": true,
+          "score": 0.5
+        },
+        {
+          "claim_id": "C034",
+          "claim": "Certificate verification is free of charge for every verifier.",
+          "label": "unsupported",
+          "judged_supported": true,
+          "score": 0.5
+        },
+        {
+          "claim_id": "C036",
+          "claim": "Students can view all payment receipts from their dashboard.",
+          "label": "unsupported",
+          "judged_supported": true,
+          "score": 0.6
+        },
+        {
+          "claim_id": "C050",
+          "claim": "The June 2026 release removed the certificate verification page.",
+          "label": "unsupported",
+          "judged_supported": true,
+          "score": 1.0
+        }
+      ]
+    },
+    "nli:nli-deberta-v3-small": {
+      "tp": 20,
+      "fp": 0,
+      "fn": 8,
+      "tn": 22,
+      "precision": 1.0,
+      "recall": 0.7142857142857143,
+      "f1": 0.8333333333333333,
+      "accuracy": 0.84,
+      "specificity": 1.0,
+      "ms_per_claim": 490.2,
+      "hallucination_detection_rate": 1.0,
+      "detected_by_error_type": {
+        "wrong_entity": "1/1",
+        "fabricated_feature": "5/5",
+        "wrong_number": "3/3",
+        "fabricated_policy": "2/2",
+        "contradiction": "6/6",
+        "unsupported_claim": "1/1",
+        "unsupported_company_info": "4/4"
+      },
+      "errors": [
+        {
+          "claim_id": "C001",
+          "claim": "LearningChain stores data on Microsoft Azure.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.016
+        },
+        {
+          "claim_id": "C003",
+          "claim": "LearningChain currently supports only PDF files for uploading certificates.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.0
+        },
+        {
+          "claim_id": "C005",
+          "claim": "Data uploaded to the blockchain through LearningChain stays valid for a lifetime.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.002
+        },
+        {
+          "claim_id": "C011",
+          "claim": "LearningChain does not have access to or control over client data.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.001
+        },
+        {
+          "claim_id": "C013",
+          "claim": "DigiLocker uses a centralized architecture for data storage and verification.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.003
+        },
+        {
+          "claim_id": "C018",
+          "claim": "Institution administrators upload scanned certificates in PDF format to the LearningChain portal.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.002
+        },
+        {
+          "claim_id": "C021",
+          "claim": "To revoke a certificate the admin opens the Reports module and then the Generated Certificates tab.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.032
+        },
+        {
+          "claim_id": "C045",
+          "claim": "You can email Sapphirus at info@sapphirus.in.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.001
+        }
+      ]
+    },
+    "nli:nli-deberta-v3-base": {
+      "tp": 23,
+      "fp": 0,
+      "fn": 5,
+      "tn": 22,
+      "precision": 1.0,
+      "recall": 0.8214285714285714,
+      "f1": 0.9019607843137255,
+      "accuracy": 0.9,
+      "specificity": 1.0,
+      "ms_per_claim": 813.1,
+      "hallucination_detection_rate": 1.0,
+      "detected_by_error_type": {
+        "wrong_entity": "1/1",
+        "fabricated_feature": "5/5",
+        "wrong_number": "3/3",
+        "fabricated_policy": "2/2",
+        "contradiction": "6/6",
+        "unsupported_claim": "1/1",
+        "unsupported_company_info": "4/4"
+      },
+      "errors": [
+        {
+          "claim_id": "C001",
+          "claim": "LearningChain stores data on Microsoft Azure.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.001
+        },
+        {
+          "claim_id": "C003",
+          "claim": "LearningChain currently supports only PDF files for uploading certificates.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.0
+        },
+        {
+          "claim_id": "C011",
+          "claim": "LearningChain does not have access to or control over client data.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.005
+        },
+        {
+          "claim_id": "C013",
+          "claim": "DigiLocker uses a centralized architecture for data storage and verification.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.144
+        },
+        {
+          "claim_id": "C027",
+          "claim": "To reset a forgotten password click the Forget password option on the login page.",
+          "label": "supported",
+          "judged_supported": false,
+          "score": 0.024
+        }
+      ]
+    }
+  }
+}

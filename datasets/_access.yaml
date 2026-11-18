@@ -1,0 +1,10 @@
+# Access control and metadata for files in this folder (read by the ingestion pipeline)
+defaults:
+  roles:
+  - public
+  - employee
+  - hr
+  - admin
+  confidentiality: public
+  sample: false
+files: []

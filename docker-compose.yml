@@ -1,0 +1,78 @@
+# Production-like stack:
+#   nginx (TLS, rate limits, routing)  ->  api (FastAPI + RAG + ingestion worker)  ->  postgres
+#                                      ->  open-webui (internal staff chat UI, optional profile)
+# Usage:
+#   cp .env.example .env   # fill in secrets
+#   docker compose up -d --build
+#   docker compose exec api python -m ingestion.cli sync          # first index build
+#   docker compose --profile staff up -d                          # also start Open WebUI
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sapphirus_assistant
+      POSTGRES_USER: sapphirus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U sapphirus"], interval: 10s, retries: 5}
+    networks: [internal]
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sapphirus:${POSTGRES_PASSWORD}@db:5432/sapphirus_assistant
+      APP_ENV: production
+      INGEST_WORKER_ENABLED: "true"
+    volumes:
+      - appdata:/app/data                       # vector index, uploads, archives
+      - ./knowledge_bases:/app/knowledge_bases  # source documents (also written by the website monitor)
+      - ./datasets:/app/datasets                # approved Q&A + evaluation datasets
+      - ./logs:/app/logs
+    depends_on: {db: {condition: service_healthy}}
+    networks: [internal]
+    deploy:
+      resources: {limits: {memory: 4g}}
+
+  open-webui:                                   # internal staff UI; talks to the API's OpenAI-compatible endpoints
+    image: ghcr.io/open-webui/open-webui:main
+    profiles: [staff]
+    restart: unless-stopped
+    environment:
+      WEBUI_NAME: "Sapphirus AI Assistant"
+      ENABLE_OPENAI_API: "True"
+      OPENAI_API_BASE_URL: "http://api:8000/v1"
+      OPENAI_API_KEY: ${OPEN_WEBUI_API_KEY:?set OPEN_WEBUI_API_KEY in .env}
+      ENABLE_OLLAMA_API: "False"
+      DEFAULT_MODELS: "sapphirus-assistant"
+      ENABLE_WEB_SEARCH: "False"
+      ENABLE_TITLE_GENERATION: "False"
+      ENABLE_TAGS_GENERATION: "False"
+      ENABLE_FOLLOW_UP_GENERATION: "False"
+      ENABLE_AUTOCOMPLETE_GENERATION: "False"
+      ENABLE_RETRIEVAL_QUERY_GENERATION: "False"
+      ENABLE_FORWARD_USER_INFO_HEADERS: "True"
+      ANONYMIZED_TELEMETRY: "False"
+    volumes: [openwebui:/app/backend/data]
+    depends_on: [api]
+    networks: [internal]
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro       # fullchain.pem + privkey.pem (e.g. from Let's Encrypt)
+    depends_on: [api]
+    networks: [internal]
+
+volumes:
+  pgdata:
+  appdata:
+  openwebui:
+
+networks:
+  internal:
