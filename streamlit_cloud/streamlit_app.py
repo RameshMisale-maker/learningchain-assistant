@@ -52,17 +52,39 @@ EXAMPLES = ["What is LearningChain?", "How do I verify a student certificate?",
             "What services does Sapphirus provide?", "How can I contact Sapphirus?"]
 
 
-@st.cache_resource(show_spinner=False)
-def load_assistant():
-    """Build the knowledge-base index if it is missing, then create the chat service (once per server)."""
-    from backend.retrieval.kb_index import get_index_manager
+def content_version() -> str:
+    """Fingerprint of the configuration, prompts and knowledge-base files. Streamlit Cloud pulls new commits into the
+    running server; a changed fingerprint makes load_assistant() rebuild instead of serving the old cached pipeline."""
+    import hashlib
+
+    h = hashlib.sha1()
+    for folder in ("config", "prompts", "knowledge_bases", "datasets"):
+        for p in sorted((ROOT / folder).rglob("*")):
+            if p.is_file() and "__pycache__" not in p.parts:
+                st_ = p.stat()
+                h.update(f"{p.relative_to(ROOT)}:{st_.st_size}:{int(st_.st_mtime)}".encode())
+    return h.hexdigest()[:12]
+
+
+@st.cache_resource(show_spinner=False, max_entries=1)
+def load_assistant(version: str):
+    """Build/refresh the knowledge-base index, then create the chat service (once per content version)."""
+    from backend.generation import llm_client, prompt_builder
+    from backend.retrieval import kb_index
     from backend.services.chat_service import ChatService
+    from config.settings import reset_settings
     from ingestion.pipeline import IngestionPipeline
+
+    # drop module-level singletons from an earlier version (settings incl. knowledge_bases.yaml, prompts, index)
+    reset_settings()
+    llm_client.get_llm.cache_clear()
+    prompt_builder.load_prompt.cache_clear()
+    kb_index._manager = None
 
     pipeline = IngestionPipeline()
     for kb in pipeline.kb_names():
         pipeline.sync_kb(kb)               # unchanged files are skipped, so a warm restart is quick
-    get_index_manager()
+    kb_index.get_index_manager()
     return ChatService()
 
 
@@ -141,16 +163,21 @@ def main() -> None:
         st.caption("Demo build · hybrid search + reranking + Corrective RAG · Sapphirus Systems")
 
     st.title("LearningChain Assistant")
-    if not os.getenv("OPENAI_API_KEY"):
-        st.info("No LLM key configured - answers are extractive (quoted from the sources). "
-                "Add OPENAI_API_KEY in the app's Secrets for generated answers.")
 
     try:
         with st.spinner("Preparing the knowledge base (first start takes 1-2 minutes)..."):
-            service = load_assistant()
+            service = load_assistant(content_version())
     except Exception as exc:     # show a clear message instead of a stack trace
         st.error(f"The assistant could not start: {type(exc).__name__}. Please try again shortly.")
         raise
+
+    with st.sidebar:
+        if service.llm is None:
+            st.error("LLM: not connected - answers are quoted from the sources. Add OPENAI_API_KEY under "
+                     "Manage app -> Settings -> Secrets, then Reboot the app.")
+        else:
+            st.success(f"LLM: {getattr(service.llm, 'model', 'connected')}")
+        st.caption(f"Knowledge base: {', '.join(ASSISTANT_KBS)} · build {content_version()}")
 
     if not st.session_state.messages:
         with st.chat_message("assistant"):
