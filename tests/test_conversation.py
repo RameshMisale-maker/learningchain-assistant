@@ -30,23 +30,17 @@ def test_small_talk(text):
     assert classify_message(text).intent == ci.SMALL_TALK
 
 
-@pytest.mark.parametrize("text,suggestion", [("Ho", "How"), ("Wht", "What"), ("Hw", "How"), ("Wat", "What")])
-def test_typos_get_a_suggestion_not_an_autocorrect(text, suggestion):
+@pytest.mark.parametrize("text", ["Ho", "Wht", "Hw", "Wat", "Wh"])
+def test_lone_question_word_asks_for_the_question_without_correcting_spelling(text):
     r = classify_message(text)
-    assert r.intent == ci.TYPO_OR_INCOMPLETE and r.suggestion == suggestion
-    assert f'Did you mean "{suggestion}"?' in r.reply and "complete your question" in r.reply
-
-
-def test_ambiguous_typo_asks_instead_of_guessing():
-    r = classify_message("Wh")
-    assert r.intent == ci.TYPO_OR_INCOMPLETE and not r.suggestion
-    assert '"What"' in r.reply and '"Where"' in r.reply and '"Why"' in r.reply
+    assert r.intent == ci.TYPO_OR_INCOMPLETE and "full question" in r.reply
+    assert "did you mean" not in r.reply.lower()                 # spelling is never commented on
 
 
 @pytest.mark.parametrize("text", ["What is", "How to", "Tell me", "Can you", "How t", "Tell m", "How do I"])
 def test_incomplete_questions(text):
     r = classify_message(text)
-    assert r.intent == ci.TYPO_OR_INCOMPLETE and "incomplete" in r.reply
+    assert r.intent == ci.TYPO_OR_INCOMPLETE and "full question" in r.reply
 
 
 @pytest.mark.parametrize("text", ["What?", "Which one?", "When?"])
@@ -115,8 +109,9 @@ def test_llm_is_only_used_for_ambiguous_short_messages():
         classify_message(text, HISTORY, llm=llm)
     assert llm.calls == 0                                       # rules handled every one of these
     r = classify_message("verfy cert", llm=llm)                  # unknown words -> LLM
-    assert llm.calls == 1 and r.intent == ci.TYPO_OR_INCOMPLETE and r.method == "llm"
-    assert r.reply.startswith('Did you mean "Verify"?')
+    assert llm.calls == 1 and r.method == "llm"
+    assert r.intent == ci.KNOWLEDGE                              # a misspelt question is answered, never "retype it"
+    assert classify_message("zx", llm=llm).reply.startswith("Sure - what would you like to know?")
 
 
 def test_llm_output_is_validated_and_failures_fall_back_to_rag():
@@ -132,15 +127,15 @@ CASES = [
     ("Hi", False, ci.GREETING, {"greeting"}, False, "Hello"),
     ("Hello", False, ci.GREETING, {"greeting"}, False, "Hello"),
     ("Good morning", False, ci.GREETING, {"greeting"}, False, "Good morning"),
-    ("Ho", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, 'Did you mean "How"?'),
+    ("Ho", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
     ("Helo", False, ci.GREETING, {"greeting"}, False, "Hello"),
-    ("Wht", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, 'Did you mean "What"?'),
-    ("Hw", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, 'Did you mean "How"?'),
-    ("Wat", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, 'Did you mean "What"?'),
-    ("What is", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "incomplete"),
-    ("How to", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "incomplete"),
-    ("Tell me", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "incomplete"),
-    ("Can you", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "incomplete"),
+    ("Wht", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
+    ("Hw", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
+    ("Wat", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
+    ("What is", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
+    ("How to", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
+    ("Tell me", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
+    ("Can you", False, ci.TYPO_OR_INCOMPLETE, {"clarification"}, False, "full question"),
     ("What?", False, ci.CLARIFICATION, {"clarification"}, False, "clarify"),
     ("Which one?", True, ci.CLARIFICATION, {"clarification"}, False, "discussed earlier"),
     ("Tell me more", True, ci.FOLLOW_UP, {"generated", "extractive", "golden_direct", "golden_semantic"}, True, ""),

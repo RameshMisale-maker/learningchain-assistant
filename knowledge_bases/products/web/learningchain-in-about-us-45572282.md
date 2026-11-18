@@ -7,6 +7,8 @@ Last updated: 2024-11-13
 
 #### Next Generation education technology cloud platform with Adaptive Learning
 
+###### Empowers Instituions from Traditional time consuming process to Instant tamper-proof Digital Certificate Generation, Single Click verification.
+
 ## About Us
 
 Welcome to **LearningChain**, a groundbreaking product from the leading EdTech company, **Sapphirus Systems**, established in 2016 and headquartered in Hyderabad, Telangana. Our mission is to set global standards for educational institutions by offering a robust platform to **issue tamper-proof digital certificates** that are globally verifiable and completely **secured using blockchain technology**.
@@ -19,4 +21,4 @@ At LearningChain, we recognize the pressing challenges facing the education syst
 
 Under the visionary leadership of Sapphirus Systems Pvt. Ltd, LearningChain is guided by an innovative, dedicated, and ethical team committed to service excellence. Our leadership is focused on building a clean and transparent education system for the future, utilizing the benefits of blockchain for digital certificates.
 
-**blockchain for digital certificates** with LearningChain. Contact us today to learn more about how we can help your institution achieve the highest standards in credential security and verification.
+Discover the benefits of **blockchain for digital certificates** with LearningChain. Contact us today to learn more about how we can help your institution achieve the highest standards in credential security and verification.

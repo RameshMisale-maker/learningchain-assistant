@@ -154,6 +154,14 @@ class Settings:
     crag_retry: bool = field(default_factory=lambda: _env_bool("CRAG_RETRY", True))
     crag_chunk_chars: int = field(default_factory=lambda: _env_int("CRAG_CHUNK_CHARS", 700))
 
+    # ---- Query normalization + lenient scope check (backend/routing/normalize.py) ----
+    # Fix typos / short forms / product-name variants before scope, retrieval and answering; the LLM is used only
+    # when unknown words remain or to double-check an out-of-scope decision.
+    query_normalization: bool = field(default_factory=lambda: _env_bool("QUERY_NORMALIZATION", True))
+    normalization_llm: bool = field(default_factory=lambda: _env_bool("NORMALIZATION_LLM", True))
+    # a reranked passage this relevant means the question is in scope, whatever the keyword check said
+    scope_retrieval_min_score: float = field(default_factory=lambda: _env_float("SCOPE_RETRIEVAL_MIN_SCORE", 0.5))
+
     # ---- Conversational intelligence layer (backend/routing/intent.py) ----
     conversation_layer: bool = field(default_factory=lambda: _env_bool("CONVERSATION_LAYER", True))
     conversation_llm_intent: bool = field(default_factory=lambda: _env_bool("CONVERSATION_LLM_INTENT", True))

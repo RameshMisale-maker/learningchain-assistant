@@ -45,6 +45,7 @@ INTENTS = (GREETING, SMALL_TALK, TYPO_OR_INCOMPLETE, CLARIFICATION, KNOWLEDGE, F
 
 EXAMPLES = ('*"What is LearningChain?"*, *"How do I verify a certificate?"* or '
             '*"What are the key features of LearningChain?"*')
+INCOMPLETE_REPLY = "Sure - what would you like to know? Please share your full question, for example: *{hint}*"
 REPHRASE_TEXT = ("Sorry, I couldn't understand that. Could you rephrase your question? You can ask me about "
                  f"LearningChain - for example {EXAMPLES}")
 
@@ -115,6 +116,11 @@ class MessageIntent:
 
 
 # ------------------------------------------------------------------------------------------------ helpers
+def is_small_talk(text: str) -> bool:
+    """Greeting / thanks / bye / yes - handled by fixed replies, so no normalization or LLM call is needed."""
+    return bool(GREETING_ONLY_RE.match(text or "") or GREETING_RE.match(text or "") or AFFIRM_RE.match(text or ""))
+
+
 def _words(text: str) -> list[str]:
     return _WORD_RE.findall(text.lower())
 
@@ -225,29 +231,26 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
         reply, used = _clarify_reply(history, t)
         return MessageIntent(CLARIFICATION, reply=reply, uses_history=used, reason="bare interrogative")
 
-    # 5. misspelt / truncated question words: "Ho", "Wht", "Hw", "Wh", "Wht is"
+    # 5. a lone (misspelt) question word: "Ho", "Wht", "Hw", "Wh" - the intent is genuinely unclear, so ask for the
+    #    question. The user's spelling is never mentioned or corrected in replies: multi-word messages with typos
+    #    are normalized and answered (backend/routing/normalize.py).
     if 1 <= len(words) <= 2 and not t.endswith("?") or len(words) == 1:
         first, matched = _typo_target(words[0]) if words else (None, False)
         rest_ok = all(w in STOPWORDS or w in TYPOS for w in words[1:])
         if matched and rest_ok and (first is None or first in QUESTION_WORDS):
             if first is None:
                 opts = ", ".join(f'"{w}"' for w in AMBIGUOUS_STARTS[:-1]) + f' or "{AMBIGUOUS_STARTS[-1]}"'
-                return MessageIntent(TYPO_OR_INCOMPLETE, reason=f"ambiguous typo: {words[0]}",
-                                     reply=f"Did you mean {opts}? Please share your complete question so I can help.")
-            hint = INCOMPLETE_HINTS.get(first, "")
-            return MessageIntent(
-                TYPO_OR_INCOMPLETE, suggestion=first.capitalize(), reason=f"typo: {words[0]} -> {first}",
-                reply=(f"Did you mean \"{first.capitalize()}\"? Could you please complete your question so I can "
-                       "help you?" + (f" For example: *{hint}*" if hint else "")))
+                return MessageIntent(TYPO_OR_INCOMPLETE, reason=f"lone word: {words[0]}", reply=INCOMPLETE_REPLY.format(
+                    hint=INCOMPLETE_HINTS["what"]))
+            return MessageIntent(TYPO_OR_INCOMPLETE, suggestion=first.capitalize(), reason=f"lone word: {words[0]}",
+                                 reply=INCOMPLETE_REPLY.format(hint=INCOMPLETE_HINTS.get(first, INCOMPLETE_HINTS["what"])))
 
     # 6. only function words / truncated words: "What is", "How to", "Tell me", "Can you", "How t"
     if words and len(words) <= 5 and all(w in STOPWORDS or w in QUESTION_WORDS or w in TYPOS
                                                   or len(w) == 1 for w in words):
         starter = next((TYPOS.get(w) or w for w in words if (TYPOS.get(w) or w) in INCOMPLETE_HINTS), "")
         hint = INCOMPLETE_HINTS.get(starter, INCOMPLETE_HINTS["what"])
-        return MessageIntent(TYPO_OR_INCOMPLETE, reason="incomplete question",
-                             reply=("It looks like your question is incomplete. What would you like to know? "
-                                    f"Please share the complete question, for example: *{hint}*"))
+        return MessageIntent(TYPO_OR_INCOMPLETE, reason="incomplete question", reply=INCOMPLETE_REPLY.format(hint=hint))
 
     # 7. random characters: "xyz123", "asdfghjkl"
     if len(words) <= 3 and all(_looks_gibberish(w, known) for w in words):
@@ -292,8 +295,10 @@ def _llm_classify(llm, text: str, history: list[dict]) -> MessageIntent | None:
     result = MessageIntent(intent, suggestion=suggestion, method="llm", reason="llm classification",
                            uses_history=intent == FOLLOW_UP)
     if intent == TYPO_OR_INCOMPLETE:
-        result.reply = ((f"Did you mean \"{suggestion}\"? " if suggestion else "") +
-                        "Could you please share your complete question so I can help you?")
+        if len(_words(text)) >= 2:          # a misspelt question is still a question: answer it, never ask to retype
+            result.intent, result.reason = KNOWLEDGE, "llm: misspelt question treated as a question"
+        else:
+            result.reply = INCOMPLETE_REPLY.format(hint=INCOMPLETE_HINTS["what"])
     elif intent == CLARIFICATION:
         result.reply, result.uses_history = _clarify_reply(history, text)
     elif intent == GIBBERISH:

@@ -18,6 +18,7 @@ scikit-learn>=1.4
 # ---- Retrieval ----
 chromadb>=0.5
 rank-bm25>=0.2.2
+rapidfuzz>=3.0                 # fuzzy matching of misspelt product / domain terms (query normalization)
 sentence-transformers>=3.0     # local embeddings (BAAI/bge-small-en-v1.5) + cross-encoder reranking
 
 # ---- Web ingestion ----

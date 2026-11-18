@@ -31,6 +31,7 @@ from backend.retrieval.reranker import Reranker, get_reranker, weighted_coverage
 from backend.common.text_utils import STOPWORDS, stem
 from backend.routing import intent as convo
 from backend.routing.decompose import decompose
+from backend.routing.normalize import Understanding, llm_understand, understand
 from backend.routing.router import QueryRouter, RouteDecision
 from backend.security.auth import AuthenticatedUser
 from backend.security.prompt_guard import BLOCKED_MESSAGE, check_query, restricted_topic, restricted_topic_reply
@@ -227,10 +228,19 @@ class ChatService:
             return ChatResponse(answer=text, session_id=session_id, message_id=None,
                                 answer_type="blocked" if check.reason == "prompt_injection" else "invalid",
                                 route={"intent": "blocked", "flags": check.flags}, warnings=check.flags)
-        query = check.cleaned
+        query = original = check.cleaned
+        # query normalization (backend/routing/normalize.py): typos, short forms and product-name variants are fixed
+        # ("wt is saphirus?" -> "what is Sapphirus?"); the normalized text is used from here on, the original only
+        # for logging. Greetings / small talk skip it (fixed replies, no LLM call).
+        understanding: Understanding | None = None
+        if s.query_normalization and not convo.is_small_talk(query):
+            with stage("normalize_ms"):
+                understanding = understand(query, known=self._known_word,
+                                           llm=self.llm if s.normalization_llm else None)
+            query = understanding.normalized
         # guardrail: restricted topics (healthcare, banking, sexual, self-harm, violence, illegal) are refused before
-        # any retrieval or LLM call - safety rules take precedence over the request
-        topic = restricted_topic(query)
+        # any retrieval or LLM call - safety rules take precedence over the request (checked on both spellings)
+        topic = restricted_topic(query) or restricted_topic(original)
         if topic:
             return ChatResponse(answer=restricted_topic_reply(topic), session_id=session_id, message_id=None,
                                 answer_type="restricted", confidence=1.0,
@@ -245,6 +255,8 @@ class ChatService:
                                                  llm=self.llm if s.conversation_llm_intent else None)
             direct = self._conversational_response(message, query, user, session_id)
             if direct is not None:
+                if understanding:
+                    direct.route.update(understanding.to_dict())
                 return direct
         with stage("query_rewrite_ms"):
             standalone = self.router.rewrite_follow_up(query, history, force=message.intent == convo.FOLLOW_UP)
@@ -253,12 +265,15 @@ class ChatService:
             qvec = self.embedder.embed_query(expanded)
         with stage("routing_ms"):
             route = self.router.route(expanded, user.roles, qvec)
+        # lenient scope check: a keyword-based "out of scope" is only final when the LLM/semantic check agrees
+        with stage("scope_check_ms"):
+            scope_action = self._lenient_scope(route, understanding, expanded, user.roles, allowed_kbs, qvec)
         if allowed_kbs is not None and route.intent not in ("greeting", "out_of_scope", "clarify", "access_denied"):
             # assistant scoped to specific KBs: drop the others; nothing left -> out of scope for this assistant
             route.knowledge_bases = [k for k in route.knowledge_bases if k in allowed_kbs]
             if not route.knowledge_bases:
                 route.intent, route.reason = "out_of_scope", f"not in this assistant's knowledge bases ({allowed_kbs})"
-        info = message.to_dict()
+        info = message.to_dict() | (understanding.to_dict() if understanding else {}) | {"scope_action": scope_action}
         if route.intent == "out_of_scope":
             info["conversation_intent"] = convo.OUT_OF_SCOPE
         elif route.intent == "greeting":
@@ -483,6 +498,53 @@ class ChatService:
         # typo / incomplete input, vague question, gibberish: ask the user - never guess, never refuse
         return ChatResponse(answer=message.reply or convo.REPHRASE_TEXT, session_id=session_id, message_id=None,
                             answer_type="clarification", confidence=1.0, route=route | {"intent": "clarify"})
+
+    def _lenient_scope(self, route: RouteDecision, understanding: Understanding | None, query: str, roles: set[str],
+                       allowed_kbs: list[str] | None, qvec) -> str:
+        """Replace the keyword-only out-of-scope decision with an LLM / semantic check (lenient).
+
+        * keyword router says out of scope ("unknown subject" / no KB matched): ask the LLM scope classifier (reusing
+          the normalization verdict when there is one). IN_SCOPE, or a retrieved passage scoring at least
+          SCOPE_RETRIEVAL_MIN_SCORE, -> answer from the knowledge bases; OUT_OF_SCOPE -> refuse; UNCLEAR -> clarify.
+        * router found a knowledge base but the LLM said OUT_OF_SCOPE: refuse only if retrieval also finds nothing.
+        Deliberate exclusions (HR topics) and assistant scoping are never overridden. Returns the action taken."""
+        s = self.settings
+        reason = route.reason or ""
+        verdict = understanding.scope if understanding else None
+        kbs = [kb for kb in self.router.kb_cfgs() if route_allows(kb, roles) and (allowed_kbs is None or kb in allowed_kbs)]
+        if route.intent in ("kb_query", "comparison"):
+            if verdict == "OUT_OF_SCOPE" and self._scope_score(query, roles, kbs, qvec) < s.scope_retrieval_min_score:
+                route.intent, route.reason = "out_of_scope", "scope check: clearly unrelated"
+                return "llm_out_of_scope"
+            return ""
+        if route.intent != "out_of_scope" or not (reason.startswith(("unknown subject", "no knowledge base matched"))
+                                                  or route.method == "llm") or not kbs:
+            return ""
+        if verdict is None and self.llm is not None and s.normalization_llm:
+            judged = llm_understand(query, self.llm)
+            verdict = judged[1] if judged else None
+        if verdict == "OUT_OF_SCOPE":
+            return "llm_out_of_scope"
+        if verdict == "GREETING":
+            route.intent, route.reason = "greeting", "scope check: greeting"
+            return "greeting"
+        if verdict == "IN_SCOPE" or self._scope_score(query, roles, kbs, qvec) >= s.scope_retrieval_min_score:
+            route.intent, route.knowledge_bases = "kb_query", kbs
+            route.reason = f"scope check: {'llm in scope' if verdict == 'IN_SCOPE' else 'relevant documents found'}"
+            return "llm_in_scope" if verdict == "IN_SCOPE" else "retrieval_in_scope"
+        if verdict == "UNCLEAR":
+            route.intent, route.reason = "clarify", "scope check: unclear"
+            route.clarification = convo.INCOMPLETE_REPLY.format(hint=convo.INCOMPLETE_HINTS["what"])
+            return "unclear"
+        return "out_of_scope"
+
+    def _scope_score(self, query: str, roles: set[str], kbs: list[str], qvec) -> float:
+        """Best reranked passage score for the query across the given knowledge bases (semantic scope evidence)."""
+        candidates: list[Candidate] = []
+        for kb in kbs:
+            candidates += self.retriever.retrieve(query, kb, roles, top_n=10, query_vector=qvec)
+        ranked = self.reranker.rerank(query, candidates) if candidates else []
+        return ranked[0].rerank_score if ranked else 0.0
 
     def _corrective_rag(self, question: str, route: RouteDecision, roles: set[str],
                         top: list[Candidate]) -> tuple[list[Candidate], CragReport]:

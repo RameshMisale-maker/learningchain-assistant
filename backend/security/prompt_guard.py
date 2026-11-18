@@ -32,7 +32,7 @@ _RESTRICTED: list[tuple[str, re.Pattern]] = [
         r"\b(sex|sexual\w*|porn\w*|nude\w*|nudity|erotic\w*|explicit (story|content|image)s?|onlyfans|fetish\w*)\b",
         re.I)),
     ("healthcare", re.compile(
-        r"\b(medical (advice|help|treatment|opinion)|medicine|medication|dosage|prescription|symptoms?|diagnos\w+|disease|fever|headache|blood (test|pressure|"
+        r"\b(medical (advice|advise|help|treatment|opinion)|medicine|medication|dosage|prescription|symptoms?|diagnos\w+|disease|fever|headache|blood (test|pressure|"
         r"sugar)|diabetes|cancer|pregnan\w+|vaccin\w+|antibiotic\w*|therapy for|doctor (says|recommend)|treat (my|a) "
         r"(cold|cough|pain|infection|illness))\b", re.I)),
     ("banking_financial", re.compile(
