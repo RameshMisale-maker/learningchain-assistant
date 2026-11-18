@@ -25,14 +25,27 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+SECRETS_STATUS: dict = {"error": "", "keys": [], "sections": []}
+
+
 def _load_config() -> None:
-    """Secrets first (Streamlit secrets -> environment), then non-secret defaults; existing values always win."""
+    """Secrets first (Streamlit secrets -> environment), then non-secret defaults; existing values always win.
+    Problems reading the secrets are recorded (names only, never values) and shown in the sidebar."""
     try:
         for key, value in st.secrets.items():
             if isinstance(value, (str, int, float, bool)):
-                os.environ.setdefault(key, str(value))
-    except Exception:      # no secrets file locally - the project's .env is used instead
-        pass
+                SECRETS_STATUS["keys"].append(key)
+                if not os.environ.get(key):
+                    os.environ[key] = str(value).strip()
+            elif hasattr(value, "items"):     # a [section]: accept OPENAI_API_KEY placed inside it too
+                SECRETS_STATUS["sections"].append(key)
+                for k, v in value.items():
+                    if k == "OPENAI_API_KEY" and isinstance(v, str) and not os.environ.get(k):
+                        os.environ[k] = v.strip()
+    except FileNotFoundError:
+        SECRETS_STATUS["error"] = "no secrets file"
+    except Exception as exc:  # e.g. invalid TOML in the Secrets box
+        SECRETS_STATUS["error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
     defaults = Path(__file__).with_name("defaults.env")
     if defaults.exists():
         for line in defaults.read_text(encoding="utf-8").splitlines():
@@ -173,8 +186,19 @@ def main() -> None:
 
     with st.sidebar:
         if service.llm is None:
-            st.error("LLM: not connected - answers are quoted from the sources. Add OPENAI_API_KEY under "
-                     "Manage app -> Settings -> Secrets, then Reboot the app.")
+            st.error("LLM: not connected - answers are quoted from the sources.")
+            key = os.getenv("OPENAI_API_KEY", "")
+            if SECRETS_STATUS["error"] and SECRETS_STATUS["error"] != "no secrets file":
+                st.warning(f"The Secrets box could not be read ({SECRETS_STATUS['error']}). It must be TOML, "
+                           'exactly: OPENAI_API_KEY = "gsk_..." (with the quotes).')
+            elif not key:
+                found = SECRETS_STATUS["keys"] + [f"[{s}]" for s in SECRETS_STATUS["sections"]]
+                st.warning("OPENAI_API_KEY was not found in Secrets" +
+                           (f" (found: {', '.join(found)})" if found else " (Secrets is empty)") +
+                           '. Add: OPENAI_API_KEY = "gsk_..." then Reboot.')
+            else:
+                st.warning(f"A key was found ({len(key)} characters, starts with '{key[:4]}') but the LLM client "
+                           "did not start - check the app logs (Manage app).")
         else:
             st.success(f"LLM: {getattr(service.llm, 'model', 'connected')}")
         st.caption(f"Knowledge base: {', '.join(ASSISTANT_KBS)} · build {content_version()}")
