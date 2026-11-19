@@ -22,6 +22,7 @@ from backend.generation.grounding import (REFUSAL_TEXT, GroundingReport, cited_i
                                           llm_grounding, normalize_citations, remove_invalid_citations,
                                           remove_unknown_urls)
 from backend.generation.failover import AllProvidersDown, reset_dense_flag
+from backend.generation.structured import parse_reply
 from backend.services import response_cache
 from backend.generation.llm_client import LLMClient, LLMRefusal, LLMResult, get_llm
 from backend.generation.prompt_builder import SourceRef, build_answer_prompt, select_context
@@ -49,15 +50,7 @@ def _replies():
 
 
 
-CLOSING_RE = re.compile(r"^\s*(no|nope|nah|no\s*,?\s*thanks?|no\s*,?\s*thank\s*(you|u)|no\s+more(\s+questions?)?|"
-                        r"nothing(\s+else)?|that'?s\s+(all|it)|that\s+is\s+(all|it)|i'?m\s+done|im\s+done|"
-                        r"all\s+good|i'?m\s+good|bye+|goodbye|good\s*bye|see\s+(you|ya)|take\s+care)\s*[!.?]*\s*$",
-                        re.IGNORECASE)
-
-
-def is_closing(text: str) -> bool:
-    """The user is ending the conversation (e.g. "no" after "anything else?", "that's all", "bye")."""
-    return bool(CLOSING_RE.match(text or ""))
+is_closing = convo.is_closing          # closing phrases live with the intent classifier (backend/routing/intent.py)
 
 
 def small_talk_reply(text: str, roles: set[str], first: bool = True) -> str:
@@ -75,6 +68,8 @@ def small_talk_reply(text: str, roles: set[str], first: bool = True) -> str:
         return r.acknowledged
     if re.match(r"^(bye|goodbye|good\s*bye|see you|see ya|take care)", t):
         return r.bye
+    if convo.is_acknowledgement(t):    # "ok", "done", a thumbs-up
+        return r.acknowledged
     if re.match(r"^how are you", t):
         return r.how_are_you
     if re.match(r"^(who are you|what are you|what is your name|are you)", t):
@@ -142,6 +137,9 @@ class ChatResponse:
     warnings: list[str] = field(default_factory=list)
     timings: dict[str, float] = field(default_factory=dict)     # per-stage latency (ms), see backend/common/timing
     tokens_per_second: float = 0.0
+    ui_action: str = "none"                  # none | show_rating | show_escalation | show_login (front end)
+    conversation_state: str = "active"       # active | closing | closed (stored per session)
+    versions: dict[str, str] = field(default_factory=dict)      # index_version / prompt_version (sent with ratings)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -191,6 +189,17 @@ class ChatService:
             if history is None:
                 history = repository.get_history(session_id, user.username, limit=8) if persist else []
             history = [h | {"content": redact_sensitive(str(h.get("content", "")))} for h in history]
+            state = self._conversation_state(session_id, history, persist)
+            if state in ("closing", "closed") and convo.is_acknowledgement(question):
+                # "ok" / "thanks" / a thumbs-up after the goodbye: no LLM call, no new message, rating stays visible
+                if persist:
+                    repository.set_conversation_state(session_id, "closed")
+                response = ChatResponse(answer="", session_id=session_id, message_id=None, answer_type="closed",
+                                        confidence=1.0, route={"intent": "closed", "conversation_intent": convo.CLOSING},
+                                        ui_action="show_rating", conversation_state="closed",
+                                        latency_ms=round((time.perf_counter() - started) * 1000, 1))
+                response.versions = self._versions(response)
+                return response
             error = ""
             with request_timings() as timings:
                 try:
@@ -213,6 +222,10 @@ class ChatService:
                     response.answer = alternative
             response.latency_ms = round((time.perf_counter() - started) * 1000, 1)
             response.timings = timings.as_dict() | {"end_to_end_ms": response.latency_ms}
+            self._apply_ui_action(response)
+            response.versions = self._versions(response)
+            if persist:      # a real question after a goodbye re-opens the conversation
+                repository.set_conversation_state(session_id, response.conversation_state)
             if persist:
                 repository.add_message(session_id, "user", redact_sensitive(question)[: self.settings.max_query_chars])
                 response.message_id = repository.add_message(
@@ -341,6 +354,7 @@ class ChatService:
                 text = _replies().access_denied_guest.format(names=names)
             else:
                 text = _replies().access_denied_user.format(names=names)
+            base["route"]["guest"] = not user.authenticated      # guests are offered the sign-in (ui_action)
             return ChatResponse(answer=text, answer_type="access_denied", **base)
 
         # ---------------- golden fast path
@@ -440,6 +454,7 @@ class ChatService:
             refs = select_context(top, s.max_context_chars)
         comparison = route.intent == "comparison"
         llm_result: LLMResult | None = None
+        llm_ui_action = "none"
         report: GroundingReport | None = None
         warnings: list[str] = []
         answer_type = "extractive"
@@ -450,7 +465,11 @@ class ChatService:
                     system, user_prompt = build_answer_prompt(
                         standalone, refs, history, comparison, route.entities, original=original,
                         language=reply_language(original, understanding.language if understanding else None))
-                llm_result = self.llm.complete(system, user_prompt)
+                llm_result = self.llm.complete(system, user_prompt, json_mode=s.structured_reply)
+                structured = parse_reply(llm_result.text) if s.structured_reply else None
+                if structured is not None:
+                    llm_result.text, llm_ui_action = structured.reply, structured.ui_action
+                    base["route"]["structured_reply"] = structured.parsed
                 timings.set("llm_ttft_ms", llm_result.ttft_ms)
                 timings.set("llm_generation_ms", llm_result.generation_ms)
                 timings.set("llm_total_ms", llm_result.latency_ms)
@@ -492,6 +511,7 @@ class ChatService:
         citations = self._citations(refs, used)
         confidence = round(min(1.0, top[0].rerank_score * (0.5 + 0.5 * report.faithfulness)), 3)
         resp = ChatResponse(answer=answer, answer_type=answer_type, knowledge_bases=kbs_used, citations=citations,
+                            ui_action=llm_ui_action if answer_type == "generated" else "none",
                             golden_match=golden_info, grounding=report.to_dict(), confidence=confidence,
                             contains_sample_data=any(c.is_sample for c in citations), retrieved=retrieved_dbg,
                             warnings=warnings, model=llm_result.model if llm_result else "extractive", **base)
@@ -535,6 +555,41 @@ class ChatService:
                 record_request(resp, channel, current_product().product_id, error)
             except Exception:
                 logger.exception("Could not update Prometheus metrics")
+
+    @staticmethod
+    def _conversation_state(session_id: str, history: list[dict], persist: bool) -> str:
+        """Stored state of a persisted session; for client-supplied history (Open WebUI, evaluation): "closing" when
+        the last assistant turn was the goodbye."""
+        if persist:
+            return repository.get_conversation_state(session_id)
+        last = next((h for h in reversed(history) if h.get("role") == "assistant"), None)
+        return "closing" if last and last.get("answer_type") in ("closing", "closed") else "active"
+
+    @staticmethod
+    def _apply_ui_action(resp: "ChatResponse") -> None:
+        """Front-end action + conversation state from the answer type; an LLM-chosen action is kept for answers."""
+        if resp.answer_type == "closing":
+            resp.ui_action, resp.conversation_state = "show_rating", "closing"
+            return
+        resp.conversation_state = "active"
+        if resp.answer_type == "escalation":
+            resp.ui_action = "show_escalation"
+        elif resp.answer_type == "access_denied" and resp.route.get("guest"):
+            resp.ui_action = "show_login"
+        elif resp.answer_type not in ("generated", "extractive_fallback"):
+            resp.ui_action = "none"
+        if resp.ui_action == "show_rating":          # only the goodbye shows the rating
+            resp.ui_action = "none"
+
+    @staticmethod
+    def _versions(resp: "ChatResponse") -> dict[str, str]:
+        try:
+            from backend.indexing.versions import index_version_label, prompt_version_label
+
+            return {"index_version": index_version_label(list(resp.knowledge_bases)),
+                    "prompt_version": prompt_version_label()}
+        except Exception:
+            return {}
 
     def _cached_response(self, query: str, user: AuthenticatedUser, allowed_kbs: list[str] | None, qvec,
                          session_id: str) -> "ChatResponse | None":
@@ -589,7 +644,7 @@ class ChatService:
         if message.needs_rag:
             return None
         route = {"intent": "greeting", "knowledge_bases": [], **message.to_dict()}
-        if message.intent in (convo.GREETING, convo.SMALL_TALK):
+        if message.intent in (convo.GREETING, convo.SMALL_TALK, convo.CLOSING):
             first = not any(h.get("role") == "assistant" for h in (history or []))
             return ChatResponse(answer=small_talk_reply(query, user.roles, first=first), session_id=session_id,
                                 message_id=None, answer_type="closing" if is_closing(query) else "greeting",

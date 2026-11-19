@@ -12,3 +12,9 @@ REPLY LANGUAGE: {language}
 
 {task_instruction}
 Answer now using only the SOURCES, citing them like [S1], in the REPLY LANGUAGE. If they are not sufficient, reply with the exact insufficient-information sentence from the rules.
+
+Return ONLY one JSON object, no text before or after it:
+{{"reply": "<your answer in Markdown, with [S1]-style citations>", "ui_action": "none | show_escalation | show_login", "conversation_state": "active"}}
+- "reply": the full answer. Never ask the user to rate the conversation and never mention a rating form; the app shows it by itself.
+- "ui_action": "show_escalation" only when the user clearly needs a human (complaint, dispute, a problem the sources cannot solve); "show_login" only when the answer requires the user to sign in to their own account; otherwise "none".
+- "conversation_state": always "active".

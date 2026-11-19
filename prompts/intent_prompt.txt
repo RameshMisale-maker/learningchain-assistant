@@ -1,8 +1,10 @@
 Classify the user's latest message to a customer-support chatbot for [[covers]].
 Choose exactly one intent:
 
-- GREETING: a greeting (hi, hello, good morning), including misspelt greetings
-- SMALL_TALK: thanks, how are you, ok, bye and similar conversational remarks
+- GREETING: a greeting (hi, hello, good morning), including misspelt greetings and greetings where the user introduces themselves ("okay hello chatbot, Ramesh here", "hi, this is Priya") - never FRUSTRATION
+- SMALL_TALK: thanks, how are you, ok and similar conversational remarks
+- CLOSING: the user is ending the conversation ("no thanks", "that's all", "nothing else", "bye", "I'm done")
+- FRUSTRATION: anger, insults or swearing aimed at the assistant or the service (not a greeting or a polite remark)
 - TYPO_OR_INCOMPLETE_INPUT: a misspelt or cut-off question word or phrase ("ho", "wht", "how t", "tell m")
 - CLARIFICATION_REQUIRED: a vague question that cannot be answered without more detail ("what?", "which one?")
 - FOLLOW_UP_QUERY: refers to the previous turn of the conversation ("tell me more", "the second one")

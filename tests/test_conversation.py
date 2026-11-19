@@ -25,9 +25,14 @@ def test_greetings(text):
     assert classify_message(text).intent == ci.GREETING
 
 
-@pytest.mark.parametrize("text", ["How are you?", "Thank you", "Okay", "Nice", "bye", "yes"])
+@pytest.mark.parametrize("text", ["How are you?", "Thank you", "Okay", "Nice", "yes"])
 def test_small_talk(text):
     assert classify_message(text).intent == ci.SMALL_TALK
+
+
+@pytest.mark.parametrize("text", ["bye", "no thanks", "that's all"])
+def test_goodbye_is_closing(text):
+    assert classify_message(text).intent == ci.CLOSING
 
 
 @pytest.mark.parametrize("text", ["Ho", "Wht", "Hw", "Wat", "Wh"])

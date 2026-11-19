@@ -76,6 +76,51 @@ def ensure_session(session_id: str | None, username: str) -> str:
         return new_id
 
 
+CONVERSATION_STATES = ("active", "closing", "closed")
+
+
+def get_conversation_state(session_id: str) -> str:
+    with db_session() as s:
+        session = s.get(ChatSession, session_id)
+        return (session.conversation_state or "active") if session else "active"
+
+
+def set_conversation_state(session_id: str, state: str) -> None:
+    if state not in CONVERSATION_STATES:
+        raise ValueError(f"conversation_state must be one of {CONVERSATION_STATES}")
+    with db_session() as s:
+        session = s.get(ChatSession, session_id)
+        if session is not None:
+            session.conversation_state = state
+
+
+def session_owner(session_id: str) -> str | None:
+    with db_session() as s:
+        session = s.get(ChatSession, session_id)
+        return session.username if session else None
+
+
+def message_session(message_id: int) -> str | None:
+    with db_session() as s:
+        msg = s.get(ChatMessage, message_id)
+        return msg.session_id if msg else None
+
+
+def session_product(session_id: str) -> str | None:
+    if not session_id:
+        return None
+    with db_session() as s:
+        session = s.get(ChatSession, session_id)
+        return session.product_id if session else None
+
+
+def last_assistant_message_id(session_id: str) -> int | None:
+    with db_session() as s:
+        return s.scalar(select(ChatMessage.id).where(ChatMessage.session_id == session_id,
+                                                     ChatMessage.role == "assistant")
+                        .order_by(ChatMessage.id.desc()).limit(1))
+
+
 def add_message(session_id: str, role: str, content: str, **fields: Any) -> int:
     fields.setdefault("product_id", _product_id())
     with db_session() as s:
@@ -129,9 +174,11 @@ def purge_old_history(retention_days: int) -> int:
 
 
 # ---------------------------------------------------------------- feedback
-def add_feedback(message_id: int, username: str, rating: str, comment: str = "") -> int:
+def add_feedback(message_id: int, username: str, rating: str, comment: str = "", session_id: str = "",
+                 product_id: str = "", stars: int | None = None, details: dict[str, Any] | None = None) -> int:
     with db_session() as s:
-        fb = Feedback(message_id=message_id, username=username, rating=rating, comment=comment[:2000])
+        fb = Feedback(message_id=message_id, username=username, rating=rating, comment=comment[:2000],
+                      session_id=session_id or "", product_id=product_id or "", stars=stars, details=details or {})
         s.add(fb)
         s.flush()
         return fb.id

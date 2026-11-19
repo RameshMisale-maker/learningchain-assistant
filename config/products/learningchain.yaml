@@ -286,8 +286,7 @@ replies:
   what_can_you_do: I can answer questions about LearningChain - for example, how to issue, share or verify certificates.
   bye: Thank you for using LearningChain! Have a great day. If you need anything later, reach us at info@sapphirus.in or +91
     96531 57225.
-  closing: Thank you for chatting with the LearningChain Assistant! Before you go, please rate this conversation below - your
-    feedback helps us improve. Have a nice day!
+  closing: Thank you for chatting with the LearningChain Assistant! Have a nice day.
   account: 'I can''t see your personal account details (payments, receipts or verification status) in this chat. Please log
     in to your account to check it, or contact our support team: email **info@sapphirus.in** or call **+91 96531 57225**.'
   escalation: I'm sorry about this. Our support team will look into it personally - please email **info@sapphirus.in** or

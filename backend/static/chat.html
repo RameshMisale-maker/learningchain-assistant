@@ -153,13 +153,24 @@ form button:disabled { opacity: .5; cursor: default; }
         items.push(s.url && safeUrl(s.url) ? `<li><a href="${s.url}" target="_blank" rel="noopener noreferrer">${label}</a></li>` : `<li>${label}</li>`); }
       el.insertAdjacentHTML("beforeend", `<div class="sources"><b>Sources</b><ul>${items.join("")}</ul></div>`);
     }
-    if (m.done && m.answerType === "closing") { renderRating(el, m); return; }
+    const wantsRating = m.uiAction === "show_rating" || (!m.uiAction && m.answerType === "closing");
+    if (m.done && wantsRating && !m.ratingHidden) { renderRating(el, m); return; }
+    if (m.done && m.uiAction === "show_escalation") el.insertAdjacentHTML("beforeend", supportHint());
+    if (m.done && m.uiAction === "show_login") el.insertAdjacentHTML("beforeend",
+      `<div class="sources"><b>Sign in</b><p>Please sign in to your account to see your own details.</p></div>`);
     if (m.done) {
       const a = document.createElement("div"); a.className = "actions";
       const rateable = m.messageId && !["greeting", "closing"].includes(m.answerType);
       a.innerHTML = `<button type="button" data-act="copy">Copy</button>` + (rateable ? `<button type="button" data-act="helpful" aria-pressed="${m.rating === "helpful"}">Helpful</button><button type="button" data-act="not_helpful" aria-pressed="${m.rating === "not_helpful"}">Not helpful</button>` : "");
       a.addEventListener("click", ev => onAction(ev, m, a)); el.appendChild(a);
     }
+  }
+  function supportHint() {
+    const parts = [];
+    if (UI.support_email) parts.push(`<a href="mailto:${esc(UI.support_email)}">${esc(UI.support_email)}</a>`);
+    if (UI.support_phone) parts.push(esc(UI.support_phone));
+    if (UI.support_url && safeUrl(UI.support_url)) parts.push(`<a href="${esc(UI.support_url)}" target="_blank" rel="noopener noreferrer">contact page</a>`);
+    return parts.length ? `<div class="sources"><b>Talk to our support team</b><p>${parts.join(" · ")}</p></div>` : "";
   }
   function renderRating(el, m) {
     const box = document.createElement("div"); box.className = "rate";
@@ -176,8 +187,10 @@ form button:disabled { opacity: .5; cursor: default; }
       box.querySelector("[data-send]").onclick = async () => {
         if (!stars) { box.querySelector(".err").textContent = "Please choose 1 to 5 stars."; return; }
         try {
-          const r = await fetch(API + "/api/v1/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message_id: m.messageId, rating: "conversation", stars, comment: box.querySelector("textarea").value }) });
+          const r = await fetch(API + "/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: state.session, message_id: m.messageId || null, rating: stars,
+                                   comment: box.querySelector("textarea").value, product_id: m.productId || product || null,
+                                   versions: m.versions || {} }) });
           if (!r.ok) throw new Error();
           m.stars = stars; finish();
         } catch { box.querySelector(".err").textContent = "Could not send your feedback. Please try again."; }
@@ -222,6 +235,13 @@ form button:disabled { opacity: .5; cursor: default; }
     } catch { ev.target.textContent = "Try again"; }
   }
   const save = () => store.set("chat:" + assistant, state);
+  // a real question after the goodbye: unanswered rating forms are put away (they are not re-shown)
+  function hideOpenRatings(current) {
+    let changed = false;
+    for (const x of state.messages) if (x !== current && x.role === "bot" && !x.stars && !x.ratingHidden &&
+        (x.uiAction === "show_rating" || (!x.uiAction && x.answerType === "closing"))) { x.ratingHidden = true; changed = true; }
+    if (changed) log.querySelectorAll(".rate").forEach(box => { if (!box.querySelector(".thanks")) box.remove(); });
+  }
 
   // ---------- streaming request (server-sent events over fetch)
   async function ask(text) {
@@ -230,6 +250,7 @@ form button:disabled { opacity: .5; cursor: default; }
     state.messages.push({ role: "user", text }); bubble("user").textContent = text;
     const m = { role: "bot", text: "", sources: [], done: false }; state.messages.push(m);
     const el = bubble("bot"); el.innerHTML = `<span class="typing" aria-label="Assistant is typing"><span></span><span></span><span></span></span>`;
+    let closed = false;
     send.disabled = true; input.value = ""; save();
     try {
       const resp = await fetch(API + "/api/v1/chat/stream", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -244,12 +265,20 @@ form button:disabled { opacity: .5; cursor: default; }
         while ((idx = buf.indexOf("\n\n")) >= 0) {
           const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
           const ev = (block.match(/^event: (.*)$/m) || [])[1], data = JSON.parse((block.match(/^data: (.*)$/m) || [])[1] || "{}");
-          if (ev === "meta") { state.session = data.session_id; m.answerType = data.answer_type; }
+          if (ev === "meta") {
+            state.session = data.session_id; m.answerType = data.answer_type; m.uiAction = data.ui_action || "none";
+            m.convState = data.conversation_state; m.versions = data.versions || {}; m.productId = data.product_id;
+            if (data.answer_type === "closed") { closed = true; }
+            else hideOpenRatings(m);
+          }
           else if (ev === "delta") { m.text += data.text; renderBot(el, m); log.scrollTop = log.scrollHeight; }
           else if (ev === "sources") { m.sources = data.citations || []; }
           else if (ev === "done") { m.messageId = data.message_id; }
           else if (ev === "error") { throw new Error(data.message); }
         }
+      }
+      if (closed) {          // acknowledgement after the goodbye: no new bot message, the rating stays on screen
+        state.messages.splice(state.messages.indexOf(m), 1); el.remove(); save(); return;
       }
       if (!m.text) throw new Error("No answer was returned. Please try again.");
       m.done = true; renderBot(el, m);

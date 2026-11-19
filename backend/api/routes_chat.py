@@ -51,7 +51,9 @@ def ui_config(request: Request, product: str | None = None, assistant: str | Non
         cfg = resolve_product(product=product, assistant=assistant, host=request.headers.get("host"))
     except ProductConfigError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"product_id": cfg.product_id, "bot_name": cfg.bot_name, "company": cfg.company, **cfg.ui.model_dump(
+    support = {"support_email": cfg.escalation.email, "support_phone": cfg.escalation.phone,
+               "support_url": cfg.escalation.contact_url}
+    return {"product_id": cfg.product_id, "bot_name": cfg.bot_name, "company": cfg.company, **support, **cfg.ui.model_dump(
         exclude={"api_model_id", "api_model_name"})}
 
 
@@ -78,7 +80,9 @@ async def chat_stream(body: ChatRequest, request: Request, user: AuthenticatedUs
             yield sse("error", {"message": "The assistant is temporarily unavailable. Please try again."})
             return
         yield sse("meta", {"session_id": resp.session_id, "answer_type": resp.answer_type,
-                           "knowledge_bases": resp.knowledge_bases})
+                           "knowledge_bases": resp.knowledge_bases, "ui_action": resp.ui_action,
+                           "conversation_state": resp.conversation_state, "versions": resp.versions,
+                           "product_id": product.product_id})
         for piece in re.findall(r"\S+\s*|\s+", resp.answer):
             yield sse("delta", {"text": piece})
         cites = [{"id": c.id, "title": c.question or c.doc_name, "section": c.section, "url": c.url,
@@ -121,16 +125,34 @@ def clear(session_id: str, user: AuthenticatedUser = Depends(current_user)) -> d
 
 @router.post("/feedback")
 def feedback(body: FeedbackRequest, request: Request, user: AuthenticatedUser = Depends(current_user)) -> dict:
-    owner = repository.message_owner(body.message_id)
+    """Answer feedback or a 1-5 conversation rating (also served at POST /api/feedback)."""
+    conversation = isinstance(body.rating, int) or body.rating == "conversation"
+    stars = body.rating if isinstance(body.rating, int) else body.stars
+    if conversation and (stars is None or not 1 <= stars <= 5):
+        raise HTTPException(status_code=422, detail="a conversation rating needs 1-5 stars")
+    message_id = body.message_id
+    if message_id is None:
+        if not conversation or not body.session_id:
+            raise HTTPException(status_code=422,
+                                detail="message_id (or session_id for a conversation rating) is required")
+        if repository.session_owner(body.session_id) != user.username:
+            raise HTTPException(status_code=404, detail="Session not found")
+        message_id = repository.last_assistant_message_id(body.session_id)
+        if message_id is None:
+            raise HTTPException(status_code=404, detail="No answer in this session to rate")
+    owner = repository.message_owner(message_id)
     if owner is None or owner != user.username:
         raise HTTPException(status_code=404, detail="Message not found")
-    if body.rating == "conversation" and body.stars is None:
-        raise HTTPException(status_code=422, detail="stars (1-5) is required for a conversation rating")
-    rating = f"stars_{body.stars}" if body.rating == "conversation" else body.rating
-    fid = repository.add_feedback(body.message_id, user.username, rating, body.comment)
+    rating = f"stars_{stars}" if conversation else body.rating
+    session_id = body.session_id or repository.message_session(message_id) or ""
+    product_id = body.product_id or repository.session_product(session_id) or ""
+    fid = repository.add_feedback(message_id, user.username, rating, body.comment, session_id=session_id,
+                                  product_id=product_id, stars=stars if conversation else None,
+                                  details={"versions": body.versions} if body.versions else {})
     from backend.services.feedback_hooks import on_feedback
 
-    on_feedback(body.message_id, rating, body.comment, user.username)
-    repository.write_audit(user.username, "feedback", str(body.message_id), details={"rating": body.rating},
+    on_feedback(message_id, rating, body.comment, user.username, session_id=session_id, product_id=product_id,
+                stars=stars if conversation else None, versions=body.versions)
+    repository.write_audit(user.username, "feedback", str(message_id), details={"rating": rating},
                            ip_address=client_ip(request))
-    return {"feedback_id": fid}
+    return {"feedback_id": fid, "message_id": message_id, "rating": rating}

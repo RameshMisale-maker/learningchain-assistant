@@ -53,13 +53,21 @@ class ChatResponseOut(BaseModel):
     warnings: list[str] = []
     timings: dict[str, float] = {}
     tokens_per_second: float = 0.0
+    ui_action: str = "none"                # none | show_rating | show_escalation | show_login
+    conversation_state: str = "active"     # active | closing | closed
+    versions: dict[str, str] = {}          # index_version / prompt_version (send back with a rating)
 
 
 class FeedbackRequest(BaseModel):
-    message_id: int
-    rating: Literal["helpful", "not_helpful", "conversation"]
+    """Answer feedback (message_id + helpful / not_helpful) or a conversation rating: rating = 1-5 (or
+    rating="conversation" + stars) with session_id and / or message_id, an optional comment, product and versions."""
+    message_id: int | None = None
+    session_id: str | None = Field(None, max_length=64)
+    rating: Literal["helpful", "not_helpful", "conversation"] | int
     stars: int | None = Field(None, ge=1, le=5, description="1-5 conversation rating (rating='conversation')")
     comment: str = Field("", max_length=2000)
+    product_id: str | None = Field(None, max_length=64)
+    versions: dict[str, str] = Field(default_factory=dict)
 
 
 class SyncRequest(BaseModel):

@@ -24,7 +24,7 @@ from config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
-AUTO_SOURCES = ("thumbs_down", "refusal", "low_confidence", "stale_doc", "manual")
+AUTO_SOURCES = ("thumbs_down", "low_rating", "refusal", "low_confidence", "stale_doc", "manual")
 GOLDEN_COLUMNS = ["Question ID", "Category", "Question", "Approved Answer", "Keywords", "Alternate Questions",
                   "Access Roles", "Status", "Source URL"]
 
@@ -105,6 +105,27 @@ def on_thumbs_down(message_id: int, comment: str = "") -> int:
             question = prev.content if prev else ""
     return add_item("thumbs_down", question, answer, message_id, product_id,
                     details={"comment": comment[:1000], "knowledge_bases": kbs})
+
+
+def on_low_rating(message_id: int, stars: int, comment: str, session_id: str, product_id: str,
+                  versions: dict) -> int:
+    """A 1-2 star conversation rating: queue the conversation (its last question and answer) for review."""
+    from sqlalchemy import select
+
+    from backend.db.models import ChatMessage
+    from backend.db.session import db_session
+
+    with db_session() as s:
+        msg = s.get(ChatMessage, message_id)
+        sid = msg.session_id if msg else session_id
+        answer = msg.content if msg else ""
+        prev = s.scalars(select(ChatMessage).where(ChatMessage.session_id == sid, ChatMessage.role == "user",
+                                                   ChatMessage.id < message_id)
+                         .order_by(ChatMessage.id.desc())).first()
+        question = prev.content if prev else ""
+    return add_item("low_rating", question or f"Conversation {session_id} rated {stars}/5", answer, message_id,
+                    product_id or None, details={"stars": stars, "comment": comment[:1000], "session_id": session_id,
+                                                 "versions": versions})
 
 
 def list_items(status: str | None = "open", source: str | None = None, product_id: str | None = None,

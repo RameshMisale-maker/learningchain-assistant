@@ -88,6 +88,8 @@ class ChatSession(Base):
     product_id: Mapped[str] = mapped_column(String(64), default="", index=True)   # config/products/<id>.yaml
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     cleared: Mapped[bool] = mapped_column(Boolean, default=False)
+    # active -> closing (goodbye sent, rating shown) -> closed (acknowledged; no further LLM calls until a question)
+    conversation_state: Mapped[str] = mapped_column(String(16), default="active")
     messages: Mapped[list["ChatMessage"]] = relationship(back_populates="session", cascade="all, delete-orphan")
 
 
@@ -115,8 +117,12 @@ class Feedback(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     message_id: Mapped[int] = mapped_column(ForeignKey("chat_messages.id", ondelete="CASCADE"), index=True)
     username: Mapped[str] = mapped_column(String(120))
-    rating: Mapped[str] = mapped_column(String(16))  # helpful | not_helpful
+    rating: Mapped[str] = mapped_column(String(16))  # helpful | not_helpful | stars_1 .. stars_5
     comment: Mapped[str] = mapped_column(Text, default="")
+    session_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    product_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    stars: Mapped[int | None] = mapped_column(Integer, nullable=True)            # conversation rating 1-5
+    details: Mapped[dict] = mapped_column(JSON, default=dict)                     # index / prompt versions
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

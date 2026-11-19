@@ -164,6 +164,9 @@ def _ask(question: str, service) -> None:
             resp = service.answer(question, _user(), session_id=st.session_state.session_id, persist=False,
                                   history=history, allowed_kbs=ASSISTANT_KBS, channel="streamlit",
                                   assistant="all", record_metrics=False, product=PRODUCT)
+        if resp.answer_type == "closed":     # "ok" / "thanks" after the goodbye: no new answer
+            st.caption("👍 Thanks! Ask another question any time.")
+            return
         st.markdown(_display(resp.answer))
         _render_sources(resp.citations)
         st.caption(f"{resp.route.get('conversation_intent', resp.answer_type)} · {resp.latency_ms / 1000:.1f}s")

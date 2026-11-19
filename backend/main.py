@@ -190,6 +190,7 @@ def readiness() -> JSONResponse:
 
 
 app.include_router(routes_chat.router)
+app.add_api_route("/api/feedback", routes_chat.feedback, methods=["POST"], tags=["chat"])   # short alias
 app.include_router(routes_admin.router)
 app.include_router(routes_openai.router)  # OpenAI-compatible API for Open WebUI
 app.include_router(routes_webhooks.router)  # signed CMS / help-centre change notifications

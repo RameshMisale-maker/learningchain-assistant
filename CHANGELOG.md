@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-19 - Conversation ending and rating
+
+- **Closing intent:** "no thanks", "that's all", "bye" -> intent `CLOSING` (rules + LLM intent prompt): a goodbye with
+  `ui_action = show_rating`. The goodbye text no longer says "please rate below" - the app shows the rating itself.
+- **Conversation state per session** (`active | closing | closed`, `chat_sessions.conversation_state`). After the
+  goodbye, a short acknowledgement (ok, okay, thanks, thank you, bye, done, a thumbs-up; case-insensitive, after
+  normalisation) makes no LLM call and stores no message: state `closed`, the rating stays visible. A real question
+  sets the state back to `active` and is answered normally.
+- **Structured LLM answer** `{reply, ui_action: none|show_rating|show_escalation|show_login, conversation_state}`,
+  validated; invalid output falls back to the text with `ui_action = none` (`STRUCTURED_REPLY`, default on). Only the
+  goodbye can show the rating; escalation replies show the support contact, guest access-denied shows sign-in.
+- **Greetings with an introduction** ("okay hello chatbot, Ramesh here", "hi, this is Priya") are `GREETING`, never
+  frustration; the LLM intent fallback can no longer assign frustration / account / escalation.
+- **Rating:** the chat page shows 1-5 stars + optional comment on `show_rating`, kept until submitted or a new
+  question; it posts to `POST /api/feedback` (alias of `/api/v1/feedback`) with `session_id`, `rating`, `comment`,
+  `product_id`, `versions`. Ratings of 1-2 create a `review_items` entry (`source = low_rating`).
+- **Migration:** `0008` - `chat_sessions.conversation_state`; `feedback.session_id`, `product_id`, `stars`,
+  `details` (backfilled stars from existing `stars_N` ratings).
+- **Data:** `knowledge_bases/products/LearningChain_08_Certificate_Generation_Modes.md` - the 10 certificate / QR
+  code generation modes from `LearningChain_Chatbot_FAQ.csv` (33 chunks).
+- **Tests:** `tests/test_conversation_end.py`.
+- **Manual test:** chat page -> ask a question -> "no thanks" (goodbye + stars) -> "ok" (nothing new, stars stay) ->
+  rate 2 stars -> admin "Review queue" shows a `low_rating` item -> ask a new question (stars disappear).
+
 ## 2026-11-19 - Pipeline upgrade (phases 1-7)
 
 Implements `docs/upgrade-plan.md` using only free components. Every phase is behind a feature flag that is **off by

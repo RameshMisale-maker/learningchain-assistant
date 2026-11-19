@@ -160,6 +160,9 @@ class Settings:
     webhook_signature_header: str = field(default_factory=lambda: _env("WEBHOOK_SIGNATURE_HEADER", "x-sapphirus-signature"))
     log_file_name: str = field(default_factory=lambda: _env("LOG_FILE_NAME", "sapphirus_assistant.log"))
 
+    # ---- Structured LLM answers (backend/generation/structured.py): {"reply", "ui_action", "conversation_state"} ----
+    structured_reply: bool = field(default_factory=lambda: _env_bool("STRUCTURED_REPLY", True))
+
     # ---- Index versioning (backend/indexing/versions.py) ----
     # Off: one collection per KB, rebuilt in place (today). On: a rebuild fills a new collection, is scored by the
     # retrieval eval gate and only then becomes live; the previous version stays for an instant rollback.

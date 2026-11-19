@@ -45,8 +45,67 @@ GIBBERISH = "UNKNOWN_OR_GIBBERISH"
 ACCOUNT = "ACCOUNT_SPECIFIC"          # this user's own payment / receipt / verification status - no lookup tools
 ESCALATION = "ESCALATION"            # complaint, refund dispute, legal or harassment issue -> human support
 FRUSTRATION = "FRUSTRATION"          # anger, insults, swearing: stay calm, ask what went wrong
+CLOSING = "CLOSING"                  # the user is ending the conversation ("no thanks", "that's all", "bye")
 INTENTS = (GREETING, SMALL_TALK, TYPO_OR_INCOMPLETE, CLARIFICATION, KNOWLEDGE, FOLLOW_UP, OUT_OF_SCOPE, GIBBERISH, ACCOUNT,
-           ESCALATION, FRUSTRATION)
+           ESCALATION, FRUSTRATION, CLOSING)
+
+# Ending the conversation: "no" after "anything else?", "that's all", "bye" -> goodbye + rating request.
+CLOSING_RE = re.compile(r"^\s*(no|nope|nah|no\s*,?\s*thanks?|no\s*,?\s*thank\s*(you|u)|no\s+more(\s+questions?)?|"
+                        r"nothing(\s+else)?|that'?s\s+(all|it)|that\s+is\s+(all|it)|i'?m\s+done|im\s+done|"
+                        r"all\s+good|i'?m\s+good|bye+|goodbye|good\s*bye|see\s+(you|ya)|take\s+care)\s*[!.?]*\s*$",
+                        re.IGNORECASE)
+# Short acknowledgements after a goodbye: no LLM call, no new message, the rating stays visible.
+ACK_WORDS = {"ok", "okay", "okk", "k", "kk", "thanks", "thank you", "thank u", "thanku", "thankyou", "thx", "ty",
+             "bye", "bye bye", "goodbye", "done", "ok thanks", "okay thanks", "ok thank you", "okay thank you",
+             "ok bye", "okay bye", "thanks bye", "cool", "great", "fine", "sure", "alright", "all right", "noted"}
+_ACK_EMOJI = ("👍", "🙏", "😊", "🙂", "✅", "👌")   # thumbs up, folded hands, ...
+# "okay hello chatbot, Ramesh here", "hi, this is Ramesh", "hello bot I am Priya" - a greeting with an introduction
+_GREETING_INTRO = (
+    r"^\s*(?:(?:ok(?:ay)?|so|well|hi+|hello+|hey+|helo|hai|namaste|good\s+(?:morning|afternoon|evening))[\s,!.]*)+"
+    r"(?:(?:there|team|all|chatbot|chat\s*bot|bot|assistant|{names})[\s,!.]*)?"
+    r"(?:(?:i\s*am|i'?m|im|this\s+is|it'?s|my\s+name\s+is|myself)\s+[a-z][a-z.'-]*(?:\s+[a-z][a-z.'-]*)?"
+    r"|[a-z][a-z.'-]*(?:\s+[a-z][a-z.'-]*)?\s+(?:here|this\s+side))?[\s,!.]*$")
+_GREETING_WORD = re.compile(r"\b(hi+|hello+|hey+|helo|hai|namaste|good\s+(morning|afternoon|evening))\b", re.IGNORECASE)
+
+
+def is_closing(text: str) -> bool:
+    """The user is ending the conversation (e.g. "no" after "anything else?", "that's all", "bye")."""
+    return bool(CLOSING_RE.match(text or ""))
+
+
+def is_acknowledgement(text: str) -> bool:
+    """A short acknowledgement (ok, okay, thanks, thank you, bye, done, a thumbs-up), case-insensitive, after
+    removing punctuation, emoji skin tones and repeated letters ("okkk", "thanksss")."""
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    for emoji in _ACK_EMOJI:
+        t = t.replace(emoji, " ok ")
+    t = re.sub(r"[🏻-🏿️]", "", t)           # skin tones / variation selectors
+    t = re.sub(r"[^\w\s']", " ", t)
+    t = re.sub(r"(.)\1{2,}", r"\1", t)                              # "okkkk" -> "ok", "thanksss" -> "thanks"
+    t = re.sub(r"\s+", " ", t).strip()
+    words = t.split()
+    if not words or len(words) > 4:
+        return False
+    if t in ACK_WORDS or " ".join(dict.fromkeys(words)) in ACK_WORDS:   # "ok ok" -> "ok"
+        return True
+    return all(w in {"ok", "okay", "thanks", "thank", "you", "u", "bye", "done", "great", "cool", "so", "much",
+                     "very", "a", "lot", "again"} for w in words) and words[0] in {"ok", "okay", "thanks", "thank",
+                                                                             "bye", "done", "great", "cool"}
+
+
+@lru_cache(maxsize=8)
+def _compile_intro(names: str):
+    return re.compile(_GREETING_INTRO.replace("{names}", names), re.IGNORECASE)
+
+
+def is_greeting_with_intro(text: str) -> bool:
+    """A greeting, optionally addressing the bot and introducing the user, with no question in it."""
+    from backend.routing.router import names_alternation
+
+    t = (text or "").strip()
+    return bool(t) and "?" not in t and bool(_GREETING_WORD.search(t)) and         bool(_compile_intro(names_alternation()).match(t))
 
 INCOMPLETE_REPLY = "Sure - what would you like to know? Please share your full question."
 
@@ -282,10 +341,14 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     known = known_word or (lambda w: w in STOPWORDS or w in QUESTION_WORDS)
     has_history = bool(last_assistant_answer(history))
 
+    # 0. ending the conversation: goodbye + rating request (backend/services/chat_service.py)
+    if is_closing(t):
+        return MessageIntent(CLOSING, reason="closing")
+
     # 1. greetings / small talk (incl. typos such as "helo", "gud morning") - no retrieval, no LLM
-    if greeting_only_re().match(t):
+    if greeting_only_re().match(t) or is_greeting_with_intro(t):
         return MessageIntent(GREETING, reason="greeting")
-    if greeting_re().match(t) or AFFIRM_RE.match(t):
+    if greeting_re().match(t) or AFFIRM_RE.match(t) or is_acknowledgement(t):
         return MessageIntent(SMALL_TALK, reason="small talk")
 
     # 1b. frustration, anger, insults or swearing: calm acknowledgement, ask what went wrong (support if repeated)
@@ -372,8 +435,8 @@ def _llm_classify(llm, text: str, history: list[dict]) -> MessageIntent | None:
         logger.warning("LLM intent classification failed: %s", exc)
         return None
     intent = str(data.get("intent", "")).strip().upper()
-    if intent not in INTENTS:
-        return None
+    if intent not in INTENTS or intent in (FRUSTRATION, ACCOUNT, ESCALATION):
+        return None      # these three are decided by the rules only (an LLM guess must never label a greeting angry)
     suggestion = str(data.get("suggestion") or "").strip()
     suggestion = suggestion if re.fullmatch(r"[A-Za-z][A-Za-z ]{0,30}", suggestion) else ""
     result = MessageIntent(intent, suggestion=suggestion, method="llm", reason="llm classification",
