@@ -177,7 +177,8 @@ class ChatbotAdapter:
                 "embedding_model": self.embedding_model, "vector_backend": s.vector_backend,
                 "reranker": f"{s.reranker_backend}:{s.reranker_model}", "router_mode": s.router_mode,
                 "grounding_mode": s.grounding_mode, "top_k_rerank": s.top_k_rerank,
-                "max_context_chars": s.max_context_chars, "crag_enabled": s.crag_enabled,
+                "max_context_chars": s.max_context_chars, "hybrid_fusion": s.hybrid_fusion,
+                "multi_query": s.multi_query_retrieval,
                 "conversation_layer": s.conversation_layer}
 
     # ------------------------------------------------------------------ call

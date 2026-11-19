@@ -48,10 +48,10 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
 <div class="wrap">
 <header>
   <h1>Sapphirus AI Assistant: RAG architecture</h1>
-  <p>How the chatbot indexes LearningChain and Sapphirus content and answers a visitor's question, drawn from the current code and configuration (19 Nov 2026). Stages outlined in light blue with a <span class="tag">NEW</span> tag were added this week.</p>
+  <p>How the chatbot indexes LearningChain and Sapphirus content and answers a visitor's question, drawn from the current code and configuration (19 Nov 2026). Stages outlined in light blue with a <span class="tag">NEW</span> tag were added this week, including the support-assistant rules (sensitive data, account and complaint handling, reply language).</p>
 </header>
 
-<div class="diagram" role="img" aria-label="Architecture diagram: indexing pipeline at the top; the answering pipeline with safety guard, query normalization, conversation layer, router and scope check, golden match, hybrid search, rerank, Corrective RAG, augmentation, generation and grounding; deployment at the bottom.">
+<div class="diagram" role="img" aria-label="Architecture diagram: indexing pipeline at the top; the answering pipeline with safety guard, query normalization, conversation layer, router and scope check, golden match, multi-query hybrid search with score fusion, rerank, augmentation, generation and grounding; deployment at the bottom.">
 <svg viewBox="0 0 1800 2030" xmlns="http://www.w3.org/2000/svg" font-family="Open Sans, Segoe UI, sans-serif">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
@@ -181,12 +181,14 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <line x1="375" y1="500" x2="394" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
   <!-- Safety guard -->
-  <rect x="400" y="440" width="195" height="120" rx="12" fill="#0a4a80"/>
+  <rect x="400" y="440" width="195" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="418" y="478" fill="#fff" font-size="21" font-weight="600">Safety guard</text>
+  <rect x="540" y="448" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="563" y="461" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="418" y="505">≤ 1,000 chars</text>
-    <text x="418" y="525">prompt-injection screen</text>
-    <text x="418" y="545">restricted topics</text>
+    <text x="418" y="505">injection · restricted topics</text>
+    <text x="418" y="525">card / CVV / OTP / PIN /</text>
+    <text x="418" y="545">password → redacted</text>
   </g>
   <line x1="595" y1="500" x2="614" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
@@ -196,9 +198,9 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <rect x="772" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
   <text x="795" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="638" y="505">typos · wt, hw, pls, abt</text>
-    <text x="638" y="525">saphirus → Sapphirus</text>
-    <text x="638" y="545">fuzzy ≥ 80 · LLM if needed</text>
+    <text x="638" y="505">typos · Hindi / Hinglish → EN</text>
+    <text x="638" y="525">glossary · fuzzy ≥ 80</text>
+    <text x="638" y="545">LLM: queries · language</text>
   </g>
   <line x1="835" y1="500" x2="854" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
@@ -208,9 +210,9 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <rect x="1022" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
   <text x="1045" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="878" y="505">8 intents · rules first</text>
+    <text x="878" y="505">11 intents · rules first</text>
     <text x="878" y="525">follow-ups use memory</text>
-    <text x="878" y="545">"tell me more" → rewrite</text>
+    <text x="878" y="545">frustration · account</text>
   </g>
   <line x1="1085" y1="500" x2="1104" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
@@ -230,19 +232,19 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <text x="292" y="670" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Database</text>
   <text x="292" y="692" fill="#a9cdee" font-size="13" text-anchor="middle">history = memory</text>
   <text x="292" y="710" fill="#a9cdee" font-size="13" text-anchor="middle">feedback · cost · latency</text>
-  <path d="M387 676 H972 V566" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <path d="M387 676 H905 V566" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <text x="540" y="668" fill="#7d9bbb" font-size="13" text-anchor="middle">last 8 messages of this session</text>
 
   <!-- short-circuit pills, row A -->
   <line x1="497" y1="560" x2="497" y2="596" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <rect x="405" y="602" width="185" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="497" y="623" fill="#a9cdee" font-size="13" text-anchor="middle">injection / restricted</text>
-  <text x="497" y="641" fill="#a9cdee" font-size="13" text-anchor="middle">→ polite refusal</text>
+  <text x="497" y="623" fill="#a9cdee" font-size="13" text-anchor="middle">refusal · safety warning,</text>
+  <text x="497" y="641" fill="#a9cdee" font-size="13" text-anchor="middle">never sent to the LLM</text>
 
   <line x1="1050" y1="560" x2="1050" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="990" y="604" width="190" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
-  <text x="1085" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">greeting · lone word ·</text>
-  <text x="1085" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">gibberish → direct reply</text>
+  <rect x="945" y="604" width="200" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
+  <text x="1045" y="626" fill="#a9cdee" font-size="12.5" text-anchor="middle">greeting (intro once) · upset ·</text>
+  <text x="1045" y="644" fill="#a9cdee" font-size="12.5" text-anchor="middle">account → short reply / support</text>
 
   <line x1="1300" y1="560" x2="1300" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <rect x="1210" y="604" width="210" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
@@ -269,8 +271,8 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <!-- Search to vector store -->
   <line x1="1260" y1="760" x2="1464" y2="760" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text x="1350" y="748" fill="#48aaee" font-size="17" text-anchor="middle">Hybrid search</text>
-  <text x="1345" y="784" fill="#a9cdee" font-size="13" text-anchor="middle">dense 20 + BM25 20</text>
-  <text x="1345" y="802" fill="#a9cdee" font-size="13" text-anchor="middle">RRF · + sub-questions</text>
+  <text x="1345" y="784" fill="#a9cdee" font-size="13" text-anchor="middle">question + rephrasings</text>
+  <text x="1345" y="802" fill="#a9cdee" font-size="13" text-anchor="middle">(LLM clean-up queries)</text>
 
   <!-- ============ VECTOR STORE REGION ============ -->
   <rect x="1440" y="690" width="330" height="240" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
@@ -288,36 +290,33 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <line x1="1600" y1="890" x2="1600" y2="954" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text x="1614" y="914" fill="#48aaee" font-size="17">Retrieve</text>
 
-  <!-- Rerank -->
-  <rect x="1470" y="960" width="260" height="105" rx="12" fill="#0a4a80"/>
-  <text x="1490" y="996" fill="#fff" font-size="21" font-weight="600">Rerank</text>
-  <text x="1490" y="1020" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
-  <text x="1490" y="1040" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
-  <text x="1490" y="1058" fill="#a9cdee" font-size="13">+ best source per sub-question</text>
-  <line x1="1600" y1="1065" x2="1600" y2="1094" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- CRAG (NEW) -->
-  <rect x="1470" y="1100" width="260" height="140" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="1490" y="1136" fill="#fff" font-size="21" font-weight="600">Corrective RAG</text>
-  <rect x="1666" y="1120" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="1689" y="1133" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
+  <!-- Hybrid fusion (NEW) -->
+  <rect x="1470" y="960" width="260" height="125" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1490" y="995" fill="#fff" font-size="21" font-weight="600">Hybrid fusion</text>
+  <rect x="1666" y="978" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="1689" y="991" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="1490" y="1162">LLM grades each passage</text>
-    <text x="1490" y="1182">drops irrelevant ones</text>
-    <text x="1490" y="1202">none relevant → rewrite,</text>
-    <text x="1490" y="1222">search again · never web</text>
+    <text x="1490" y="1020">dense 40 + BM25 40 per query</text>
+    <text x="1490" y="1040">relative score fusion</text>
+    <text x="1490" y="1060">multi-query (RAG-Fusion)</text>
+    <text x="1490" y="1078" font-size="13">+ each sub-question</text>
   </g>
-  <!-- retry loop -->
-  <path d="M1470 1200 H1428 V850 H1464" fill="none" stroke="#48aaee" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#aha)"/>
-  <text transform="translate(1418 1025) rotate(-90)" fill="#48aaee" font-size="13" text-anchor="middle">rewrite &amp; re-search (once)</text>
+  <line x1="1600" y1="1085" x2="1600" y2="1114" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- Rerank -->
+  <rect x="1470" y="1120" width="260" height="105" rx="12" fill="#0a4a80"/>
+  <text x="1490" y="1156" fill="#fff" font-size="21" font-weight="600">Rerank</text>
+  <text x="1490" y="1180" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
+  <text x="1490" y="1200" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
+  <text x="1490" y="1218" fill="#a9cdee" font-size="13">+ best source per sub-question</text>
 
   <!-- question path into Augment -->
   <path d="M727 560 V1250 H930 V1304" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text transform="translate(717 980) rotate(-90)" fill="#48aaee" font-size="14" text-anchor="middle">normalized question</text>
 
-  <!-- CRAG -> Augment -->
-  <path d="M1600 1240 V1375 H1406" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1500" y="1365" fill="#48aaee" font-size="14" text-anchor="middle">relevant passages</text>
+  <!-- Rerank -> Augment -->
+  <path d="M1600 1225 V1375 H1406" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1500" y="1365" fill="#48aaee" font-size="14" text-anchor="middle">top passages</text>
 
   <!-- Augment frame -->
   <rect x="830" y="1290" width="570" height="170" rx="14" fill="none" stroke="#ffffff" stroke-width="2"/>
@@ -327,7 +326,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <g fill="#a9cdee" font-size="13.5">
     <text x="1025" y="1360">one source per parent [S1]–[S5]</text>
     <text x="1025" y="1380">answer only from sources · cite [S#]</text>
-    <text x="1025" y="1400">infer intent, never fix spelling</text>
+    <text x="1025" y="1400">reply in EN · Hindi · Hinglish</text>
     <text x="1025" y="1420">untrusted data · ≤ 9,000 chars</text>
   </g>
   <g fill="#3a9be3">
@@ -357,7 +356,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <line x1="410" y1="1435" x2="410" y2="1460" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <rect x="270" y="1466" width="285" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
   <text x="412" y="1487" fill="#a9cdee" font-size="13" text-anchor="middle">fails → quote the source extract,</text>
-  <text x="412" y="1505" fill="#a9cdee" font-size="13" text-anchor="middle">or "insufficient information"</text>
+  <text x="412" y="1505" fill="#a9cdee" font-size="13" text-anchor="middle">or "no confirmed info → support"</text>
 
   <rect x="40" y="1320" width="210" height="115" rx="12" fill="#0a4a80"/>
   <text x="145" y="1360" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Response</text>
@@ -378,12 +377,12 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     <text x="80" y="1697">GitHub · learningchain-assistant</text>
     <rect x="410" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
     <text x="430" y="1652" fill="#fff" font-size="20" font-weight="600">Test</text>
-    <text x="430" y="1677">pytest suite · 250 tests</text>
+    <text x="430" y="1677">pytest suite · 304 tests</text>
     <text x="430" y="1697">mocked APIs · no keys needed</text>
     <rect x="760" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
     <text x="780" y="1652" fill="#fff" font-size="20" font-weight="600">Evaluate</text>
     <text x="780" y="1677">dashboard :8502 · CSV export</text>
-    <text x="780" y="1697">retrieval · RAGAS · CRAG A/B</text>
+    <text x="780" y="1697">retrieval · RAGAS · fusion A/B</text>
     <rect x="1110" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
     <text x="1130" y="1652" fill="#fff" font-size="20" font-weight="600">Docker build</text>
     <text x="1130" y="1677">python 3.12-slim · non-root</text>
@@ -476,13 +475,15 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     <span class="chip">Embeddings: <b>bge-small-en-v1.5</b> (local)</span>
     <span class="chip">Chunking: <b>parent-child, structure + recursive</b> (1,800 / 400 chars)</span>
     <span class="chip">Reranker: <b>ms-marco-MiniLM-L-6-v2</b></span>
-    <span class="chip new">CRAG: <b>on</b> (grade, filter, rewrite once; KB only)</span>
+    <span class="chip new">Hybrid search: <b>dense 40 + BM25 40, relative score fusion, multi-query</b> (CRAG removed)</span>
     <span class="chip new">Conversation layer: <b>on</b> (8 intents, memory = last 8 messages)</span>
     <span class="chip new">Query normalization: <b>on</b> (rules + rapidfuzz ≥ 80, LLM only for unknown words)</span>
     <span class="chip new">Scope check: <b>lenient</b> (LLM or relevant passage ≥ 0.5 overrides the keyword router)</span>
     <span class="chip">Router: <b>hybrid</b> (multi-KB ratio 0.70)</span>
     <span class="chip">Grounding: <b>lexical</b></span>
     <span class="chip">Web scraper: <b>builtin</b> (Firecrawl once FIRECRAWL_API_KEY is set)</span>
+    <span class="chip new">Support rules: <b>sensitive-data guard · account &amp; complaint replies</b> (no account tools yet)</span>
+    <span class="chip new">Reply language: <b>English · Hindi · Hinglish</b> (decided from the user's script)</span>
     <span class="chip new">Demo: <b>Streamlit Community Cloud</b> from GitHub</span>
     <span class="chip">Production target: <b>Docker Compose · nginx · PostgreSQL 16</b> (manual release, no CI yet)</span>
   </div>
@@ -502,21 +503,20 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
       <tr><td>Vectorize &amp; index</td><td>Child chunks are embedded with bge-small-en-v1.5 into Chroma, with a BM25 index alongside: 83 documents and 1,279 chunks across the two knowledge bases.</td><td><code>ingestion/embedding.py</code>, <code>ingestion/vector_store.py</code>, <code>backend/retrieval/kb_index.py</code></td></tr>
       <tr class="phase"><td colspan="3">Answering</td></tr>
       <tr><td>API</td><td>Token auth and roles, rate limit, streamed reply. The Streamlit demo calls the same pipeline in-process instead.</td><td><code>backend/api/routes_chat.py</code>, <code>streamlit_cloud/streamlit_app.py</code></td></tr>
-      <tr><td>Safety guard</td><td>Length limit and prompt-injection screen; restricted topics (medical, financial advice, sexual, self-harm, violence, illegal) are refused before any retrieval. Checked on both the original and the normalized wording.</td><td><code>backend/security/prompt_guard.py</code></td></tr>
-      <tr><td>Normalize<span class="tag">NEW</span></td><td>Fixes typos and SMS short forms (wt, hw, r, u, pls, abt), product names (saphirus → Sapphirus, leaning chain / LC → LearningChain) and misspelt domain terms with rapidfuzz (≥ 80). The LLM rewrites the question only when unknown words remain. The normalized question drives everything after this; the original is kept for logs.</td><td><code>backend/routing/normalize.py</code>, <code>prompts/normalize_prompt.txt</code></td></tr>
-      <tr><td>Conversation layer<span class="tag">NEW</span></td><td>Classifies greeting, small talk, incomplete input, clarification, gibberish, out-of-scope, follow-up and knowledge questions, mostly by rules. Non-questions get a direct reply with no retrieval. Follow-ups ("tell me more", "explain the second point") are rewritten from the session history (last 8 messages).</td><td><code>backend/routing/intent.py</code>, <code>backend/routing/router.py</code></td></tr>
+      <tr><td>Safety guard<span class="tag">NEW</span></td><td>Length limit and prompt-injection screen (reply: "I can only help with your own account and Sapphirus / LearningChain questions."); restricted topics (medical, financial advice, sexual, self-harm, violence, illegal) are refused before any retrieval, checked on both the original and the normalized wording. Card numbers (Luhn-checked), CVV, OTP, UPI PIN and passwords get a safety warning, never reach the LLM or the search, and are stored only as [REDACTED].</td><td><code>backend/security/prompt_guard.py</code></td></tr>
+      <tr><td>Normalize<span class="tag">NEW</span></td><td>Fixes typos and SMS short forms (wt, hw, r, u, pls, abt), product names (saphirus → Sapphirus, leaning chain / LC → LearningChain) and misspelt domain terms with rapidfuzz (≥ 80). The LLM clean-up prompt runs only when unknown words remain or the message is in another script: it returns the corrected English question, up to 3 search queries, the language, an account-data flag, an unclear flag and the scope, using the last 4 messages; a rewrite that changes any number is rejected. The normalized question drives everything after this; the original is kept for logs.</td><td><code>backend/routing/normalize.py</code>, <code>prompts/normalize_prompt.txt</code></td></tr>
+      <tr><td>Conversation layer<span class="tag">NEW</span></td><td>Classifies greeting, small talk, incomplete input, clarification, gibberish, out-of-scope, follow-up and knowledge questions, mostly by rules. Non-questions get a direct reply with no retrieval. Follow-ups ("tell me more", "explain the second point") are rewritten into standalone search queries from the session history (last 8 messages); TOOL_ONLY or questions about the user's own payment / receipt / verification status get a "please log in or contact support" reply (no account tools yet), and complaints, refund demands or legal issues are directed to the support team. Greetings introduce the assistant only on the first message; small talk gets one short sentence; frustration, insults or swearing get a calm one-line acknowledgement and an offer to retry the last question (support team after two in a row); off-topic gets one sentence with one suggestion; unclear input gets one short clarifying question; and the same fixed reply is never sent twice in a row.</td><td><code>backend/routing/intent.py</code>, <code>backend/routing/router.py</code></td></tr>
       <tr><td>Router + scope<span class="tag">NEW</span></td><td>Picks LearningChain, Sapphirus or both (close scores search both). A keyword "out of scope" is no longer final: the LLM scope check or a relevant passage (rerank ≥ 0.5) lets the question through; only clearly unrelated questions get the polite out-of-scope reply. HR topics stay excluded.</td><td><code>backend/routing/router.py</code>, <code>backend/services/chat_service.py</code></td></tr>
       <tr><td>Golden match</td><td>Approved Q&amp;A at 0.78 or above is returned verbatim; from 0.50 it joins the candidates for reranking.</td><td><code>backend/retrieval/golden_matcher.py</code></td></tr>
-      <tr><td>Hybrid search</td><td>Top 20 dense + top 20 BM25 child chunks, filtered by access roles and fused with RRF; multi-part questions are also searched per sub-question.</td><td><code>backend/retrieval/hybrid.py</code>, <code>backend/routing/decompose.py</code></td></tr>
+      <tr><td>Hybrid search<span class="tag">NEW</span></td><td>For every phrasing of the question (as typed / normalised, synonym-expanded, and the LLM clean-up's search query when it ran) the top 40 dense and top 40 BM25 child chunks are retrieved, filtered by access roles, and combined with relative score fusion (each list's scores normalised to 0-1, weighted 0.5 / 0.5). The phrasings' result lists are then fused with RRF (multi-query / RAG-Fusion), so a chunk found by several phrasings rises. Multi-part questions are also searched per sub-question. Benchmarked on the golden dataset (LLM off): MRR 80.5% &rarr; 81.6%, nDCG 72.4% &rarr; 74.0%, Precision@5 44.5% &rarr; 45.3%, Recall@5 unchanged at 86.2%.</td><td><code>backend/retrieval/hybrid.py</code>, <code>backend/routing/decompose.py</code></td></tr>
       <tr><td>Rerank</td><td>A cross-encoder scores each child chunk with its header and keeps the top 5 scoring at least 0.15.</td><td><code>backend/retrieval/reranker.py</code></td></tr>
-      <tr><td>Corrective RAG<span class="tag">NEW</span></td><td>One LLM call grades every selected passage; irrelevant ones are dropped. If none is relevant, the question is rewritten as a documentation search query and searched once more in the knowledge base (never the web). If the grader fails, the reranked passages are used unchanged.</td><td><code>backend/retrieval/crag.py</code>, <code>prompts/crag_*.txt</code></td></tr>
-      <tr><td>Augment</td><td>Matched children are swapped for their parent sections (≤ 9,000 characters) and wrapped as untrusted, numbered sources. The system prompt tells the model to infer the meaning of informal or misspelt questions and never comment on spelling.</td><td><code>backend/generation/prompt_builder.py</code>, <code>prompts/system_prompt.txt</code></td></tr>
+      <tr><td>Augment</td><td>Matched children are swapped for their parent sections (≤ 9,000 characters) and wrapped as untrusted, numbered sources. The system prompt carries the support-assistant rules: answer only from the sources, copy numbers and contacts exactly, prefer the newest source, ask one clarifying question when ambiguous, under 120 words with bold key values, never mention "documents", infer the meaning of informal or misspelt questions, and reply in the language decided in code (Devanagari → Hindi; Hindi in English letters → Hinglish).</td><td><code>backend/generation/prompt_builder.py</code>, <code>prompts/system_prompt.txt</code></td></tr>
       <tr><td>Generate</td><td><code>openai/gpt-oss-120b</code> on Groq (temperature 0, max 900 tokens); on a rate limit or outage it falls back to <code>gpt-oss-20b</code>, then to extractive answers.</td><td><code>backend/generation/llm_client.py</code></td></tr>
-      <tr><td>Grounding check</td><td>Removes invalid citations and checks sentences and numbers against the sources; failures return a source extract or the "insufficient information" reply.</td><td><code>backend/generation/grounding.py</code></td></tr>
+      <tr><td>Grounding check</td><td>Removes invalid citations and checks sentences and numbers against the sources; failures return a source extract or the reply "I don't have confirmed information on that. Let me connect you with our support team" with the support contacts.</td><td><code>backend/generation/grounding.py</code></td></tr>
       <tr><td>Persist</td><td>Messages (the conversation memory), route, citations, latency, tokens, cost and feedback are stored per session.</td><td><code>backend/db/repository.py</code></td></tr>
       <tr class="phase"><td colspan="3">Deployment</td></tr>
       <tr><td>Code</td><td>Azure DevOps (AI-Intern-Repo, branch <code>Ramesh_Misale</code>, folder <code>sapphirus_chatbot/</code>; PR to <code>dev</code>) and GitHub (<code>RameshMisale-maker/learningchain-assistant</code>). No <code>.env</code>, keys, indexes or training PDFs are committed.</td><td><code>.gitignore</code></td></tr>
-      <tr><td>Test &amp; evaluate</td><td>250 pytest tests with mocked APIs; the evaluation dashboard measures retrieval, generation (RAGAS) and end-to-end performance, and CRAG on/off.</td><td><code>tests/</code>, <code>evaluation/</code></td></tr>
+      <tr><td>Test &amp; evaluate</td><td>304 pytest tests with mocked APIs; the evaluation dashboard measures retrieval, generation (RAGAS) and end-to-end performance; hybrid search settings are compared with A/B runs.</td><td><code>tests/</code>, <code>evaluation/</code></td></tr>
       <tr><td>Production target</td><td>Docker image under Docker Compose with PostgreSQL 16 and nginx (TLS, rate limits); the API container also runs the ingestion worker and web monitor.</td><td><code>Dockerfile</code>, <code>docker-compose.yml</code>, <code>deploy/</code></td></tr>
       <tr><td>Live demo<span class="tag">NEW</span></td><td>Streamlit Community Cloud builds from the GitHub repo (Python 3.12, CPU-only torch), runs the same pipeline in-process, builds the index on start and shows the LLM status in the sidebar. The Groq key is set in the app's Secrets. Reboot the app after each push.</td><td><code>streamlit_cloud/</code></td></tr>
     </tbody>

@@ -116,6 +116,13 @@ def fuzzy_normalize(text: str, known: Callable[[str], bool] | None = None) -> tu
         if lw in SHORTFORMS and not (lw in ("n", "d", "da", "info") and known(lw)):
             fixes.append((w, SHORTFORMS[lw]))
             return SHORTFORMS[lw]
+        # truncated domain word ("revok", "certificat", "verificatio"): complete it. These look "known" to the
+        # knowledge base, whose vocabulary is stemmed, but the cross-encoder reranker scores the typo badly.
+        if len(lw) >= 5 and lw not in DOMAIN_TERMS:
+            completion = next((t for t in DOMAIN_TERMS if t.startswith(lw) and len(t) - len(lw) <= 2), None)
+            if completion:
+                fixes.append((w, completion))
+                return completion
         if lw.isdigit() or len(lw) < 3 or known(lw):
             return w
         squeezed = re.sub(r"(.)\1{2,}", r"\1", lw)                     # "helppp" -> "help"

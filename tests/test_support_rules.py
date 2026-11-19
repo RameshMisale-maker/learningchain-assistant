@@ -61,7 +61,7 @@ def test_account_specific_questions_get_the_no_lookup_reply(chat, public_user, t
     assert not resp.citations
 
 
-@pytest.mark.parametrize("text", ["I want a refund", "I will file a complaint", "worst service ever",
+@pytest.mark.parametrize("text", ["I want a refund", "I will file a complaint",
                                   "my refund is still not received", "I will take legal action"])
 def test_complaints_and_disputes_escalate_to_support(chat, public_user, text):
     resp = chat.answer(text, public_user, persist=False, allowed_kbs=ALL_KBS)

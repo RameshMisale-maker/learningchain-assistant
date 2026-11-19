@@ -85,9 +85,8 @@ class Settings:
         "info@sapphirus.in or call +91 96531 57225."))
     out_of_scope_text: str = field(default_factory=lambda: _env(
         "OUT_OF_SCOPE_TEXT",
-        "I'm sorry, but that's outside what I can help with. I can answer questions about Sapphirus and its "
-        "LearningChain platform - for example issuing, sharing or verifying blockchain certificates, the admin and "
-        "user portals, or Sapphirus company information."))
+        "I can only help with Sapphirus Systems and LearningChain - for example, I can explain how to verify a "
+        "certificate."))
 
     # ---- Automated ingestion (queue worker, website monitor, webhooks) ----
     ingest_worker_enabled: bool = field(default_factory=lambda: _env_bool("INGEST_WORKER_ENABLED", True))
@@ -129,11 +128,18 @@ class Settings:
     reranker_model: str = field(default_factory=lambda: _env("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"))
 
     # ---- Retrieval ----
-    top_k_vector: int = field(default_factory=lambda: _env_int("TOP_K_VECTOR", 20))
-    top_k_bm25: int = field(default_factory=lambda: _env_int("TOP_K_BM25", 20))
+    top_k_vector: int = field(default_factory=lambda: _env_int("TOP_K_VECTOR", 40))
+    top_k_bm25: int = field(default_factory=lambda: _env_int("TOP_K_BM25", 40))
     top_k_rerank: int = field(default_factory=lambda: _env_int("TOP_K_RERANK", 5))
     rrf_k: int = field(default_factory=lambda: _env_int("RRF_K", 60))
     vector_weight: float = field(default_factory=lambda: _env_float("HYBRID_VECTOR_WEIGHT", 0.5))
+    # How dense and BM25 results are combined: "rrf" (Reciprocal Rank Fusion, rank-based) or "relative" (min-max
+    # normalised scores, weighted sum - keeps how much better one hit is than the next).
+    hybrid_fusion: str = field(default_factory=lambda: _env("HYBRID_FUSION", "relative").lower())
+    # Multi-query retrieval (RAG-Fusion): search with every phrasing of the question (as typed / normalised,
+    # synonym-expanded, the LLM clean-up's search queries) and fuse the result lists with RRF.
+    multi_query_retrieval: bool = field(default_factory=lambda: _env_bool("MULTI_QUERY_RETRIEVAL", True))
+    multi_query_max: int = field(default_factory=lambda: _env_int("MULTI_QUERY_MAX", 4))
     min_rerank_score: float = field(default_factory=lambda: _env_float("MIN_RERANK_SCORE", 0.15))
     min_query_coverage_llm: float = field(default_factory=lambda: _env_float("MIN_QUERY_COVERAGE_LLM", 0.25))
     min_query_coverage: float = field(default_factory=lambda: _env_float("MIN_QUERY_COVERAGE", 0.40))
@@ -148,12 +154,6 @@ class Settings:
     grounding_mode: str = field(default_factory=lambda: _env("GROUNDING_MODE", "lexical").lower())
     grounding_min_support: float = field(default_factory=lambda: _env_float("GROUNDING_MIN_SUPPORT", 0.6))
 
-    # ---- Corrective RAG (backend/retrieval/crag.py) ----
-    # An LLM grades each retrieved chunk for relevance before generation; irrelevant chunks are dropped, and when
-    # none is relevant the query is rewritten and the knowledge base searched once more (never the web).
-    crag_enabled: bool = field(default_factory=lambda: _env_bool("CRAG_ENABLED", True))
-    crag_retry: bool = field(default_factory=lambda: _env_bool("CRAG_RETRY", True))
-    crag_chunk_chars: int = field(default_factory=lambda: _env_int("CRAG_CHUNK_CHARS", 700))
 
     # ---- Query normalization + lenient scope check (backend/routing/normalize.py) ----
     # Fix typos / short forms / product-name variants before scope, retrieval and answering; the LLM is used only

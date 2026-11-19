@@ -128,12 +128,14 @@
   <line x1="375" y1="500" x2="394" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
   <!-- Safety guard -->
-  <rect x="400" y="440" width="195" height="120" rx="12" fill="#0a4a80"/>
+  <rect x="400" y="440" width="195" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="418" y="478" fill="#fff" font-size="21" font-weight="600">Safety guard</text>
+  <rect x="540" y="448" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="563" y="461" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="418" y="505">≤ 1,000 chars</text>
-    <text x="418" y="525">prompt-injection screen</text>
-    <text x="418" y="545">restricted topics</text>
+    <text x="418" y="505">injection · restricted topics</text>
+    <text x="418" y="525">card / CVV / OTP / PIN /</text>
+    <text x="418" y="545">password → redacted</text>
   </g>
   <line x1="595" y1="500" x2="614" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
@@ -143,9 +145,9 @@
   <rect x="772" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
   <text x="795" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="638" y="505">typos · wt, hw, pls, abt</text>
-    <text x="638" y="525">saphirus → Sapphirus</text>
-    <text x="638" y="545">fuzzy ≥ 80 · LLM if needed</text>
+    <text x="638" y="505">typos · Hindi / Hinglish → EN</text>
+    <text x="638" y="525">glossary · fuzzy ≥ 80</text>
+    <text x="638" y="545">LLM: queries · language</text>
   </g>
   <line x1="835" y1="500" x2="854" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
@@ -155,9 +157,9 @@
   <rect x="1022" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
   <text x="1045" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="878" y="505">8 intents · rules first</text>
+    <text x="878" y="505">11 intents · rules first</text>
     <text x="878" y="525">follow-ups use memory</text>
-    <text x="878" y="545">"tell me more" → rewrite</text>
+    <text x="878" y="545">frustration · account</text>
   </g>
   <line x1="1085" y1="500" x2="1104" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
@@ -177,19 +179,19 @@
   <text x="292" y="670" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Database</text>
   <text x="292" y="692" fill="#a9cdee" font-size="13" text-anchor="middle">history = memory</text>
   <text x="292" y="710" fill="#a9cdee" font-size="13" text-anchor="middle">feedback · cost · latency</text>
-  <path d="M387 676 H972 V566" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <path d="M387 676 H905 V566" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <text x="540" y="668" fill="#7d9bbb" font-size="13" text-anchor="middle">last 8 messages of this session</text>
 
   <!-- short-circuit pills, row A -->
   <line x1="497" y1="560" x2="497" y2="596" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <rect x="405" y="602" width="185" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="497" y="623" fill="#a9cdee" font-size="13" text-anchor="middle">injection / restricted</text>
-  <text x="497" y="641" fill="#a9cdee" font-size="13" text-anchor="middle">→ polite refusal</text>
+  <text x="497" y="623" fill="#a9cdee" font-size="13" text-anchor="middle">refusal · safety warning,</text>
+  <text x="497" y="641" fill="#a9cdee" font-size="13" text-anchor="middle">never sent to the LLM</text>
 
   <line x1="1050" y1="560" x2="1050" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="990" y="604" width="190" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
-  <text x="1085" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">greeting · lone word ·</text>
-  <text x="1085" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">gibberish → direct reply</text>
+  <rect x="945" y="604" width="200" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
+  <text x="1045" y="626" fill="#a9cdee" font-size="12.5" text-anchor="middle">greeting (intro once) · upset ·</text>
+  <text x="1045" y="644" fill="#a9cdee" font-size="12.5" text-anchor="middle">account → short reply / support</text>
 
   <line x1="1300" y1="560" x2="1300" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <rect x="1210" y="604" width="210" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
@@ -216,8 +218,8 @@
   <!-- Search to vector store -->
   <line x1="1260" y1="760" x2="1464" y2="760" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text x="1350" y="748" fill="#48aaee" font-size="17" text-anchor="middle">Hybrid search</text>
-  <text x="1345" y="784" fill="#a9cdee" font-size="13" text-anchor="middle">dense 20 + BM25 20</text>
-  <text x="1345" y="802" fill="#a9cdee" font-size="13" text-anchor="middle">RRF · + sub-questions</text>
+  <text x="1345" y="784" fill="#a9cdee" font-size="13" text-anchor="middle">question + rephrasings</text>
+  <text x="1345" y="802" fill="#a9cdee" font-size="13" text-anchor="middle">(LLM clean-up queries)</text>
 
   <!-- ============ VECTOR STORE REGION ============ -->
   <rect x="1440" y="690" width="330" height="240" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
@@ -235,36 +237,33 @@
   <line x1="1600" y1="890" x2="1600" y2="954" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text x="1614" y="914" fill="#48aaee" font-size="17">Retrieve</text>
 
-  <!-- Rerank -->
-  <rect x="1470" y="960" width="260" height="105" rx="12" fill="#0a4a80"/>
-  <text x="1490" y="996" fill="#fff" font-size="21" font-weight="600">Rerank</text>
-  <text x="1490" y="1020" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
-  <text x="1490" y="1040" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
-  <text x="1490" y="1058" fill="#a9cdee" font-size="13">+ best source per sub-question</text>
-  <line x1="1600" y1="1065" x2="1600" y2="1094" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- CRAG (NEW) -->
-  <rect x="1470" y="1100" width="260" height="140" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="1490" y="1136" fill="#fff" font-size="21" font-weight="600">Corrective RAG</text>
-  <rect x="1666" y="1120" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="1689" y="1133" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
+  <!-- Hybrid fusion (NEW) -->
+  <rect x="1470" y="960" width="260" height="125" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1490" y="995" fill="#fff" font-size="21" font-weight="600">Hybrid fusion</text>
+  <rect x="1666" y="978" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="1689" y="991" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="1490" y="1162">LLM grades each passage</text>
-    <text x="1490" y="1182">drops irrelevant ones</text>
-    <text x="1490" y="1202">none relevant → rewrite,</text>
-    <text x="1490" y="1222">search again · never web</text>
+    <text x="1490" y="1020">dense 40 + BM25 40 per query</text>
+    <text x="1490" y="1040">relative score fusion</text>
+    <text x="1490" y="1060">multi-query (RAG-Fusion)</text>
+    <text x="1490" y="1078" font-size="13">+ each sub-question</text>
   </g>
-  <!-- retry loop -->
-  <path d="M1470 1200 H1428 V850 H1464" fill="none" stroke="#48aaee" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#aha)"/>
-  <text transform="translate(1418 1025) rotate(-90)" fill="#48aaee" font-size="13" text-anchor="middle">rewrite &amp; re-search (once)</text>
+  <line x1="1600" y1="1085" x2="1600" y2="1114" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- Rerank -->
+  <rect x="1470" y="1120" width="260" height="105" rx="12" fill="#0a4a80"/>
+  <text x="1490" y="1156" fill="#fff" font-size="21" font-weight="600">Rerank</text>
+  <text x="1490" y="1180" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
+  <text x="1490" y="1200" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
+  <text x="1490" y="1218" fill="#a9cdee" font-size="13">+ best source per sub-question</text>
 
   <!-- question path into Augment -->
   <path d="M727 560 V1250 H930 V1304" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text transform="translate(717 980) rotate(-90)" fill="#48aaee" font-size="14" text-anchor="middle">normalized question</text>
 
-  <!-- CRAG -> Augment -->
-  <path d="M1600 1240 V1375 H1406" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1500" y="1365" fill="#48aaee" font-size="14" text-anchor="middle">relevant passages</text>
+  <!-- Rerank -> Augment -->
+  <path d="M1600 1225 V1375 H1406" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1500" y="1365" fill="#48aaee" font-size="14" text-anchor="middle">top passages</text>
 
   <!-- Augment frame -->
   <rect x="830" y="1290" width="570" height="170" rx="14" fill="none" stroke="#ffffff" stroke-width="2"/>
@@ -274,7 +273,7 @@
   <g fill="#a9cdee" font-size="13.5">
     <text x="1025" y="1360">one source per parent [S1]–[S5]</text>
     <text x="1025" y="1380">answer only from sources · cite [S#]</text>
-    <text x="1025" y="1400">infer intent, never fix spelling</text>
+    <text x="1025" y="1400">reply in EN · Hindi · Hinglish</text>
     <text x="1025" y="1420">untrusted data · ≤ 9,000 chars</text>
   </g>
   <g fill="#3a9be3">
@@ -304,7 +303,7 @@
   <line x1="410" y1="1435" x2="410" y2="1460" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <rect x="270" y="1466" width="285" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
   <text x="412" y="1487" fill="#a9cdee" font-size="13" text-anchor="middle">fails → quote the source extract,</text>
-  <text x="412" y="1505" fill="#a9cdee" font-size="13" text-anchor="middle">or "insufficient information"</text>
+  <text x="412" y="1505" fill="#a9cdee" font-size="13" text-anchor="middle">or "no confirmed info → support"</text>
 
   <rect x="40" y="1320" width="210" height="115" rx="12" fill="#0a4a80"/>
   <text x="145" y="1360" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Response</text>
@@ -325,12 +324,12 @@
     <text x="80" y="1697">GitHub · learningchain-assistant</text>
     <rect x="410" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
     <text x="430" y="1652" fill="#fff" font-size="20" font-weight="600">Test</text>
-    <text x="430" y="1677">pytest suite · 250 tests</text>
+    <text x="430" y="1677">pytest suite · 304 tests</text>
     <text x="430" y="1697">mocked APIs · no keys needed</text>
     <rect x="760" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
     <text x="780" y="1652" fill="#fff" font-size="20" font-weight="600">Evaluate</text>
     <text x="780" y="1677">dashboard :8502 · CSV export</text>
-    <text x="780" y="1697">retrieval · RAGAS · CRAG A/B</text>
+    <text x="780" y="1697">retrieval · RAGAS · fusion A/B</text>
     <rect x="1110" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
     <text x="1130" y="1652" fill="#fff" font-size="20" font-weight="600">Docker build</text>
     <text x="1130" y="1677">python 3.12-slim · non-root</text>

@@ -28,7 +28,7 @@ FLAT_COLUMNS = [
     "faithfulness", "answer_relevancy", "answer_correctness", "ragas_context_precision", "ragas_context_recall",
     "lexical_f1", "total_claims", "unsupported_claims", "contradicted_claims", "hallucination_rate",
     "latency_ms", "retrieval_ms", "llm_total_ms", "ttft_ms", "prompt_tokens", "completion_tokens", "cost_usd",
-    "model", "conversation_intent", "crag_action", "crag_rewritten_query", "retrieved_chunk_ids", "parent_ids", "context_documents", "ragas_error",
+    "model", "conversation_intent", "normalized_query", "retrieved_chunk_ids", "parent_ids", "context_documents", "ragas_error",
 ]
 
 
@@ -68,8 +68,7 @@ def flatten(q: dict[str, Any]) -> dict[str, Any]:
         "ttft_ms": run.get("ttft_ms"), "prompt_tokens": run.get("prompt_tokens"),
         "completion_tokens": run.get("completion_tokens"), "cost_usd": run.get("cost_usd"), "model": run.get("model"),
         "conversation_intent": (run.get("route") or {}).get("conversation_intent", ""),
-        "crag_action": ((run.get("route") or {}).get("crag") or {}).get("action", ""),
-        "crag_rewritten_query": ((run.get("route") or {}).get("crag") or {}).get("rewritten_query", ""),
+        "normalized_query": (run.get("route") or {}).get("normalized_query", ""),
         "retrieved_chunk_ids": "|".join(c["chunk_id"] for c in run.get("retrieved", [])[:config.RETRIEVAL_K]),
         "parent_ids": "|".join(dict.fromkeys(c["parent_id"] for c in run.get("contexts", []) if c.get("parent_id"))),
         "context_documents": "|".join(dict.fromkeys(f"{c['doc_name']} > {c['section']}" for c in run.get("contexts", []))),

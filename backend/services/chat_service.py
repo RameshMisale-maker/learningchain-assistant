@@ -3,8 +3,8 @@
   validate & screen query -> conversational intent layer (greeting / small talk / typo / clarification /
   gibberish answered directly; follow-ups resolved from history) -> follow-up rewrite + abbreviation expansion
   -> route (intent + KBs + ACL) -> golden fast path (approved answer verbatim) -> hybrid retrieval per KB
-  (per entity for comparisons) -> rerank -> CRAG relevance grading (+ rewrite & re-retrieve when nothing is
-  relevant) -> context selection -> LLM generation (or extractive fallback)
+  (dense + BM25, multi-query fusion, per entity for comparisons) -> rerank -> context selection
+  -> LLM generation (or extractive fallback)
   -> grounding / hallucination check -> citations -> persist history, metrics and audit
 """
 from __future__ import annotations
@@ -23,7 +23,6 @@ from backend.generation.grounding import (REFUSAL_TEXT, GroundingReport, cited_i
                                           remove_unknown_urls)
 from backend.generation.llm_client import LLMClient, LLMRefusal, LLMResult, get_llm
 from backend.generation.prompt_builder import SourceRef, build_answer_prompt, select_context
-from backend.retrieval.crag import CragReport, RelevanceGrader, apply_grades
 from backend.retrieval.golden_matcher import GoldenMatch, GoldenMatcher
 from backend.retrieval.hybrid import Candidate, HybridRetriever
 from backend.retrieval.kb_index import get_index_manager
@@ -43,9 +42,25 @@ logger = logging.getLogger(__name__)
 
 GREETING_TEXT = ("Hello! I'm the Sapphirus AI Assistant. Ask me about our company, services, products or "
                  "policies, and I'll answer from the approved knowledge base with sources.")
-OUT_OF_SCOPE_TEXT = ("I'm sorry, but that's outside what I can help with. I can answer questions about Sapphirus and "
-                     "its LearningChain platform - for example issuing, sharing or verifying blockchain certificates, "
-                     "the admin and user portals, or Sapphirus company information.")
+OUT_OF_SCOPE_TEXT = ("I can only help with Sapphirus Systems and LearningChain - for example, I can explain how to "
+                     "verify a certificate.")
+# Never send the same reply twice in a row: second wording for the fixed replies (by answer_type).
+REPEAT_ALTERNATIVES = {
+    "refusal": ("I still don't have confirmed information on that. Our support team can help: email "
+                "info@sapphirus.in or call +91 96531 57225."),
+    "error": "I still couldn't get an answer for that. Please try again in a moment, or contact info@sapphirus.in.",
+    "out_of_scope": ("That's outside what I can help with, but I'm happy to answer anything about Sapphirus or "
+                     "LearningChain - for example, what LearningChain's key features are."),
+    "clarification": "Could you share a little more detail - for example, which feature or page you mean?",
+    "greeting": "How can I help you today?",
+    "account": ("As mentioned, I can't see account details here - please log in to your account, or contact our "
+                "support team at info@sapphirus.in or +91 96531 57225."),
+    "escalation": ("Our support team is the best way to resolve this - please email info@sapphirus.in or call "
+                   "+91 96531 57225."),
+    "sensitive": "Please don't share those details here - they aren't needed. How else can I help?",
+    "restricted": "I can't help with that topic, but I'm happy to help with any Sapphirus or LearningChain question.",
+    "blocked": "I can only help with your own account and Sapphirus / LearningChain questions. What do you need help with?",
+}
 
 
 CLOSING_RE = re.compile(r"^\s*(no|nope|nah|no\s*,?\s*thanks?|no\s*,?\s*thank\s*(you|u)|no\s+more(\s+questions?)?|"
@@ -61,32 +76,33 @@ def is_closing(text: str) -> bool:
     return bool(CLOSING_RE.match(text or ""))
 
 
-def small_talk_reply(text: str, roles: set[str]) -> str:
-    """Friendly reply for greetings / small talk, tailored to the kind of message and the user's access."""
+def small_talk_reply(text: str, roles: set[str], first: bool = True) -> str:
+    """Short reply for greetings / small talk (one sentence). The assistant introduces itself only on the first
+    message of a conversation."""
     t = text.strip().lower()
     if is_closing(t):
         return CLOSING_TEXT
-    topics = ("Sapphirus Systems - our company, services and products - and LearningChain - features, issuing and "
-              "verifying blockchain certificates, and how-to guides")
-    examples = ("e.g. *\"How do I verify a student certificate?\"*, *\"What are the key features of LearningChain?\"* "
-                "or *\"How do I revoke a certificate?\"*")
     if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)\b", t):
-        return f"Great! What would you like to know? You can ask me about {topics}."
-    if re.match(r"^(thanks|thank|thx|ty|great|cool|nice|awesome|perfect|ok|okay|got it)", t):
-        return "You're welcome! Is there anything else you'd like to know about Sapphirus or LearningChain?"
+        return "Great - what would you like to know?"
+    if re.match(r"^(thanks|thank|thx|ty)", t):
+        return "You're welcome! Anything else I can help with?"
+    if re.match(r"^(great|cool|nice|awesome|perfect|ok|okay|got it)", t):
+        return "Glad that helps - anything else I can help with?"
     if re.match(r"^(bye|goodbye|good\s*bye|see you|see ya|take care)", t):
         return ("Thank you for visiting Sapphirus! Have a great day. If you need anything later, reach us at "
                 "info@sapphirus.in or +91 96531 57225.")
     if re.match(r"^how are you", t):
-        return f"I'm doing great, thank you for asking! How can I help you today? You can ask me about {topics}."
+        return "I'm doing well, thanks for asking! How can I help?"
     if re.match(r"^(who are you|what are you|what is your name|are you)", t):
-        return ("I'm the Sapphirus Assistant - a virtual assistant from Sapphirus Systems. I answer questions about "
-                f"{topics}, using Sapphirus's approved information and showing the sources.")
+        return "I'm the Sapphirus Assistant - I answer questions about Sapphirus Systems and LearningChain."
     if re.match(r"^(what can you do|how can you help|help)", t):
-        return f"I can answer questions about {topics}. Try asking, {examples}."
-    m = re.match(r"^good\s+(morning|afternoon|evening|day)", t)
-    hello = f"Good {m.group(1)}!" if m else "Hello!"
-    return f"{hello} Welcome to Sapphirus Systems. I'm the Sapphirus Assistant. How can I help you today? You can ask me about {topics}."
+        return ("I can answer questions about Sapphirus Systems and LearningChain - for example, how to issue, share or "
+                "verify certificates.")
+    m = re.match(r"^(good|gud|gd)\s*(morning|afternoon|evening|day)", t)
+    hello = f"Good {m.group(2)}!" if m else "Hello!"
+    if first:
+        return f"{hello} I'm the Sapphirus Assistant. How can I help you with Sapphirus Systems or LearningChain today?"
+    return f"{hello} How can I help?" if m else "Hi again! How can I help?"
 CONTACT_HINT = (" Our team will be happy to help - please contact us at info@sapphirus.in, call +91 96531 57225, "
                 "or use https://sapphirus.in/contacts/.")
 AMBIGUOUS_MIN_SCORE = 0.35
@@ -166,7 +182,6 @@ class ChatService:
         self.reranker = reranker or get_reranker()
         self.golden = golden or GoldenMatcher(self.embedder)
         self.router = router or QueryRouter(self.settings, self.embedder, llm=self.llm)
-        self.grader = RelevanceGrader(self.llm, self.settings) if self.llm is not None else None
 
     # ================================================================== public API
     def answer(self, question: str, user: AuthenticatedUser, session_id: str | None = None,
@@ -200,6 +215,12 @@ class ChatService:
             response.answer, response.citations = self.settings.insufficient_info_text, []
         elif response.answer_type == "out_of_scope":
             response.answer, response.citations = self.settings.out_of_scope_text, []
+        # never send exactly the same reply twice in a row
+        previous = next((h for h in reversed(history) if h.get("role") == "assistant"), None)
+        if previous and str(previous.get("content", "")).strip() == response.answer.strip():
+            alternative = REPEAT_ALTERNATIVES.get(response.answer_type)
+            if alternative and alternative.strip() != response.answer.strip():
+                response.answer = alternative
         response.latency_ms = round((time.perf_counter() - started) * 1000, 1)
         response.timings = timings.as_dict() | {"end_to_end_ms": response.latency_ms}
         if record_metrics if record_metrics is not None else persist:
@@ -262,7 +283,7 @@ class ChatService:
             with stage("intent_ms"):
                 message = convo.classify_message(query, history, known_word=self._known_word,
                                                  llm=self.llm if s.conversation_llm_intent else None)
-            direct = self._conversational_response(message, query, user, session_id)
+            direct = self._conversational_response(message, query, user, session_id, history)
             if direct is not None:
                 if understanding:
                     direct.route.update(understanding.to_dict())
@@ -300,7 +321,8 @@ class ChatService:
                     route=route.to_dict() | {"rewritten_query": standalone} | info)
 
         if route.intent == "greeting":
-            return ChatResponse(answer=small_talk_reply(query, user.roles),
+            first = not any(h.get("role") == "assistant" for h in history)
+            return ChatResponse(answer=small_talk_reply(query, user.roles, first=first),
                                 answer_type="closing" if is_closing(query) else "greeting", confidence=1.0,
                                 **base)
         if route.intent == "out_of_scope":
@@ -354,8 +376,13 @@ class ChatService:
                     sub_questions = decompose(standalone, self.llm)
 
         # ---------------- retrieval + rerank
+        # phrasings for multi-query hybrid search: the plain question (synonym expansion can dilute it) and the LLM
+        # clean-up's search queries when it ran (typos, Hindi / Hinglish, vague wording)
+        variants = [standalone] if standalone != expanded else []
+        if understanding and len(understanding.search_queries) <= 1:
+            variants += [self.router.expand(q) for q in understanding.search_queries]
         with stage("retrieval_ms"):
-            candidates = self._retrieve(expanded, route, user.roles, qvec)
+            candidates = self._retrieve(expanded, route, user.roles, qvec, variants=variants)
             sub_pools = self._retrieve_sub_questions(sub_questions, route, user.roles, candidates)
         if golden_best and GoldenMatcher.is_assist(golden_best) and golden_best.chunk.id not in {c.id for c in candidates}:
             candidates.append(Candidate(chunk=golden_best.chunk, kb=golden_best.kb, fused_score=0.0))
@@ -402,17 +429,7 @@ class ChatService:
                                 retrieved=retrieved_dbg, **base)
         if route.ambiguous and top:
             kbs_used = sorted({c.kb for c in top[:3]})
-        # Corrective RAG: the LLM grades the selected passages; irrelevant ones are dropped, and when nothing relevant
-        # was found the question is rewritten and the knowledge base searched once more (backend/retrieval/crag.py)
-        crag: CragReport | None = None
-        if self.grader is not None and s.crag_enabled:
-            with stage("crag_ms"):
-                weak = not top or self._insufficient(expanded, top)
-                top, crag = self._corrective_rag(standalone, route, user.roles, [] if weak else top)
-            base["route"]["crag"] = crag.to_dict()
-            if top:
-                kbs_used = sorted({c.kb for c in top})
-        if not top or (not (crag and crag.verified) and self._insufficient(expanded, top)):
+        if not top or self._insufficient(expanded, top):
             return ChatResponse(answer=REFUSAL_TEXT, answer_type="refusal", knowledge_bases=kbs_used,
                                 golden_match=golden_info, retrieved=retrieved_dbg, **base)
 
@@ -500,7 +517,7 @@ class ChatService:
         except Exception:   # metrics must never break a user request
             logger.exception("Could not record request metrics")
 
-    # ------------------------------------------------------------------ conversational layer + CRAG
+    # ------------------------------------------------------------------ conversational layer + scope
     @staticmethod
     def _known_word(word: str) -> bool:
         """A common English function word or a term that occurs in an indexed knowledge base."""
@@ -511,15 +528,19 @@ class ChatService:
         return any(token in manager.get(kb).doc_freq for kb in manager.kb_names())
 
     def _conversational_response(self, message: convo.MessageIntent, query: str, user: AuthenticatedUser,
-                                 session_id: str) -> ChatResponse | None:
+                                 session_id: str, history: list[dict] | None = None) -> ChatResponse | None:
         """Direct reply (no retrieval, no LLM) for messages that are not knowledge questions; None otherwise."""
         if message.needs_rag:
             return None
         route = {"intent": "greeting", "knowledge_bases": [], **message.to_dict()}
         if message.intent in (convo.GREETING, convo.SMALL_TALK):
-            return ChatResponse(answer=small_talk_reply(query, user.roles), session_id=session_id, message_id=None,
-                                answer_type="closing" if is_closing(query) else "greeting", confidence=1.0,
-                                route=route)
+            first = not any(h.get("role") == "assistant" for h in (history or []))
+            return ChatResponse(answer=small_talk_reply(query, user.roles, first=first), session_id=session_id,
+                                message_id=None, answer_type="closing" if is_closing(query) else "greeting",
+                                confidence=1.0, route=route)
+        if message.intent == convo.FRUSTRATION:
+            return ChatResponse(answer=message.reply, session_id=session_id, message_id=None,
+                                answer_type="frustration", confidence=1.0, route=route | {"intent": "frustration"})
         if message.intent in (convo.ACCOUNT, convo.ESCALATION):
             return ChatResponse(answer=message.reply, session_id=session_id, message_id=None,
                                 answer_type="account" if message.intent == convo.ACCOUNT else "escalation",
@@ -577,46 +598,6 @@ class ChatService:
             candidates += self.retriever.retrieve(query, kb, roles, top_n=10, query_vector=qvec)
         ranked = self.reranker.rerank(query, candidates) if candidates else []
         return ranked[0].rerank_score if ranked else 0.0
-
-    def _corrective_rag(self, question: str, route: RouteDecision, roles: set[str],
-                        top: list[Candidate]) -> tuple[list[Candidate], CragReport]:
-        """CRAG: grade -> keep relevant passages; nothing relevant -> rewrite, re-retrieve (KB only), grade again."""
-        s = self.settings
-        if top:
-            verdicts = self.grader.grade(question, top)
-            if verdicts is None:                       # grader unavailable: fail open, keep the reranked passages
-                return top, CragReport(action="grader_error", graded=len(top), relevant=len(top))
-            kept, dropped = apply_grades(top, verdicts)
-            if kept:
-                return kept, CragReport(action="correct" if not dropped else "filtered", graded=len(top),
-                                        relevant=len(kept), dropped_ids=dropped)
-            report = CragReport(action="incorrect", graded=len(top), dropped_ids=dropped)
-        else:
-            report = CragReport(action="incorrect")
-        if not s.crag_retry:
-            return [], report
-        rewritten = self.grader.rewrite(question)
-        report.retried, report.rewritten_query = True, rewritten
-        if not rewritten:
-            return [], report
-        expanded = self.router.expand(rewritten)
-        qvec = self.embedder.embed_query(expanded)
-        candidates = self._retrieve(expanded, route, roles, qvec)
-        present = {c.id for c in candidates}
-        for m in self._golden_assists(expanded, route, roles, qvec):
-            if m.chunk.id not in present:
-                candidates.append(Candidate(chunk=m.chunk, kb=m.kb, fused_score=0.0))
-        reranked = self.reranker.rerank(expanded, candidates) if candidates else []
-        retry_top = [c for c in reranked if c.rerank_score >= s.min_rerank_score][:s.top_k_rerank]
-        verdicts = self.grader.grade(question, retry_top)   # graded against the user's ORIGINAL question
-        if not verdicts:
-            return [], report
-        kept, dropped = apply_grades(retry_top, verdicts)
-        report.graded += len(retry_top)
-        report.dropped_ids += dropped
-        if kept:
-            report.action, report.relevant = "corrected", len(kept)
-        return kept, report
 
     def _golden_response(self, golden_best: GoldenMatch, golden_info: dict | None, base: dict,
                          answer_type: str = "golden_direct") -> ChatResponse:
@@ -712,7 +693,10 @@ class ChatService:
             have.add(best.id)
         return out
 
-    def _retrieve(self, query: str, route: RouteDecision, roles: set[str], qvec, top_n: int = 25) -> list[Candidate]:
+    def _retrieve(self, query: str, route: RouteDecision, roles: set[str], qvec, top_n: int = 25,
+                  variants: list[str] | None = None) -> list[Candidate]:
+        """Hybrid retrieval per routed KB. `variants`: further phrasings of the same question - when given (and
+        MULTI_QUERY_RETRIEVAL is on) every phrasing is searched and the lists are fused (retrieve_multi)."""
         merged: dict[str, Candidate] = {}
         if route.intent == "comparison" and len(route.entities) >= 2:
             for entity in route.entities:
@@ -726,8 +710,16 @@ class ChatService:
                         if cand.id not in merged or cand.fused_score > merged[cand.id].fused_score:
                             merged[cand.id] = cand
         else:
+            phrasings = list(dict.fromkeys([query] + [v for v in (variants or []) if v and v.strip()]))
+            phrasings = phrasings[: max(1, self.settings.multi_query_max)]
+            multi = self.settings.multi_query_retrieval and len(phrasings) > 1
+            vectors = [qvec] + [self.embedder.embed_query(v) for v in phrasings[1:]] if multi else None
             for kb in route.knowledge_bases:
-                for cand in self.retriever.retrieve(query, kb, roles, top_n=top_n, entities=route.entities, query_vector=qvec):
+                found = (self.retriever.retrieve_multi(phrasings, kb, roles, top_n=top_n, entities=route.entities,
+                                                       query_vectors=vectors) if multi else
+                         self.retriever.retrieve(query, kb, roles, top_n=top_n, entities=route.entities,
+                                                 query_vector=qvec))
+                for cand in found:
                     merged[cand.id] = cand
         return list(merged.values())
 

@@ -43,12 +43,17 @@ OUT_OF_SCOPE = "OUT_OF_SCOPE_QUERY"
 GIBBERISH = "UNKNOWN_OR_GIBBERISH"
 ACCOUNT = "ACCOUNT_SPECIFIC"          # this user's own payment / receipt / verification status - no lookup tools
 ESCALATION = "ESCALATION"            # complaint, refund dispute, legal or harassment issue -> human support
+FRUSTRATION = "FRUSTRATION"          # anger, insults, swearing: stay calm, ask what went wrong
 INTENTS = (GREETING, SMALL_TALK, TYPO_OR_INCOMPLETE, CLARIFICATION, KNOWLEDGE, FOLLOW_UP, OUT_OF_SCOPE, GIBBERISH, ACCOUNT,
-           ESCALATION)
+           ESCALATION, FRUSTRATION)
 
 EXAMPLES = ('*"What is LearningChain?"*, *"How do I verify a certificate?"* or '
             '*"What are the key features of LearningChain?"*')
-INCOMPLETE_REPLY = "Sure - what would you like to know? Please share your full question, for example: *{hint}*"
+INCOMPLETE_REPLY = "Sure - what would you like to know? Please share your full question."
+FRUSTRATION_REPLY = ("Sorry you're having a frustrating time. What's going wrong? I'll do my best to help, or I can "
+                     "connect you with our support team.")
+FRUSTRATION_AGAIN_REPLY = ("I'm really sorry this still isn't working for you. Our support team can help you directly: "
+                           "email info@sapphirus.in or call +91 96531 57225. Or tell me what went wrong and I'll try again.")
 REPHRASE_TEXT = ("Sorry, I couldn't understand that. Could you rephrase your question? You can ask me about "
                  f"LearningChain - for example {EXAMPLES}")
 
@@ -97,6 +102,7 @@ OUT_OF_SCOPE_RE = re.compile(
     r"write\s+(me\s+)?(a\s+)?(code|program|essay|story|poem)|play\s+a\s+game|translate\b|capital\s+of|"
     r"president\s+of|prime\s+minister)\b", re.IGNORECASE)
 SUPPORT_CONTACT = "email **info@sapphirus.in** or call **+91 96531 57225**"
+SUPPORT_CONTACT_PLAIN = "email info@sapphirus.in or call +91 96531 57225"
 ACCOUNT_RE = re.compile(
     r"\b(has|have|did|is|was|were|are)\s+(my|our)\s+(payment|transaction|refund|order|subscription|verification|"
     r"certificate|application|receipt|invoice)s?\b|"
@@ -107,8 +113,15 @@ ACCOUNT_RE = re.compile(
     r"transaction history)\b|\bmoney (was |got )?deducted\b", re.IGNORECASE)
 ESCALATION_RE = re.compile(
     r"\b(complain\w*|harass\w*|abusive|legal action|legal notice|lawyer|lawsuit|sue (you|sapphirus)|consumer (court|forum)|"
-    r"(want|need|demand|give me)\s+(a\s+|my\s+)?(refund|money back)|refund\s+(is\s+)?(not|never|still)\b|"
-    r"(worst|pathetic|useless|terrible)\s+(service|support|app|experience))", re.IGNORECASE)
+    r"(want|need|demand|give me)\s+(a\s+|my\s+)?(refund|money back)|refund\s+(is\s+)?(not|never|still)\b)",
+    re.IGNORECASE)
+FRUSTRATION_RE = re.compile(
+    r"\b(go to hell|shut up|get lost|screw (you|this)|damn|dammit|wtf|wth|f+u+c+k\w*|f\*+\w*|sh[i1]t\w*|bullshit|crap|"
+    r"idiot\w*|stupid|dumb|moron\w*|useless|pathetic|rubbish|nonsense|garbage|trash|worthless|hopeless|"
+    r"waste of (my )?time|not (at all )?helpful|no help|you (are|r) (bad|terrible|horrible|the worst)|"
+    r"(worst|terrible|horrible|awful|bad) (bot|app|service|support|experience|chatbot|assistant)|"
+    r"(i hate|hate) (you|this)|so annoying|frustrat\w*|fed up|sick of (this|you))\b|"
+    r"\b(this|it|you) (sucks?|is (so )?bad)\b", re.IGNORECASE)
 ACCOUNT_REPLY = ("I can't see your personal account details (payments, receipts or verification status) in this chat. "
                  "Please log in to your account to check it, or contact our support team: " + SUPPORT_CONTACT + ".")
 ESCALATION_REPLY = ("I'm sorry about this. Our support team will look into it personally - please " + SUPPORT_CONTACT +
@@ -205,6 +218,25 @@ def _looks_gibberish(word: str, known: Callable[[str], bool]) -> bool:
     return False
 
 
+def _last_assistant(history: list[dict]) -> dict | None:
+    return next((h for h in reversed(history or []) if h.get("role") == "assistant"), None)
+
+
+def frustration_reply(history: list[dict]) -> tuple[str, bool]:
+    """Calm, short reply to frustration. Second frustrated message in a row -> offer the support team. Otherwise
+    offer to retry the user's last real question when there is one."""
+    last = _last_assistant(history)
+    if last and last.get("answer_type") == "frustration":
+        return FRUSTRATION_AGAIN_REPLY, True
+    prev_q = next((h.get("content", "") for h in reversed(history or []) if h.get("role") == "user"
+                   and not FRUSTRATION_RE.search(h.get("content", "")) and len(_words(h.get("content", ""))) >= 3), "")
+    if prev_q:
+        topic = prev_q.strip().rstrip("?.!")[:80]
+        return (f"Sorry you're having a frustrating time. Was it my answer about \"{topic}\"? Tell me what went wrong "
+                "and I'll try again, or I can connect you with our support team."), True
+    return FRUSTRATION_REPLY, False
+
+
 def _clarify_reply(history: list[dict], message: str) -> tuple[str, bool]:
     prev = last_assistant_answer(history)
     if prev:
@@ -213,9 +245,8 @@ def _clarify_reply(history: list[dict], message: str) -> tuple[str, bool]:
             opts = ", ".join(f'"{i}"' for i in items[:-1]) + f' or "{items[-1]}"' if len(items) > 1 else f'"{items[0]}"'
             return (f"Are you referring to one of the points we discussed earlier - {opts}? "
                     "Please tell me which one and I'll explain it."), True
-        return ("Could you clarify what you'd like to know about my previous answer? For example, you can say "
-                "*\"Tell me more\"* or *\"Explain the second point\"*."), True
-    return f"Could you clarify what you'd like to know? I'll be happy to help - for example {EXAMPLES}", False
+        return "Could you clarify which part of my previous answer you'd like to know more about?", True
+    return "Could you clarify what you'd like to know?", False
 
 
 # ------------------------------------------------------------------------------------------------ classifier
@@ -234,6 +265,12 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     if GREETING_RE.match(t) or AFFIRM_RE.match(t):
         return MessageIntent(SMALL_TALK, reason="small talk")
 
+    # 1b. frustration, anger, insults or swearing: calm acknowledgement, ask what went wrong (support if repeated)
+    real_question = bool(words) and words[0] in QUESTION_WORDS and len(words) >= 4
+    if FRUSTRATION_RE.search(t) and len(words) <= 10 and not real_question:
+        reply, used = frustration_reply(history)
+        return MessageIntent(FRUSTRATION, reply=reply, uses_history=used, reason="frustration")
+
     # 2. no letters at all ("@@@###", "???", "123")
     if not re.search(r"[^\W\d_]", t):
         return MessageIntent(GIBBERISH, reply=REPHRASE_TEXT, reason="no words")
@@ -251,8 +288,7 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
         if has_history:
             return MessageIntent(FOLLOW_UP, uses_history=True, reason="elaboration request")
         return MessageIntent(CLARIFICATION, reason="elaboration without a previous topic",
-                             reply="Sure - which topic would you like me to explain? You can ask me, for example, "
-                                   f"{EXAMPLES}")
+                             reply="Sure - which topic would you like me to explain?")
 
     # 4. a bare interrogative: "What?", "Which one?", "When?"
     if CLARIFY_ONLY_RE.match(t):

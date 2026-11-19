@@ -21,6 +21,8 @@ ALL_KBS = ["products", "company"]
     ("saphirus contact no", "Sapphirus contact number"),
     ("wat r the features of lerning chain pls", "what are the features of LearningChain please"),
     ("is LC free?", "is LearningChain free?"),
+    ("hw to revok a certificat", "how to revoke a certificate"),      # truncated words look "known" (stemmed vocab)
+    ("verificatio steps", "verification steps"),
 ])
 def test_rule_and_fuzzy_normalization(raw, expected):
     assert fuzzy_normalize(raw)[0] == expected

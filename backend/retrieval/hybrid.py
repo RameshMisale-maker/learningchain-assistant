@@ -1,4 +1,6 @@
-"""Hybrid retrieval: dense vector search + BM25 keyword search fused with Reciprocal Rank Fusion.
+"""Hybrid retrieval: dense vector search + BM25 keyword search, fused per query with Reciprocal Rank Fusion
+(HYBRID_FUSION=rrf) or relative score fusion (HYBRID_FUSION=relative); several phrasings of one question can be
+searched together and their result lists fused again with RRF (retrieve_multi, "RAG-Fusion").
 
 Access control is enforced here: chunks whose `access_roles` do not intersect the
 user's roles are never returned (document-level ACL).
@@ -94,15 +96,27 @@ class HybridRetriever:
                     candidates[chunk.id] = cand
                 cand.bm25_score, cand.bm25_rank = float(scores[pos]), rank
 
-        # ---- Reciprocal Rank Fusion (+ entity boost)
+        # ---- fusion (+ entity boost)
         wv, wb, k = s.vector_weight, 1.0 - s.vector_weight, s.rrf_k
         entity_set = {e.lower() for e in (entities or [])}
+        relative = s.hybrid_fusion == "relative"
+        if relative:   # min-max normalise each list's scores to 0..1 (only chunks that list returned)
+            v_scores = [c.vector_score for c in candidates.values() if c.vector_rank]
+            b_scores = [c.bm25_score for c in candidates.values() if c.bm25_rank]
+            v_lo, v_hi = (min(v_scores), max(v_scores)) if v_scores else (0.0, 1.0)
+            b_lo, b_hi = (min(b_scores), max(b_scores)) if b_scores else (0.0, 1.0)
         for cand in candidates.values():
             fused = 0.0
-            if cand.vector_rank:
-                fused += wv / (k + cand.vector_rank)
-            if cand.bm25_rank:
-                fused += wb / (k + cand.bm25_rank)
+            if relative:
+                if cand.vector_rank:
+                    fused += wv * ((cand.vector_score - v_lo) / (v_hi - v_lo) if v_hi > v_lo else 1.0)
+                if cand.bm25_rank:
+                    fused += wb * ((cand.bm25_score - b_lo) / (b_hi - b_lo) if b_hi > b_lo else 1.0)
+            else:
+                if cand.vector_rank:
+                    fused += wv / (k + cand.vector_rank)
+                if cand.bm25_rank:
+                    fused += wb / (k + cand.bm25_rank)
             if entity_set:
                 names = {a.lower() for a in str(cand.meta.get("entity_aliases", "")).split(",") if a}
                 names.add(str(cand.meta.get("entity_name", "")).lower())
@@ -113,6 +127,27 @@ class HybridRetriever:
             cand.fused_score = fused
         ranked = sorted(candidates.values(), key=lambda c: c.fused_score, reverse=True)
         return ranked[:top_n]
+
+    def retrieve_multi(self, queries: list[str], kb: str, roles: set[str], top_n: int = 30,
+                       entities: list[str] | None = None, query_vectors: list | None = None) -> list[Candidate]:
+        """Multi-query hybrid retrieval: each phrasing gets its own hybrid search, then the ranked lists are fused
+        with RRF, so a chunk found by several phrasings rises and one found by any single phrasing is kept."""
+        k = self.settings.rrf_k
+        fused: dict[str, float] = {}
+        hits: dict[str, int] = {}
+        best: dict[str, Candidate] = {}
+        vectors = query_vectors or [None] * len(queries)
+        for q, qv in zip(queries, vectors):
+            for rank, cand in enumerate(self.retrieve(q, kb, roles, top_n=max(top_n, 30), entities=entities,
+                                                      query_vector=qv), start=1):
+                fused[cand.id] = fused.get(cand.id, 0.0) + 1.0 / (k + rank)
+                hits[cand.id] = hits.get(cand.id, 0) + 1
+                if cand.id not in best or cand.fused_score > best[cand.id].fused_score:
+                    best[cand.id] = cand
+        for cid, cand in best.items():
+            cand.debug["multi_query_hits"] = hits[cid]
+            cand.fused_score = fused[cid]
+        return sorted(best.values(), key=lambda c: c.fused_score, reverse=True)[:top_n]
 
 
 def index_for(kb: str) -> KBIndex:

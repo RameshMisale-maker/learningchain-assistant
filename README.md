@@ -47,8 +47,8 @@ python -m backend.security.manage_users create --username priya --roles employee
 | # | Deliverable | Where |
 |---|---|---|
 | 1 | Requirement analysis | [`docs/01_requirements_analysis.md`](docs/01_requirements_analysis.md) |
-| 2 | End-to-end architecture diagram | [`docs/02_architecture.md`](docs/02_architecture.md), `docs/diagrams/01_*.svg` |
-| 3 | Workflow diagrams (golden, products, HR, routing, ingestion, execution) | [`docs/02_architecture.md`](docs/02_architecture.md), `docs/diagrams/02–07_*.svg` |
+| 2 | End-to-end architecture diagram | [`docs/02_architecture.md`](docs/02_architecture.md), [`docs/diagrams/08_rag_architecture.html`](docs/diagrams/08_rag_architecture.html) |
+| 3 | Workflow diagrams | [`docs/02_architecture.md`](docs/02_architecture.md) (Mermaid), [`docs/diagrams/08_rag_architecture.png`](docs/diagrams/08_rag_architecture.png) |
 | 4 | Technology selection & justification | [`docs/03_technology_selection.md`](docs/03_technology_selection.md) |
 | 5 | Folder structure + per-module responsibilities/dependencies | [`docs/04_folder_structure_and_modules.md`](docs/04_folder_structure_and_modules.md) |
 | 6 | Synthetic datasets | `datasets/`, `knowledge_bases/`, [`docs/05_datasets.md`](docs/05_datasets.md) |

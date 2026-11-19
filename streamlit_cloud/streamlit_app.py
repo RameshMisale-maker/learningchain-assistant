@@ -1,7 +1,7 @@
 """LearningChain Assistant - Streamlit UI (Streamlit Community Cloud demo).
 
 Runs the SAME chatbot pipeline as the FastAPI service (ChatService: conversational layer, guardrails, hybrid
-retrieval, reranking, CRAG, grounding, citations) in-process - no separate API server is needed.
+retrieval (dense + BM25, multi-query), reranking, grounding, citations) in-process - no separate API server is needed.
 
 Configuration
 * Non-secret settings: streamlit_cloud/defaults.env (same values as the production .env, no keys).

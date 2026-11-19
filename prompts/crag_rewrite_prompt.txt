@@ -1,6 +1,0 @@
-The knowledge base search for the question below returned no relevant passages. Rewrite the question as a better
-search query for LearningChain product documentation (user manuals, admin manuals, FAQs, product presentation):
-use the wording such documentation would use, expand vague terms, and keep product names exactly.
-Do not answer the question. Return only the rewritten query on one line.
-
-Question: {question}
