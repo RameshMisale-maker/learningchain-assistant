@@ -41,7 +41,10 @@ KNOWLEDGE = "KNOWLEDGE_QUERY"
 FOLLOW_UP = "FOLLOW_UP_QUERY"
 OUT_OF_SCOPE = "OUT_OF_SCOPE_QUERY"
 GIBBERISH = "UNKNOWN_OR_GIBBERISH"
-INTENTS = (GREETING, SMALL_TALK, TYPO_OR_INCOMPLETE, CLARIFICATION, KNOWLEDGE, FOLLOW_UP, OUT_OF_SCOPE, GIBBERISH)
+ACCOUNT = "ACCOUNT_SPECIFIC"          # this user's own payment / receipt / verification status - no lookup tools
+ESCALATION = "ESCALATION"            # complaint, refund dispute, legal or harassment issue -> human support
+INTENTS = (GREETING, SMALL_TALK, TYPO_OR_INCOMPLETE, CLARIFICATION, KNOWLEDGE, FOLLOW_UP, OUT_OF_SCOPE, GIBBERISH, ACCOUNT,
+           ESCALATION)
 
 EXAMPLES = ('*"What is LearningChain?"*, *"How do I verify a certificate?"* or '
             '*"What are the key features of LearningChain?"*')
@@ -93,6 +96,23 @@ OUT_OF_SCOPE_RE = re.compile(
     r"recipe|cook(ing)?\b|movie|film|song|lyrics|poem|horoscope|astrology|news\s+today|latest\s+news|"
     r"write\s+(me\s+)?(a\s+)?(code|program|essay|story|poem)|play\s+a\s+game|translate\b|capital\s+of|"
     r"president\s+of|prime\s+minister)\b", re.IGNORECASE)
+SUPPORT_CONTACT = "email **info@sapphirus.in** or call **+91 96531 57225**"
+ACCOUNT_RE = re.compile(
+    r"\b(has|have|did|is|was|were|are)\s+(my|our)\s+(payment|transaction|refund|order|subscription|verification|"
+    r"certificate|application|receipt|invoice)s?\b|"
+    r"\b(status|update)\s+of\s+(my|our)\s+(payment|transaction|refund|order|verification|application)\b|"
+    r"\b(my|our)\s+(payment|transaction|refund|order|verification|application)\s+(status|is pending|is not|isn't|"
+    r"failed|went through|gone through|deducted|stuck)\b|"
+    r"\b(check|show|send|get|download)\s+(me\s+)?(my|our)\s+(receipt|invoice|payment status|verification status|"
+    r"transaction history)\b|\bmoney (was |got )?deducted\b", re.IGNORECASE)
+ESCALATION_RE = re.compile(
+    r"\b(complain\w*|harass\w*|abusive|legal action|legal notice|lawyer|lawsuit|sue (you|sapphirus)|consumer (court|forum)|"
+    r"(want|need|demand|give me)\s+(a\s+|my\s+)?(refund|money back)|refund\s+(is\s+)?(not|never|still)\b|"
+    r"(worst|pathetic|useless|terrible)\s+(service|support|app|experience))", re.IGNORECASE)
+ACCOUNT_REPLY = ("I can't see your personal account details (payments, receipts or verification status) in this chat. "
+                 "Please log in to your account to check it, or contact our support team: " + SUPPORT_CONTACT + ".")
+ESCALATION_REPLY = ("I'm sorry about this. Our support team will look into it personally - please " + SUPPORT_CONTACT +
+                    " and share the details there.")
 _KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm", "1234567890")
 _WORD_RE = re.compile(r"[a-z0-9']+")
 
@@ -215,8 +235,16 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
         return MessageIntent(SMALL_TALK, reason="small talk")
 
     # 2. no letters at all ("@@@###", "???", "123")
-    if not re.search(r"[a-zA-Z]", t):
+    if not re.search(r"[^\W\d_]", t):
         return MessageIntent(GIBBERISH, reply=REPHRASE_TEXT, reason="no words")
+    if not words:                       # written only in another script (e.g. Devanagari): a question to answer
+        return MessageIntent(KNOWLEDGE, reason="non-Latin script")
+
+    # 2b. this user's own account (no lookup tools) and complaints / disputes (human support) - fixed replies
+    if ESCALATION_RE.search(t):
+        return MessageIntent(ESCALATION, reply=ESCALATION_REPLY, reason="complaint / dispute -> support")
+    if ACCOUNT_RE.search(t):
+        return MessageIntent(ACCOUNT, reply=ACCOUNT_REPLY, reason="personal account data")
 
     # 3. requests to continue / elaborate - resolved from the conversation, or clarified when there is none
     if ELABORATE_RE.match(t):

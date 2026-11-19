@@ -6,7 +6,8 @@
 <title>Sapphirus Assistant Architecture</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
 <style>
-/* Layout: one wide RAG pipeline diagram (reference style: navy ground, blue blocks, white arrows), then a stage-by-stage reference table. Single deliberate dark look. */
+/* Layout: one tall RAG pipeline diagram (navy ground, blue blocks, white arrows; stages added this week are outlined
+   in light blue with a NEW tag), then the current configuration and a stage-by-stage reference table. */
 :root {
   --bg: #072b4b;
   --panel: #0a4a80;
@@ -25,13 +26,14 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font); font-s
   display: grid; gap: 28px; }
 header { display: grid; gap: 6px; }
 h1 { font-size: 1.9rem; font-weight: 700; margin: 0; text-wrap: balance; }
-header p { margin: 0; color: var(--muted); max-width: 70ch; }
+header p { margin: 0; color: var(--muted); max-width: 75ch; }
 .diagram { overflow-x: auto; border-radius: 14px; }
 .diagram svg { display: block; width: 100%; min-width: 980px; height: auto; }
 h2 { font-size: 1.2rem; margin: 0 0 10px; font-weight: 700; }
 .facts { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { background: var(--panel-2); border: 1px solid #1d5a8f; border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--muted); }
 .chip b { color: var(--fg); font-weight: 600; }
+.chip.new { border-color: var(--accent); }
 .tbl { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 640px; }
 th, td { text-align: left; padding: 10px 12px; vertical-align: top; border-bottom: 1px solid #164d7d; }
@@ -39,23 +41,27 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: v
 td:first-child { font-weight: 600; white-space: nowrap; }
 td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
 .phase td { background: var(--panel-2); color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: var(--accent); color: #072b4b; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; vertical-align: 2px; }
 </style>
 </head>
 <body style="margin:0">
 <div class="wrap">
 <header>
   <h1>Sapphirus AI Assistant: RAG architecture</h1>
-  <p>How the chatbot indexes LearningChain help content and answers a website visitor's question, drawn from the current code and <code>.env</code> defaults.</p>
+  <p>How the chatbot indexes LearningChain and Sapphirus content and answers a visitor's question, drawn from the current code and configuration (19 Nov 2026). Stages outlined in light blue with a <span class="tag">NEW</span> tag were added this week.</p>
 </header>
 
-<div class="diagram" role="img" aria-label="Architecture diagram: indexing pipeline at the top, question-answering pipeline below, sharing one vector store.">
-<svg viewBox="0 0 1800 1530" xmlns="http://www.w3.org/2000/svg" font-family="Open Sans, Segoe UI, sans-serif">
+<div class="diagram" role="img" aria-label="Architecture diagram: indexing pipeline at the top; the answering pipeline with safety guard, query normalization, conversation layer, router and scope check, golden match, hybrid search, rerank, Corrective RAG, augmentation, generation and grounding; deployment at the bottom.">
+<svg viewBox="0 0 1800 2030" xmlns="http://www.w3.org/2000/svg" font-family="Open Sans, Segoe UI, sans-serif">
   <defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
       <path d="M0 0 L10 5 L0 10 z" fill="#ffffff"/>
     </marker>
     <marker id="ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M0 0 L10 5 L0 10 z" fill="#7d9bbb"/>
+    </marker>
+    <marker id="aha" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#48aaee"/>
     </marker>
     <symbol id="nn" viewBox="0 0 180 130">
       <g stroke="#48aaee" stroke-width="1.6" fill="none">
@@ -72,32 +78,34 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     </symbol>
   </defs>
 
-  <rect width="1800" height="1530" fill="#072b4b"/>
+  <rect width="1800" height="2030" fill="#072b4b"/>
 
   <!-- ============ INDEXING REGION ============ -->
   <rect x="30" y="30" width="1740" height="340" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
   <text x="60" y="80" fill="#fff" font-size="28" font-weight="600">Indexing</text>
 
   <!-- Sources -->
-  <rect x="60" y="100" width="240" height="256" rx="12" fill="#0a4a80"/>
+  <rect x="60" y="100" width="250" height="256" rx="12" fill="#0a4a80"/>
   <text x="80" y="138" fill="#fff" font-size="22" font-weight="600">Sources</text>
   <g fill="#a9cdee" font-size="15">
-    <text x="80" y="172">Help-centre articles</text>
-    <text x="80" y="200">LearningChain FAQ</text>
-    <text x="80" y="228">Admin uploads</text>
-    <text x="80" y="256">PDF · DOCX · MD · CSV</text>
-    <text x="80" y="284">Golden Q&amp;A (CSV)</text>
-    <text x="80" y="312">Training manuals + deck (PDF)</text>
-    <text x="80" y="340">Web pages via Firecrawl</text>
+    <text x="80" y="172">Help-centre articles · FAQ</text>
+    <text x="80" y="200">learningchain.in pages</text>
+    <text x="80" y="228" fill="#ffffff">sapphirus.in · 57 pages</text>
+    <text x="80" y="256">Training manuals + deck (PDF)</text>
+    <text x="80" y="284">Golden Q&amp;A · 2 CSVs</text>
+    <text x="80" y="312">Admin uploads</text>
+    <text x="80" y="340">PDF · DOCX · MD · CSV</text>
   </g>
-  <line x1="300" y1="180" x2="344" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="245" y="214" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="268" y="227" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
+  <line x1="310" y1="180" x2="344" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
   <!-- Queue -->
   <rect x="350" y="120" width="230" height="120" rx="12" fill="#0a4a80"/>
   <text x="370" y="158" fill="#fff" font-size="21" font-weight="600">Ingestion queue</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="370" y="185">upload · CLI sync</text>
-    <text x="370" y="205">Firecrawl monitor · webhook</text>
+    <text x="370" y="185">upload · CLI sync · crawl</text>
+    <text x="370" y="205">web monitor · webhook</text>
     <text x="370" y="225">3 tries, backoff</text>
   </g>
   <line x1="580" y1="180" x2="614" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
@@ -108,7 +116,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <g fill="#a9cdee" font-size="14">
     <text x="640" y="185">type · size · macros</text>
     <text x="640" y="205">SHA-256 dedupe</text>
-    <text x="640" y="225">clean text · OCR (opt.)</text>
+    <text x="640" y="225">clean text · OCR off (PII)</text>
   </g>
   <text x="905" y="165" fill="#48aaee" font-size="18" text-anchor="middle">Chunking</text>
   <line x1="860" y1="180" x2="944" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
@@ -135,7 +143,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
 
   <!-- Embedding model (indexing) -->
   <text x="1600" y="78" fill="#fff" font-size="19" font-weight="600" text-anchor="middle">Embedding model</text>
-  <text x="1600" y="100" fill="#a9cdee" font-size="14" text-anchor="middle">BAAI/bge-small-en-v1.5</text>
+  <text x="1600" y="100" fill="#a9cdee" font-size="14" text-anchor="middle">BAAI/bge-small-en-v1.5 (local)</text>
   <use href="#nn" x="1510" y="112" width="180" height="125"/>
   <line x1="1600" y1="242" x2="1600" y2="282" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
   <text x="1614" y="268" fill="#48aaee" font-size="17">Vectorize children</text>
@@ -151,242 +159,332 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     </g>
   </g>
 
-  <!-- ============ VECTOR STORE REGION ============ -->
-  <rect x="1440" y="395" width="330" height="275" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
-  <text transform="translate(1755 532) rotate(-90)" fill="#fff" font-size="20" font-weight="600" text-anchor="middle">Vector store</text>
-  <line x1="1600" y1="356" x2="1600" y2="424" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1614" y="390" fill="#48aaee" font-size="17">Index</text>
+  <!-- ============ ROW A: question understanding ============ -->
+  <text x="40" y="425" fill="#7d9bbb" font-size="15" font-weight="600" letter-spacing="1">ANSWERING</text>
 
-  <path d="M1470 445 V575 A130 18 0 0 0 1730 575 V445 Z" fill="#0a4a80" stroke="#ffffff" stroke-width="2"/>
-  <ellipse cx="1600" cy="445" rx="130" ry="18" fill="#0d5a98" stroke="#ffffff" stroke-width="2"/>
-  <text x="1600" y="488" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Chroma · dense vectors</text>
-  <text x="1600" y="516" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">BM25 · keyword index</text>
-  <text x="1600" y="542" fill="#a9cdee" font-size="14" text-anchor="middle">841 chunks · 213 parents · 22 docs</text>
-  <text x="1600" y="562" fill="#a9cdee" font-size="14" text-anchor="middle">parent text + access metadata</text>
-
-  <line x1="1600" y1="594" x2="1600" y2="694" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1614" y="650" fill="#48aaee" font-size="17">Retrieve</text>
-
-  <!-- ============ QUERY ROW ============ -->
   <!-- User -->
-  <rect x="40" y="440" width="150" height="120" rx="12" fill="#0a4a80"/>
-  <text x="115" y="490" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">User</text>
-  <text x="115" y="518" fill="#a9cdee" font-size="13" text-anchor="middle">website widget</text>
-  <text x="115" y="537" fill="#a9cdee" font-size="13" text-anchor="middle">/chat · Open WebUI</text>
-  <line x1="190" y1="500" x2="219" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="40" y="440" width="145" height="120" rx="12" fill="#0a4a80"/>
+  <text x="112" y="482" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">User</text>
+  <text x="112" y="510" fill="#a9cdee" font-size="13" text-anchor="middle">website · /chat</text>
+  <text x="112" y="529" fill="#a9cdee" font-size="13" text-anchor="middle">Streamlit demo</text>
+  <text x="112" y="548" fill="#a9cdee" font-size="13" text-anchor="middle">Open WebUI</text>
+  <line x1="185" y1="500" x2="204" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
   <!-- API -->
-  <rect x="225" y="440" width="190" height="120" rx="12" fill="#0a4a80"/>
-  <text x="245" y="478" fill="#fff" font-size="21" font-weight="600">FastAPI</text>
+  <rect x="210" y="440" width="165" height="120" rx="12" fill="#0a4a80"/>
+  <text x="228" y="478" fill="#fff" font-size="21" font-weight="600">API</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="245" y="505">token auth · roles</text>
-    <text x="245" y="525">30 requests / min</text>
-    <text x="245" y="545">streams the reply</text>
+    <text x="228" y="505">token auth · roles</text>
+    <text x="228" y="525">rate limit</text>
+    <text x="228" y="545">streams the reply</text>
   </g>
-  <line x1="415" y1="500" x2="449" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="375" y1="500" x2="394" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
-  <!-- Guard & rewrite -->
-  <rect x="455" y="440" width="220" height="120" rx="12" fill="#0a4a80"/>
-  <text x="475" y="478" fill="#fff" font-size="21" font-weight="600">Query</text>
+  <!-- Safety guard -->
+  <rect x="400" y="440" width="195" height="120" rx="12" fill="#0a4a80"/>
+  <text x="418" y="478" fill="#fff" font-size="21" font-weight="600">Safety guard</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="475" y="505">≤ 1,000 chars · injection screen</text>
-    <text x="475" y="525">follow-up rewrite · abbreviations</text>
-    <text x="475" y="545">multi-part → sub-questions</text>
+    <text x="418" y="505">≤ 1,000 chars</text>
+    <text x="418" y="525">prompt-injection screen</text>
+    <text x="418" y="545">restricted topics</text>
   </g>
-  <line x1="675" y1="500" x2="709" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="595" y1="500" x2="614" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
-  <!-- Embedding model (query) -->
-  <text x="778" y="425" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Embedding model</text>
-  <use href="#nn" x="715" y="455" width="126" height="91"/>
-  <text x="873" y="486" fill="#48aaee" font-size="15" text-anchor="middle">Vectorize</text>
-  <line x1="845" y1="500" x2="899" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Router -->
-  <rect x="905" y="440" width="180" height="120" rx="12" fill="#0a4a80"/>
-  <text x="925" y="478" fill="#fff" font-size="21" font-weight="600">Router</text>
+  <!-- Normalize (NEW) -->
+  <rect x="620" y="440" width="215" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="638" y="478" fill="#fff" font-size="21" font-weight="600">Normalize</text>
+  <rect x="772" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="795" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="925" y="505">keywords · examples</text>
-    <text x="925" y="525">corpus statistics</text>
-    <text x="925" y="545">in scope? which KB?</text>
+    <text x="638" y="505">typos · wt, hw, pls, abt</text>
+    <text x="638" y="525">saphirus → Sapphirus</text>
+    <text x="638" y="545">fuzzy ≥ 80 · LLM if needed</text>
   </g>
-  <line x1="1085" y1="500" x2="1109" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="835" y1="500" x2="854" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
-  <!-- Golden -->
-  <rect x="1115" y="440" width="190" height="120" rx="12" fill="#0a4a80"/>
-  <text x="1135" y="478" fill="#fff" font-size="21" font-weight="600">Golden match</text>
+  <!-- Conversation layer (NEW) -->
+  <rect x="860" y="440" width="225" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="878" y="478" fill="#fff" font-size="21" font-weight="600">Conversation</text>
+  <rect x="1022" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="1045" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="1135" y="505">approved Q&amp;A answers</text>
-    <text x="1135" y="525">≥ 0.78 → direct answer</text>
-    <text x="1135" y="545">top 3 ≥ 0.50 → context</text>
+    <text x="878" y="505">8 intents · rules first</text>
+    <text x="878" y="525">follow-ups use memory</text>
+    <text x="878" y="545">"tell me more" → rewrite</text>
+  </g>
+  <line x1="1085" y1="500" x2="1104" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- Router + scope (NEW scope check) -->
+  <rect x="1110" y="440" width="215" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1128" y="478" fill="#fff" font-size="21" font-weight="600">Router + scope</text>
+  <g fill="#a9cdee" font-size="14">
+    <text x="1128" y="505">which KB? LearningChain,</text>
+    <text x="1128" y="525">Sapphirus or both</text>
+    <text x="1128" y="545">lenient LLM / semantic</text>
   </g>
 
-  <!-- Search -->
-  <text x="1385" y="486" fill="#48aaee" font-size="18" text-anchor="middle">Search</text>
-  <line x1="1305" y1="500" x2="1464" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1372" y="526" fill="#a9cdee" font-size="13" text-anchor="middle">dense 20 + BM25 20</text>
-  <text x="1372" y="544" fill="#a9cdee" font-size="13" text-anchor="middle">RRF · + sub-questions</text>
+  <!-- PostgreSQL (memory) -->
+  <line x1="292" y1="560" x2="292" y2="618" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <path d="M197 636 V716 A95 12 0 0 0 387 716 V636 Z" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+  <ellipse cx="292" cy="636" rx="95" ry="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+  <text x="292" y="670" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Database</text>
+  <text x="292" y="692" fill="#a9cdee" font-size="13" text-anchor="middle">history = memory</text>
+  <text x="292" y="710" fill="#a9cdee" font-size="13" text-anchor="middle">feedback · cost · latency</text>
+  <path d="M387 676 H972 V566" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <text x="540" y="668" fill="#7d9bbb" font-size="13" text-anchor="middle">last 8 messages of this session</text>
 
-  <!-- short-circuit pills -->
-  <line x1="995" y1="560" x2="995" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="905" y="604" width="180" height="52" rx="26" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="995" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">off-topic or greeting</text>
-  <text x="995" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">→ fixed reply</text>
+  <!-- short-circuit pills, row A -->
+  <line x1="497" y1="560" x2="497" y2="596" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <rect x="405" y="602" width="185" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
+  <text x="497" y="623" fill="#a9cdee" font-size="13" text-anchor="middle">injection / restricted</text>
+  <text x="497" y="641" fill="#a9cdee" font-size="13" text-anchor="middle">→ polite refusal</text>
 
-  <line x1="1210" y1="560" x2="1210" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="1115" y="604" width="190" height="52" rx="26" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="1210" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">strong match → approved</text>
-  <text x="1210" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">answer, LLM skipped</text>
+  <line x1="1050" y1="560" x2="1050" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <rect x="990" y="604" width="190" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
+  <text x="1085" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">greeting · lone word ·</text>
+  <text x="1085" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">gibberish → direct reply</text>
 
-  <!-- PostgreSQL -->
-  <line x1="320" y1="560" x2="320" y2="618" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <path d="M225 636 V716 A95 12 0 0 0 415 716 V636 Z" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-  <ellipse cx="320" cy="636" rx="95" ry="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="320" y="672" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">PostgreSQL</text>
-  <text x="320" y="694" fill="#a9cdee" font-size="13" text-anchor="middle">history · feedback</text>
-  <text x="320" y="712" fill="#a9cdee" font-size="13" text-anchor="middle">cost · latency · audit</text>
+  <line x1="1300" y1="560" x2="1300" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <rect x="1210" y="604" width="210" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
+  <text x="1315" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">clearly unrelated</text>
+  <text x="1315" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">→ polite out-of-scope</text>
+
+  <!-- Router -> Golden -->
+  <line x1="1160" y1="560" x2="1160" y2="694" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1148" y="676" fill="#48aaee" font-size="14" text-anchor="end">embed query</text>
+
+  <!-- ============ ROW B: retrieval ============ -->
+  <rect x="1060" y="700" width="200" height="120" rx="12" fill="#0a4a80"/>
+  <text x="1078" y="738" fill="#fff" font-size="21" font-weight="600">Golden match</text>
+  <g fill="#a9cdee" font-size="14">
+    <text x="1078" y="765">approved Q&amp;A (2 KBs)</text>
+    <text x="1078" y="785">≥ 0.78 → direct answer</text>
+    <text x="1078" y="805">≥ 0.50 → context</text>
+  </g>
+  <line x1="1060" y1="760" x2="1036" y2="760" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <rect x="800" y="734" width="230" height="52" rx="26" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
+  <text x="915" y="756" fill="#a9cdee" font-size="13" text-anchor="middle">strong match → approved</text>
+  <text x="915" y="774" fill="#a9cdee" font-size="13" text-anchor="middle">answer, LLM skipped</text>
+
+  <!-- Search to vector store -->
+  <line x1="1260" y1="760" x2="1464" y2="760" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1350" y="748" fill="#48aaee" font-size="17" text-anchor="middle">Hybrid search</text>
+  <text x="1345" y="784" fill="#a9cdee" font-size="13" text-anchor="middle">dense 20 + BM25 20</text>
+  <text x="1345" y="802" fill="#a9cdee" font-size="13" text-anchor="middle">RRF · + sub-questions</text>
+
+  <!-- ============ VECTOR STORE REGION ============ -->
+  <rect x="1440" y="690" width="330" height="240" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text transform="translate(1757 812) rotate(-90)" fill="#fff" font-size="20" font-weight="600" text-anchor="middle">Vector store</text>
+  <line x1="1600" y1="356" x2="1600" y2="712" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1614" y="420" fill="#48aaee" font-size="17">Index</text>
+  <path d="M1470 735 V870 A130 18 0 0 0 1730 870 V735 Z" fill="#0a4a80" stroke="#ffffff" stroke-width="2"/>
+  <ellipse cx="1600" cy="735" rx="130" ry="18" fill="#0d5a98" stroke="#ffffff" stroke-width="2"/>
+  <text x="1600" y="776" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Chroma · dense vectors</text>
+  <text x="1600" y="802" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">BM25 · keyword index</text>
+  <text x="1600" y="828" fill="#a9cdee" font-size="13" text-anchor="middle">LearningChain: 22 docs · 841 chunks</text>
+  <text x="1600" y="848" fill="#ffffff" font-size="13" text-anchor="middle">Sapphirus: 61 docs · 438 chunks</text>
+  <text x="1600" y="868" fill="#a9cdee" font-size="13" text-anchor="middle">parent text + access metadata</text>
+
+  <line x1="1600" y1="890" x2="1600" y2="954" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1614" y="914" fill="#48aaee" font-size="17">Retrieve</text>
 
   <!-- Rerank -->
-  <rect x="1470" y="700" width="260" height="112" rx="12" fill="#0a4a80"/>
-  <text x="1490" y="738" fill="#fff" font-size="21" font-weight="600">Rerank</text>
-  <text x="1490" y="760" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
-  <text x="1490" y="778" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
-  <text x="1490" y="796" fill="#a9cdee" font-size="14">+ best source per sub-question</text>
-  <line x1="1600" y1="812" x2="1600" y2="834" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="1470" y="960" width="260" height="105" rx="12" fill="#0a4a80"/>
+  <text x="1490" y="996" fill="#fff" font-size="21" font-weight="600">Rerank</text>
+  <text x="1490" y="1020" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
+  <text x="1490" y="1040" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
+  <text x="1490" y="1058" fill="#a9cdee" font-size="13">+ best source per sub-question</text>
+  <line x1="1600" y1="1065" x2="1600" y2="1094" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
-  <!-- Query path to Augment -->
-  <path d="M565 560 V860 H1110 V925 H1174" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <!-- CRAG (NEW) -->
+  <rect x="1470" y="1100" width="260" height="140" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1490" y="1136" fill="#fff" font-size="21" font-weight="600">Corrective RAG</text>
+  <rect x="1666" y="1120" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="1689" y="1133" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
+  <g fill="#a9cdee" font-size="14">
+    <text x="1490" y="1162">LLM grades each passage</text>
+    <text x="1490" y="1182">drops irrelevant ones</text>
+    <text x="1490" y="1202">none relevant → rewrite,</text>
+    <text x="1490" y="1222">search again · never web</text>
+  </g>
+  <!-- retry loop -->
+  <path d="M1470 1200 H1428 V850 H1464" fill="none" stroke="#48aaee" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#aha)"/>
+  <text transform="translate(1418 1025) rotate(-90)" fill="#48aaee" font-size="13" text-anchor="middle">rewrite &amp; re-search (once)</text>
+
+  <!-- question path into Augment -->
+  <path d="M727 560 V1250 H930 V1304" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text transform="translate(717 980) rotate(-90)" fill="#48aaee" font-size="14" text-anchor="middle">normalized question</text>
+
+  <!-- CRAG -> Augment -->
+  <path d="M1600 1240 V1375 H1406" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1500" y="1365" fill="#48aaee" font-size="14" text-anchor="middle">relevant passages</text>
 
   <!-- Augment frame -->
-  <rect x="1150" y="840" width="620" height="200" rx="14" fill="none" stroke="#ffffff" stroke-width="2"/>
-  <rect x="1180" y="870" width="170" height="135" rx="12" fill="#0a4a80"/>
-  <text x="1265" y="945" fill="#fff" font-size="22" text-anchor="middle">Query</text>
-  <text x="1375" y="895" fill="#fff" font-size="18">Child → parent section</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="1375" y="922">one source per parent [S1]–[S5]</text>
-    <text x="1375" y="942">rules: answer only from sources,</text>
-    <text x="1375" y="962">cite [S#], keep source links</text>
-    <text x="1375" y="982">untrusted data · ≤ 9,000 chars</text>
+  <rect x="830" y="1290" width="570" height="170" rx="14" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <rect x="855" y="1310" width="150" height="125" rx="12" fill="#0a4a80"/>
+  <text x="930" y="1380" fill="#fff" font-size="22" text-anchor="middle">Query</text>
+  <text x="1025" y="1335" fill="#fff" font-size="17">Child → parent section</text>
+  <g fill="#a9cdee" font-size="13.5">
+    <text x="1025" y="1360">one source per parent [S1]–[S5]</text>
+    <text x="1025" y="1380">answer only from sources · cite [S#]</text>
+    <text x="1025" y="1400">infer intent, never fix spelling</text>
+    <text x="1025" y="1420">untrusted data · ≤ 9,000 chars</text>
   </g>
-  <text x="1680" y="925" fill="#fff" font-size="18" text-anchor="middle">Prompt</text>
   <g fill="#3a9be3">
-    <rect x="1620" y="945" width="110" height="5"/>
-    <rect x="1620" y="962" width="125" height="5"/>
-    <rect x="1620" y="979" width="135" height="5"/>
+    <rect x="1300" y="1432" width="60" height="4"/>
+    <rect x="1300" y="1442" width="75" height="4"/>
   </g>
-  <text x="1460" y="1078" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Augment</text>
+  <text x="1115" y="1490" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Augment</text>
 
   <!-- ============ GENERATE ROW ============ -->
-  <line x1="1150" y1="985" x2="1016" y2="985" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="830" y1="1375" x2="776" y2="1375" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
-  <rect x="820" y="925" width="190" height="115" rx="12" fill="#0a4a80"/>
-  <text x="915" y="960" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">LLM</text>
-  <text x="915" y="985" fill="#a9cdee" font-size="14" text-anchor="middle">gpt-oss-120b on Groq</text>
-  <text x="915" y="1005" fill="#a9cdee" font-size="14" text-anchor="middle">max 900 tokens</text>
-  <text x="915" y="1025" fill="#7d9bbb" font-size="12" text-anchor="middle">Claude once a key is added</text>
+  <rect x="570" y="1320" width="200" height="115" rx="12" fill="#0a4a80"/>
+  <text x="670" y="1355" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">LLM</text>
+  <text x="670" y="1380" fill="#a9cdee" font-size="14" text-anchor="middle">gpt-oss-120b · Groq</text>
+  <text x="670" y="1400" fill="#a9cdee" font-size="14" text-anchor="middle">fallback gpt-oss-20b</text>
+  <text x="670" y="1420" fill="#a9cdee" font-size="13" text-anchor="middle">temperature 0 · 900 tokens</text>
+  <line x1="570" y1="1375" x2="526" y2="1375" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
-  <text x="760" y="970" fill="#fff" font-size="18" text-anchor="middle">Generate</text>
-  <line x1="820" y1="985" x2="706" y2="985" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <rect x="470" y="925" width="230" height="115" rx="12" fill="#0a4a80"/>
-  <text x="490" y="963" fill="#fff" font-size="21" font-weight="600">Grounding check</text>
+  <rect x="300" y="1320" width="220" height="115" rx="12" fill="#0a4a80"/>
+  <text x="318" y="1356" fill="#fff" font-size="21" font-weight="600">Grounding check</text>
   <g fill="#a9cdee" font-size="14">
-    <text x="490" y="990">citations valid?</text>
-    <text x="490" y="1010">facts &amp; numbers in sources?</text>
-    <text x="490" y="1030">≥ 60% support</text>
+    <text x="318" y="1382">citations valid?</text>
+    <text x="318" y="1402">facts &amp; numbers in sources?</text>
+    <text x="318" y="1422">≥ 60% support</text>
   </g>
-  <line x1="470" y1="985" x2="251" y2="985" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="300" y1="1375" x2="256" y2="1375" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="410" y1="1435" x2="410" y2="1460" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <rect x="270" y="1466" width="285" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
+  <text x="412" y="1487" fill="#a9cdee" font-size="13" text-anchor="middle">fails → quote the source extract,</text>
+  <text x="412" y="1505" fill="#a9cdee" font-size="13" text-anchor="middle">or "insufficient information"</text>
 
-  <line x1="585" y1="1040" x2="585" y2="1068" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="440" y="1074" width="290" height="52" rx="26" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="585" y="1096" fill="#a9cdee" font-size="13" text-anchor="middle">fails → quote the source extract,</text>
-  <text x="585" y="1114" fill="#a9cdee" font-size="13" text-anchor="middle">or "insufficient information"</text>
-
-  <rect x="40" y="925" width="205" height="115" rx="12" fill="#0a4a80"/>
-  <text x="142" y="965" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Response</text>
-  <text x="142" y="992" fill="#a9cdee" font-size="14" text-anchor="middle">streamed answer</text>
-  <text x="142" y="1012" fill="#a9cdee" font-size="14" text-anchor="middle">+ source links</text>
-
-  <line x1="115" y1="925" x2="115" y2="566" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="40" y="1320" width="210" height="115" rx="12" fill="#0a4a80"/>
+  <text x="145" y="1360" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Response</text>
+  <text x="145" y="1387" fill="#a9cdee" font-size="14" text-anchor="middle">streamed answer</text>
+  <text x="145" y="1407" fill="#a9cdee" font-size="14" text-anchor="middle">+ source links</text>
+  <line x1="112" y1="1320" x2="112" y2="566" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
 
   <!-- ============ DEPLOYMENT ============ -->
-  <rect x="30" y="1170" width="1740" height="340" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
-  <text x="60" y="1214" fill="#fff" font-size="28" font-weight="600">Deployment</text>
-  <text x="250" y="1212" fill="#7d9bbb" font-size="14">release steps are run by hand today · no CI pipeline yet</text>
+  <rect x="30" y="1555" width="1740" height="450" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="1600" fill="#fff" font-size="28" font-weight="600">Deployment</text>
+  <text x="250" y="1598" fill="#7d9bbb" font-size="14">release steps are run by hand today · no CI pipeline yet</text>
+
+  <!-- row 1: release -->
   <g font-size="14" fill="#a9cdee">
-    <rect x="60" y="1236" width="300" height="104" rx="12" fill="#0a4a80"/>
-    <text x="80" y="1270" fill="#fff" font-size="20" font-weight="600">Code</text>
-    <text x="80" y="1295">Azure DevOps · Ramesh_Misale</text>
-    <text x="80" y="1315">sapphirus_chatbot/ · PR to dev</text>
-    <rect x="410" y="1236" width="300" height="104" rx="12" fill="#0a4a80"/>
-    <text x="430" y="1270" fill="#fff" font-size="20" font-weight="600">Test</text>
-    <text x="430" y="1295">pytest suite (95+ tests)</text>
-    <text x="430" y="1315">mocked APIs · no keys needed</text>
-    <rect x="760" y="1236" width="300" height="104" rx="12" fill="#0a4a80"/>
-    <text x="780" y="1270" fill="#fff" font-size="20" font-weight="600">Evaluate</text>
-    <text x="780" y="1295">evaluation dashboard (:8502)</text>
-    <text x="780" y="1315">RAGAS · hallucination · safety</text>
-    <rect x="1110" y="1236" width="300" height="104" rx="12" fill="#0a4a80"/>
-    <text x="1130" y="1270" fill="#fff" font-size="20" font-weight="600">Docker build</text>
-    <text x="1130" y="1295">python 3.12-slim · non-root</text>
-    <text x="1130" y="1315">embedder + reranker preloaded</text>
-    <rect x="1460" y="1236" width="280" height="104" rx="12" fill="#0a4a80"/>
-    <text x="1480" y="1270" fill="#fff" font-size="20" font-weight="600">docker compose up</text>
-    <text x="1480" y="1295">secrets from server .env</text>
-    <text x="1480" y="1315">healthcheck /health/live</text>
+    <rect x="60" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
+    <text x="80" y="1652" fill="#fff" font-size="20" font-weight="600">Code</text>
+    <text x="80" y="1677">Azure DevOps · Ramesh_Misale</text>
+    <text x="80" y="1697">GitHub · learningchain-assistant</text>
+    <rect x="410" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
+    <text x="430" y="1652" fill="#fff" font-size="20" font-weight="600">Test</text>
+    <text x="430" y="1677">pytest suite · 250 tests</text>
+    <text x="430" y="1697">mocked APIs · no keys needed</text>
+    <rect x="760" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
+    <text x="780" y="1652" fill="#fff" font-size="20" font-weight="600">Evaluate</text>
+    <text x="780" y="1677">dashboard :8502 · CSV export</text>
+    <text x="780" y="1697">retrieval · RAGAS · CRAG A/B</text>
+    <rect x="1110" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
+    <text x="1130" y="1652" fill="#fff" font-size="20" font-weight="600">Docker build</text>
+    <text x="1130" y="1677">python 3.12-slim · non-root</text>
+    <text x="1130" y="1697">embedder + reranker preloaded</text>
+    <rect x="1460" y="1620" width="280" height="96" rx="12" fill="#0a4a80"/>
+    <text x="1480" y="1652" fill="#fff" font-size="20" font-weight="600">docker compose up</text>
+    <text x="1480" y="1677">secrets from server .env</text>
+    <text x="1480" y="1697">healthcheck /health/live</text>
   </g>
   <g stroke="#fff" stroke-width="3">
-    <line x1="360" y1="1288" x2="404" y2="1288" marker-end="url(#ah)"/>
-    <line x1="710" y1="1288" x2="754" y2="1288" marker-end="url(#ah)"/>
-    <line x1="1060" y1="1288" x2="1104" y2="1288" marker-end="url(#ah)"/>
-    <line x1="1410" y1="1288" x2="1454" y2="1288" marker-end="url(#ah)"/>
+    <line x1="360" y1="1668" x2="404" y2="1668" marker-end="url(#ah)"/>
+    <line x1="710" y1="1668" x2="754" y2="1668" marker-end="url(#ah)"/>
+    <line x1="1060" y1="1668" x2="1104" y2="1668" marker-end="url(#ah)"/>
+    <line x1="1410" y1="1668" x2="1454" y2="1668" marker-end="url(#ah)"/>
   </g>
-  <line x1="1600" y1="1340" x2="1600" y2="1376" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+
+  <!-- row 2: production target -->
+  <text x="60" y="1752" fill="#7d9bbb" font-size="14" font-weight="600" letter-spacing="1">PRODUCTION TARGET · DOCKER COMPOSE</text>
+  <line x1="1600" y1="1716" x2="1600" y2="1756" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
   <g font-size="14" fill="#a9cdee">
-    <rect x="60" y="1384" width="220" height="104" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="80" y="1416" fill="#fff" font-size="18" font-weight="600">Visitors</text>
-    <text x="80" y="1440">website widget</text>
-    <text x="80" y="1460">chat.sapphirus.in</text>
-    <rect x="330" y="1384" width="300" height="104" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="350" y="1416" fill="#fff" font-size="18" font-weight="600">nginx</text>
-    <text x="350" y="1440">TLS 1.2/1.3 · ports 80/443</text>
-    <text x="350" y="1460">chat 20 req/min · admin 60</text>
-    <rect x="680" y="1384" width="380" height="104" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="700" y="1416" fill="#fff" font-size="18" font-weight="600">api container (uvicorn)</text>
-    <text x="700" y="1440">chat · admin · OpenAI-compatible API</text>
-    <text x="700" y="1460">ingestion worker · Firecrawl monitor</text>
-    <rect x="1110" y="1384" width="300" height="104" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="1130" y="1416" fill="#fff" font-size="18" font-weight="600">Volumes</text>
-    <text x="1130" y="1440">PostgreSQL 16 (pgdata)</text>
-    <text x="1130" y="1460">Chroma index (appdata)</text>
-    <rect x="1460" y="1384" width="280" height="104" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="1480" y="1416" fill="#fff" font-size="18" font-weight="600">Operations</text>
-    <text x="1480" y="1440">backup.sh · 14-day retention</text>
-    <text x="1480" y="1460">Open WebUI (staff profile)</text>
+    <rect x="60" y="1762" width="220" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+    <text x="80" y="1794" fill="#fff" font-size="18" font-weight="600">Visitors</text>
+    <text x="80" y="1818">website widget</text>
+    <text x="80" y="1838">chat.sapphirus.in</text>
+    <rect x="330" y="1762" width="300" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+    <text x="350" y="1794" fill="#fff" font-size="18" font-weight="600">nginx</text>
+    <text x="350" y="1818">TLS 1.2/1.3 · ports 80/443</text>
+    <text x="350" y="1838">chat 20 req/min · admin 60</text>
+    <rect x="680" y="1762" width="380" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+    <text x="700" y="1794" fill="#fff" font-size="18" font-weight="600">api container (uvicorn)</text>
+    <text x="700" y="1818">chat · admin · OpenAI-compatible API</text>
+    <text x="700" y="1838">ingestion worker · web monitor</text>
+    <rect x="1110" y="1762" width="300" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+    <text x="1130" y="1794" fill="#fff" font-size="18" font-weight="600">Volumes</text>
+    <text x="1130" y="1818">PostgreSQL 16 (pgdata)</text>
+    <text x="1130" y="1838">Chroma index (appdata)</text>
+    <rect x="1460" y="1762" width="280" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
+    <text x="1480" y="1794" fill="#fff" font-size="18" font-weight="600">Operations</text>
+    <text x="1480" y="1818">backup.sh · 14-day retention</text>
+    <text x="1480" y="1838">Open WebUI (staff profile)</text>
   </g>
   <g stroke="#fff" stroke-width="3">
-    <line x1="280" y1="1436" x2="324" y2="1436" marker-end="url(#ah)"/>
-    <line x1="630" y1="1436" x2="674" y2="1436" marker-end="url(#ah)"/>
-    <line x1="1060" y1="1436" x2="1104" y2="1436" marker-end="url(#ah)"/>
+    <line x1="280" y1="1810" x2="324" y2="1810" marker-end="url(#ah)"/>
+    <line x1="630" y1="1810" x2="674" y2="1810" marker-end="url(#ah)"/>
+    <line x1="1060" y1="1810" x2="1104" y2="1810" marker-end="url(#ah)"/>
   </g>
-  <line x1="1410" y1="1436" x2="1454" y2="1436" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+  <line x1="1410" y1="1810" x2="1454" y2="1810" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
+
+  <!-- row 3: live demo (NEW) -->
+  <text x="60" y="1894" fill="#48aaee" font-size="14" font-weight="600" letter-spacing="1">LIVE DEMO · STREAMLIT COMMUNITY CLOUD</text>
+  <rect x="402" y="1881" width="46" height="18" rx="4" fill="#48aaee"/>
+  <text x="425" y="1894" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
+  <g font-size="14" fill="#a9cdee">
+    <rect x="60" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
+    <text x="80" y="1934" fill="#fff" font-size="18" font-weight="600">GitHub push</text>
+    <text x="80" y="1958">RameshMisale-maker /</text>
+    <text x="80" y="1977">learningchain-assistant · main</text>
+    <rect x="410" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
+    <text x="430" y="1934" fill="#fff" font-size="18" font-weight="600">Streamlit Cloud build</text>
+    <text x="430" y="1958">Python 3.12 · CPU-only torch</text>
+    <text x="430" y="1977">no training PDFs (student data)</text>
+    <rect x="760" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
+    <text x="780" y="1934" fill="#fff" font-size="18" font-weight="600">streamlit_app.py</text>
+    <text x="780" y="1958">same pipeline, in-process</text>
+    <text x="780" y="1977">index built on start · LLM status</text>
+    <rect x="1110" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
+    <text x="1130" y="1934" fill="#fff" font-size="18" font-weight="600">Secrets</text>
+    <text x="1130" y="1958">OPENAI_API_KEY (Groq key)</text>
+    <text x="1130" y="1977">set in app settings, not in git</text>
+    <rect x="1460" y="1904" width="280" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
+    <text x="1480" y="1934" fill="#fff" font-size="18" font-weight="600">Demo users</text>
+    <text x="1480" y="1958">public link</text>
+    <text x="1480" y="1977">10 questions/min per session</text>
+  </g>
+  <g stroke="#fff" stroke-width="3">
+    <line x1="360" y1="1948" x2="404" y2="1948" marker-end="url(#ah)"/>
+    <line x1="710" y1="1948" x2="754" y2="1948" marker-end="url(#ah)"/>
+    <line x1="1060" y1="1948" x2="1104" y2="1948" marker-end="url(#ah)"/>
+    <line x1="1410" y1="1948" x2="1454" y2="1948" marker-end="url(#ah)"/>
+  </g>
 </svg>
 </div>
 
 <section>
   <h2>Current configuration</h2>
   <div class="facts">
-    <span class="chip">Active KB: <b>LearningChain Product Help</b></span>
-    <span class="chip">Company KB: <b>disabled</b> (separate bot)</span>
-    <span class="chip">LLM: <b>openai/gpt-oss-120b</b> on Groq (no Anthropic key set)</span>
+    <span class="chip new">Knowledge bases: <b>LearningChain Product Help + Sapphirus Company</b> (one combined assistant)</span>
+    <span class="chip new">Index: <b>83 documents · 1,279 chunks</b> (22 / 841 LearningChain · 61 / 438 Sapphirus)</span>
+    <span class="chip">LLM: <b>openai/gpt-oss-120b</b> on Groq, fallback <b>gpt-oss-20b</b> (free tier, ~200k tokens/day each)</span>
     <span class="chip">Embeddings: <b>bge-small-en-v1.5</b> (local)</span>
     <span class="chip">Chunking: <b>parent-child, structure + recursive</b> (1,800 / 400 chars)</span>
-    <span class="chip">Index: <b>22 documents · 841 chunks</b> (incl. 3 training PDFs)</span>
-    <span class="chip">Web scraper: <b>Firecrawl</b> (builtin until FIRECRAWL_API_KEY is set)</span>
-    <span class="chip">Vector DB: <b>Chroma</b></span>
     <span class="chip">Reranker: <b>ms-marco-MiniLM-L-6-v2</b></span>
-    <span class="chip">Router: <b>hybrid</b> (0.30 kw · 0.30 examples · 0.40 corpus)</span>
+    <span class="chip new">CRAG: <b>on</b> (grade, filter, rewrite once; KB only)</span>
+    <span class="chip new">Conversation layer: <b>on</b> (8 intents, memory = last 8 messages)</span>
+    <span class="chip new">Query normalization: <b>on</b> (rules + rapidfuzz ≥ 80, LLM only for unknown words)</span>
+    <span class="chip new">Scope check: <b>lenient</b> (LLM or relevant passage ≥ 0.5 overrides the keyword router)</span>
+    <span class="chip">Router: <b>hybrid</b> (multi-KB ratio 0.70)</span>
     <span class="chip">Grounding: <b>lexical</b></span>
-    <span class="chip">Deploy: <b>Docker Compose · nginx · PostgreSQL 16</b> (manual release, no CI yet)</span>
+    <span class="chip">Web scraper: <b>builtin</b> (Firecrawl once FIRECRAWL_API_KEY is set)</span>
+    <span class="chip new">Demo: <b>Streamlit Community Cloud</b> from GitHub</span>
+    <span class="chip">Production target: <b>Docker Compose · nginx · PostgreSQL 16</b> (manual release, no CI yet)</span>
   </div>
 </section>
 
@@ -397,26 +495,30 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     <thead><tr><th>Stage</th><th>What happens</th><th>Code</th></tr></thead>
     <tbody>
       <tr class="phase"><td colspan="3">Indexing</td></tr>
-      <tr><td>Ingestion queue</td><td>Admin uploads, CLI sync, the 6-hourly web monitor (pages scraped with Firecrawl, or the builtin scraper until a key is set) and signed Zendesk/CMS webhooks all enqueue jobs. Failed jobs retry 3 times with backoff (30 s, 60 s, 120 s).</td><td><code>ingestion/jobs.py</code>, <code>ingestion/automation.py</code>, <code>backend/api/routes_webhooks.py</code>, <code>ingestion/web.py</code></td></tr>
-      <tr><td>Validate &amp; load</td><td>Checks file type, size, magic bytes, macros and zip bombs. SHA-256 hashing skips unchanged or duplicate files. Text is extracted, cleaned and optionally OCR'd.</td><td><code>backend/security/upload_validator.py</code>, <code>ingestion/document_loader.py</code>, <code>ingestion/text_cleaner.py</code></td></tr>
-      <tr><td>Parent-child chunking</td><td>Splits each document along its heading tree (each chunk header carries the heading path) into parent sections of up to 1,800 characters. Each parent is split recursively (paragraph, line, sentence, clause, word) into child chunks of 400 characters with 80 characters of whole-sentence overlap, and every child stores its parent's ID and text. Tables, records, golden Q&amp;A rows and short sections stay as single chunks. Chunks containing injection attempts are flagged.</td><td><code>ingestion/chunking.py</code>, <code>config/knowledge_bases.yaml</code></td></tr>
-      <tr><td>Vectorize &amp; index</td><td>Embeds only the child chunks with BAAI/bge-small-en-v1.5 and replaces the document's old chunks in Chroma. The BM25 index and the document registry are refreshed. The current index holds 841 chunks in 213 parent sections across 22 documents, including the user and admin training manuals and the product presentation (PDF, cited by page).</td><td><code>ingestion/embedding.py</code>, <code>ingestion/vector_store.py</code>, <code>ingestion/registry.py</code>, <code>backend/retrieval/kb_index.py</code></td></tr>
+      <tr><td>Sources<span class="tag">NEW</span></td><td>LearningChain help-centre articles, FAQ and website pages; the user and admin training manuals and product deck (PDF); approved Q&amp;A for both knowledge bases; and 57 public pages crawled from sapphirus.in (services, products, about, management, contact, certifications, careers, blog). Training PDFs stay out of public repositories because their screenshots contain student data.</td><td><code>knowledge_bases/</code>, <code>datasets/</code>, <code>ingestion/web.py</code></td></tr>
+      <tr><td>Ingestion queue</td><td>Admin uploads, CLI sync, crawls, the web monitor and signed webhooks enqueue jobs. Failed jobs retry 3 times with backoff.</td><td><code>ingestion/jobs.py</code>, <code>ingestion/automation.py</code></td></tr>
+      <tr><td>Validate &amp; load</td><td>Checks file type, size, magic bytes and macros; SHA-256 skips unchanged files; text is extracted and cleaned. OCR is off.</td><td><code>backend/security/upload_validator.py</code>, <code>ingestion/document_loader.py</code></td></tr>
+      <tr><td>Parent-child chunking</td><td>Heading-aware parents of up to 1,800 characters, split recursively into 400-character children with 80 characters of whole-sentence overlap. Chunks with injection attempts are flagged.</td><td><code>ingestion/chunking.py</code></td></tr>
+      <tr><td>Vectorize &amp; index</td><td>Child chunks are embedded with bge-small-en-v1.5 into Chroma, with a BM25 index alongside: 83 documents and 1,279 chunks across the two knowledge bases.</td><td><code>ingestion/embedding.py</code>, <code>ingestion/vector_store.py</code>, <code>backend/retrieval/kb_index.py</code></td></tr>
       <tr class="phase"><td colspan="3">Answering</td></tr>
-      <tr><td>API</td><td>Authenticates hashed bearer tokens (anonymous visitors get the public role), applies roles and a 30 requests/minute rate limit, and streams the reply.</td><td><code>backend/api/routes_chat.py</code>, <code>backend/security/auth.py</code>, <code>rbac.py</code>, <code>rate_limit.py</code></td></tr>
-      <tr><td>Query</td><td>Rejects questions over 1,000 characters and screens for prompt injection. Follow-ups are rewritten as standalone questions and abbreviations are expanded.</td><td><code>backend/security/prompt_guard.py</code>, <code>backend/routing/router.py</code></td></tr>
-      <tr><td>Router</td><td>Scores each knowledge base from keywords, similarity to example questions and corpus term statistics. Below 0.30 the question is out of scope and gets a fixed reply.</td><td><code>backend/routing/router.py</code>, <code>config/knowledge_bases.yaml</code></td></tr>
-      <tr><td>Golden match</td><td>Compares the question with approved Q&amp;A (0.45 dense + 0.30 term overlap + 0.25 fuzzy). At 0.78 or above, the approved answer is returned verbatim. From 0.50, the best match and up to 2 more approved answers join the candidates for reranking.</td><td><code>backend/retrieval/golden_matcher.py</code></td></tr>
-      <tr><td>Hybrid search</td><td>Searches the small child chunks: the top 20 dense results and the top 20 BM25 results, filtered by document access roles, fused with Reciprocal Rank Fusion. Multi-part questions are split into sub-questions (by the LLM, with a rule-based fallback) and each part is retrieved as well.</td><td><code>backend/retrieval/hybrid.py</code></td></tr>
-      <tr><td>Rerank</td><td>A cross-encoder rescores each child chunk together with its document and section header, and keeps the top 5 scoring at least 0.15. For multi-part questions, the best source for every part is guaranteed a place in the context.</td><td><code>backend/retrieval/reranker.py</code></td></tr>
-      <tr><td>Augment</td><td>Swaps each matched child for its full parent section, merging children of the same parent into one source. If a parent doesn't fit the 9,000-character budget, the child alone is used. The prompt is built from the system rules, these numbered sources (wrapped as untrusted data) and the question. Citation snippets still show the matched child.</td><td><code>backend/generation/prompt_builder.py</code>, <code>prompts/</code></td></tr>
-      <tr><td>Generate</td><td>The LLM writes the answer with [S#] citations (max 900 tokens, 60 s timeout, 2 retries). <code>LLM_PROVIDER</code> is set to Anthropic, but no Anthropic key is configured, so the app falls back to <code>openai/gpt-oss-120b</code> on Groq through its OpenAI-compatible API. Claude Sonnet 4.5 takes over once <code>ANTHROPIC_API_KEY</code> is set. With no working LLM, the app falls back to extractive answers.</td><td><code>backend/generation/llm_client.py</code></td></tr>
-      <tr><td>Grounding check</td><td>Removes invalid citations and checks that sentences and numbers appear in the sources. If the answer fails, the bot returns a source extract or the fixed "insufficient information" reply.</td><td><code>backend/generation/grounding.py</code>, <code>backend/generation/extractive.py</code></td></tr>
-      <tr><td>Persist</td><td>Stores the messages, route, citations, latency, tokens, cost and user feedback in PostgreSQL.</td><td><code>backend/db/repository.py</code>, <code>backend/services/metrics_service.py</code></td></tr>
+      <tr><td>API</td><td>Token auth and roles, rate limit, streamed reply. The Streamlit demo calls the same pipeline in-process instead.</td><td><code>backend/api/routes_chat.py</code>, <code>streamlit_cloud/streamlit_app.py</code></td></tr>
+      <tr><td>Safety guard</td><td>Length limit and prompt-injection screen; restricted topics (medical, financial advice, sexual, self-harm, violence, illegal) are refused before any retrieval. Checked on both the original and the normalized wording.</td><td><code>backend/security/prompt_guard.py</code></td></tr>
+      <tr><td>Normalize<span class="tag">NEW</span></td><td>Fixes typos and SMS short forms (wt, hw, r, u, pls, abt), product names (saphirus → Sapphirus, leaning chain / LC → LearningChain) and misspelt domain terms with rapidfuzz (≥ 80). The LLM rewrites the question only when unknown words remain. The normalized question drives everything after this; the original is kept for logs.</td><td><code>backend/routing/normalize.py</code>, <code>prompts/normalize_prompt.txt</code></td></tr>
+      <tr><td>Conversation layer<span class="tag">NEW</span></td><td>Classifies greeting, small talk, incomplete input, clarification, gibberish, out-of-scope, follow-up and knowledge questions, mostly by rules. Non-questions get a direct reply with no retrieval. Follow-ups ("tell me more", "explain the second point") are rewritten from the session history (last 8 messages).</td><td><code>backend/routing/intent.py</code>, <code>backend/routing/router.py</code></td></tr>
+      <tr><td>Router + scope<span class="tag">NEW</span></td><td>Picks LearningChain, Sapphirus or both (close scores search both). A keyword "out of scope" is no longer final: the LLM scope check or a relevant passage (rerank ≥ 0.5) lets the question through; only clearly unrelated questions get the polite out-of-scope reply. HR topics stay excluded.</td><td><code>backend/routing/router.py</code>, <code>backend/services/chat_service.py</code></td></tr>
+      <tr><td>Golden match</td><td>Approved Q&amp;A at 0.78 or above is returned verbatim; from 0.50 it joins the candidates for reranking.</td><td><code>backend/retrieval/golden_matcher.py</code></td></tr>
+      <tr><td>Hybrid search</td><td>Top 20 dense + top 20 BM25 child chunks, filtered by access roles and fused with RRF; multi-part questions are also searched per sub-question.</td><td><code>backend/retrieval/hybrid.py</code>, <code>backend/routing/decompose.py</code></td></tr>
+      <tr><td>Rerank</td><td>A cross-encoder scores each child chunk with its header and keeps the top 5 scoring at least 0.15.</td><td><code>backend/retrieval/reranker.py</code></td></tr>
+      <tr><td>Corrective RAG<span class="tag">NEW</span></td><td>One LLM call grades every selected passage; irrelevant ones are dropped. If none is relevant, the question is rewritten as a documentation search query and searched once more in the knowledge base (never the web). If the grader fails, the reranked passages are used unchanged.</td><td><code>backend/retrieval/crag.py</code>, <code>prompts/crag_*.txt</code></td></tr>
+      <tr><td>Augment</td><td>Matched children are swapped for their parent sections (≤ 9,000 characters) and wrapped as untrusted, numbered sources. The system prompt tells the model to infer the meaning of informal or misspelt questions and never comment on spelling.</td><td><code>backend/generation/prompt_builder.py</code>, <code>prompts/system_prompt.txt</code></td></tr>
+      <tr><td>Generate</td><td><code>openai/gpt-oss-120b</code> on Groq (temperature 0, max 900 tokens); on a rate limit or outage it falls back to <code>gpt-oss-20b</code>, then to extractive answers.</td><td><code>backend/generation/llm_client.py</code></td></tr>
+      <tr><td>Grounding check</td><td>Removes invalid citations and checks sentences and numbers against the sources; failures return a source extract or the "insufficient information" reply.</td><td><code>backend/generation/grounding.py</code></td></tr>
+      <tr><td>Persist</td><td>Messages (the conversation memory), route, citations, latency, tokens, cost and feedback are stored per session.</td><td><code>backend/db/repository.py</code></td></tr>
       <tr class="phase"><td colspan="3">Deployment</td></tr>
-      <tr><td>Code</td><td>Source lives in Azure DevOps (AI-Intern-Repo, branch <code>Ramesh_Misale</code>, folder <code>sapphirus_chatbot/</code>). Changes reach <code>dev</code> through a pull request. Secrets (<code>.env</code>), indexes and evaluation results are not in the repository.</td><td><code>.gitignore</code></td></tr>
-      <tr><td>Test &amp; evaluate</td><td>Run the pytest suite (external APIs are mocked), then an evaluation run on the golden dataset (retrieval, RAGAS, hallucination, safety) and compare it with the previous run before releasing. Both are run by hand today; there is no CI pipeline yet.</td><td><code>tests/</code>, <code>evaluation/</code></td></tr>
-      <tr><td>Build &amp; run</td><td>The Docker image (python 3.12-slim, non-root user, CPU torch, embedding and reranker models preloaded) runs under Docker Compose with PostgreSQL 16 and nginx. nginx terminates TLS for chat.sapphirus.in and rate-limits chat (20/min) and admin (60/min) traffic. The API container serves chat, admin and the OpenAI-compatible API, and runs the ingestion worker and web monitor. Docker checks <code>/health/live</code>.</td><td><code>Dockerfile</code>, <code>docker-compose.yml</code>, <code>deploy/nginx.conf</code></td></tr>
-      <tr><td>Operate</td><td><code>backup.sh</code> saves a PostgreSQL dump, the vector index and the knowledge-base files, keeping 14 days. Open WebUI is optional, for staff (compose profile <code>staff</code>).</td><td><code>deploy/backup.sh</code></td></tr>
+      <tr><td>Code</td><td>Azure DevOps (AI-Intern-Repo, branch <code>Ramesh_Misale</code>, folder <code>sapphirus_chatbot/</code>; PR to <code>dev</code>) and GitHub (<code>RameshMisale-maker/learningchain-assistant</code>). No <code>.env</code>, keys, indexes or training PDFs are committed.</td><td><code>.gitignore</code></td></tr>
+      <tr><td>Test &amp; evaluate</td><td>250 pytest tests with mocked APIs; the evaluation dashboard measures retrieval, generation (RAGAS) and end-to-end performance, and CRAG on/off.</td><td><code>tests/</code>, <code>evaluation/</code></td></tr>
+      <tr><td>Production target</td><td>Docker image under Docker Compose with PostgreSQL 16 and nginx (TLS, rate limits); the API container also runs the ingestion worker and web monitor.</td><td><code>Dockerfile</code>, <code>docker-compose.yml</code>, <code>deploy/</code></td></tr>
+      <tr><td>Live demo<span class="tag">NEW</span></td><td>Streamlit Community Cloud builds from the GitHub repo (Python 3.12, CPU-only torch), runs the same pipeline in-process, builds the index on start and shows the LLM status in the sidebar. The Groq key is set in the app's Secrets. Reboot the app after each push.</td><td><code>streamlit_cloud/</code></td></tr>
     </tbody>
   </table>
   </div>

@@ -1,10 +1,15 @@
-Rewrite the user's latest message into a single standalone question that can be understood without the conversation.
-Keep product names, policy names and numbers exactly. Do not answer it. Return only the rewritten question.
-If the latest message asks for more detail ("tell me more", "explain that", "can you elaborate") make the question
-ask for more details about the specific topic of the previous answer. If it refers to an item by position ("the
-second one", "explain the third point"), name that item from the previous answer explicitly.
+Rewrite the user's latest message into a clear, standalone search query in English
+for searching the Sapphirus / LearningChain help documentation.
+- Resolve pronouns using the chat history ("that plan" -> "Annual plan", "it" -> the product or feature discussed).
+- If the latest message asks for more detail ("tell me more", "explain that", "can you elaborate"), ask for more details
+  about the specific topic of the previous answer; if it refers to an item by position ("the second one"), name that item.
+- Translate Hindi/Hinglish/regional language to English.
+- Expand abbreviations and fix spelling. Keep product names, IDs and numbers exactly.
+- If the message needs account data (my payment, my status) rather than docs, output: TOOL_ONLY
+- If it contains multiple questions, output one query per line (max 3).
+Output only the query/queries, nothing else.
 
-Conversation:
+Chat history:
 {history}
 
 Latest message: {question}

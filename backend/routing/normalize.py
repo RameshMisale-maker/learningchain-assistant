@@ -72,10 +72,16 @@ class Understanding:
     scope: str | None = None             # set only when the LLM was asked
     method: str = "none"                 # none | rules | llm
     corrections: list[tuple[str, str]] = field(default_factory=list)
+    search_queries: list[str] = field(default_factory=list)   # one per separate question (LLM only, max 3)
+    language: str = "en"                 # en | hi | hinglish | other (LLM only)
+    needs_account_tool: bool = False     # needs this user's own account data, not the help documentation
+    unclear: bool = False                # an ambiguous word was kept as written
 
     def to_dict(self) -> dict:
         return {"original_query": self.original, "normalized_query": self.normalized, "scope_check": self.scope,
-                "normalization": self.method, "corrections": [f"{a}->{b}" for a, b in self.corrections][:10]}
+                "normalization": self.method, "corrections": [f"{a}->{b}" for a, b in self.corrections][:10],
+                "search_queries": self.search_queries, "language": self.language,
+                "needs_account_tool": self.needs_account_tool, "unclear": self.unclear}
 
 
 def _default_known(word: str) -> bool:
@@ -134,49 +140,100 @@ def unknown_words(text: str, known: Callable[[str], bool]) -> list[str]:
     return [w for w in words if not w.isdigit() and w.lower() not in _CANON and not known(w)]
 
 
+_NUMBER_RE = re.compile(r"\d[\d,./-]*\d|\d")
+
+
+def _numbers(text: str) -> set[str]:
+    return {re.sub(r"[,]", "", n) for n in _NUMBER_RE.findall(text or "")}
+
+
+def _as_bool(value) -> bool:
+    return value is True or str(value).strip().lower() in ("true", "yes", "1")
+
+
 @lru_cache(maxsize=512)
-def _llm_call(llm, text: str) -> tuple[str, str] | None:
+def _llm_call(llm, text: str, history: str = "(none)") -> dict | None:
     from backend.generation.prompt_builder import load_prompt
 
     data, _ = llm.complete_json("You normalize and classify chatbot messages. Output JSON only.",
-                                load_prompt("normalize_prompt.txt").format(message=text), max_tokens=400)
-    normalized = str(data.get("normalized") or "").strip()
+                                load_prompt("normalize_prompt.txt").format(message=text, history=history),
+                                max_tokens=500)
+    corrected = str(data.get("corrected") or data.get("normalized") or "").strip()
     scope = str(data.get("scope") or "").strip().upper()
-    if not normalized or scope not in SCOPES:
+    if not corrected or scope not in SCOPES:
         return None
-    return normalized, scope
+    queries = data.get("search_queries") or []
+    queries = [str(q).strip() for q in (queries if isinstance(queries, list) else [queries]) if str(q).strip()][:3]
+    language = str(data.get("language") or "en").strip().lower()
+    return {"corrected": corrected, "scope": scope, "search_queries": queries,
+            "language": language if language in ("en", "hi", "hinglish", "other") else "other",
+            "needs_account_tool": _as_bool(data.get("needs_account_tool")), "unclear": _as_bool(data.get("unclear"))}
 
 
-def llm_understand(text: str, llm) -> tuple[str, str] | None:
-    """(normalized text, scope) from the LLM, or None when unavailable / unusable. Never raises."""
+def llm_clean(text: str, llm, history: str = "(none)") -> dict | None:
+    """Full LLM clean-up result, or None when unavailable / unusable. Never raises.
+    Rejected: answers instead of rewrites, injected instructions, and rewrites that drop or change a number
+    (IDs, amounts and dates must be kept exactly as the user wrote them)."""
     if llm is None:
         return None
     try:
-        result = _llm_call(llm, text)
+        result = _llm_call(llm, text, history)
     except Exception as exc:
         logger.warning("LLM query normalization failed (%s); using rule-based normalization", exc)
         return None
     if result is None:
         return None
-    normalized, scope = result
-    # sanity: a rewrite, not an answer - keep it short and free of instructions
-    if len(normalized) > max(3 * len(text), len(text) + 80):
+    corrected = result["corrected"]
+    if len(corrected) > max(3 * len(text), len(text) + 80):
         return None
     from ingestion.text_cleaner import detect_injection
-    if detect_injection(normalized):
+    if detect_injection(corrected) or any(detect_injection(q) for q in result["search_queries"]):
         return None
-    return normalized, scope
+    if not _numbers(text) <= _numbers(corrected):
+        logger.warning("LLM normalization changed a number; using rule-based normalization")
+        return None
+    return result
 
 
-def understand(text: str, known: Callable[[str], bool] | None = None, llm=None) -> Understanding:
-    """Rule/fuzzy normalization, plus the LLM when words remain that neither the rules nor the knowledge base know."""
+def llm_understand(text: str, llm, history: str = "(none)") -> tuple[str, str] | None:
+    """(normalized text, scope) from the LLM, or None. Used by the lenient scope check."""
+    result = llm_clean(text, llm, history)
+    return (result["corrected"], result["scope"]) if result else None
+
+
+def reply_language(original: str, label: str | None) -> str:
+    """Instruction for the answer language, decided from the script of the user's own message (reliable) plus the
+    normalizer's language label: Devanagari -> Hindi; Hindi written in English letters -> Hinglish in Roman script."""
+    if re.search(r"[\u0900-\u097f]", original or ""):
+        return "Hindi, in Devanagari script"
+    if (label or "en") in ("hi", "hinglish"):
+        return ("Hinglish - Hindi sentences written in English (Roman) letters, like the user, e.g. \"Pehle LearningChain "
+                "mein login karein, phir Dashboard par Verification URL par click karein.\" Do NOT reply in English "
+                "and do NOT use Devanagari")
+    if label == "other":
+        return "the same language and script as the user's original wording"
+    return "English"
+
+
+def understand(text: str, known: Callable[[str], bool] | None = None, llm=None,
+               history: list[dict] | None = None) -> Understanding:
+    """Rule/fuzzy normalization, plus the LLM when words remain that neither the rules nor the knowledge base know,
+    or the message is written in another script (Hindi etc.)."""
     known = known or _default_known
     normalized, fixes = fuzzy_normalize(text, known)
     result = Understanding(original=text, normalized=normalized, method="rules" if fixes else "none",
                            corrections=fixes)
-    if llm is not None and unknown_words(normalized, known):
-        judged = llm_understand(normalized, llm)
-        if judged:
-            result.normalized, result.scope = judged
-            result.method = "llm"
+    other_script = bool(re.search(r"[^\x00-\x7f]", re.sub(r"[\u2018-\u201f\u2026\xa0]", "", normalized)))
+    if llm is not None and (unknown_words(normalized, known) or other_script):   # typos left, or Hindi etc.
+        history_text = "(none)"
+        if history:
+            from backend.generation.prompt_builder import format_history
+            history_text = format_history(history, 2)                            # last 4 messages
+        cleaned = llm_clean(normalized, llm, history_text)
+        if cleaned:
+            result.normalized, result.scope, result.method = cleaned["corrected"], cleaned["scope"], "llm"
+            result.search_queries = cleaned["search_queries"]
+            result.language = cleaned["language"]
+            result.needs_account_tool = cleaned["needs_account_tool"]
+            result.unclear = cleaned["unclear"]
     return result

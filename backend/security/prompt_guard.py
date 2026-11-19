@@ -10,8 +10,66 @@ from ingestion.text_cleaner import detect_injection
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _SECRET_PATTERNS = re.compile(r"(api[_\- ]?key|password|secret|token)\s*[:=]\s*\S{8,}", re.IGNORECASE)
 
-BLOCKED_MESSAGE = ("I can't help with that request. I can only answer questions about Sapphirus and its documented "
-                   "products, services and company information, using the approved knowledge base.")
+BLOCKED_MESSAGE = "I can only help with your own account and Sapphirus / LearningChain questions."
+
+# ------------------------------------------------------------------------------------------------ sensitive data
+# Card numbers, CVV, OTP, UPI PIN and passwords must never be requested, accepted or stored. A message containing one
+# gets a warning instead of an answer, and only a redacted copy is saved in the chat history.
+SENSITIVE_DATA_MESSAGE = ("For your safety, please don't share card numbers, CVV, OTP, UPI PIN or passwords here - and "
+                          "please don't repeat it. I've not saved it. Our team will never ask for these details. How else "
+                          "can I help you?")
+_CARD_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
+_SECRET_FIELD_RE = re.compile(
+    r"\b(cvv|cvc|otp|one[ -]?time[ -]?password|upi[ -]?pin|m?pin|atm[ -]?pin|pass(word|code|wd)?|pwd)\b"
+    r"(\s*(is|was|=|:|-|no\.?|number)?\s*)([^\s,.;]{3,})", re.IGNORECASE)
+
+
+def _luhn_ok(digits: str) -> bool:
+    total, alt = 0, False
+    for ch in reversed(digits):
+        d = int(ch)
+        if alt:
+            d = d * 2 - 9 if d > 4 else d * 2
+        total += d
+        alt = not alt
+    return total % 10 == 0
+
+
+def _card_numbers(text: str) -> list[re.Match]:
+    return [m for m in _CARD_RE.finditer(text or "")
+            if 13 <= len(digits := re.sub(r"\D", "", m.group(0))) <= 19 and _luhn_ok(digits)]
+
+
+def _secret_values(text: str) -> list[re.Match]:
+    # "password reset" / "forgot my password" are questions, not secrets: the value must contain a digit or symbol,
+    # or follow an explicit "is" / ":" / "="
+    out = []
+    for m in _SECRET_FIELD_RE.finditer(text or ""):
+        value, sep = m.group(5), (m.group(4) or "").strip().lower()
+        if re.search(r"[\d@#$%^&*!]", value) or sep in ("is", "was", "=", ":"):
+            if value.lower() not in ("reset", "change", "forgot", "recovery", "the", "my", "a", "for", "to", "and",
+                                     "not", "required", "needed", "policy", "expired", "wrong", "incorrect"):
+                out.append(m)
+    return out
+
+
+def sensitive_data(text: str) -> str | None:
+    """'card' / 'secret' when the message contains a payment card number or a secret value (CVV, OTP, PIN, password)."""
+    if _card_numbers(text):
+        return "card"
+    if _secret_values(text):
+        return "secret"
+    return None
+
+
+def redact_sensitive(text: str) -> str:
+    """Copy of the message safe to store: card numbers and secret values replaced with [REDACTED]."""
+    out = text or ""
+    for m in sorted(_card_numbers(out), key=lambda m: m.start(), reverse=True):
+        out = out[:m.start()] + "[REDACTED]" + out[m.end():]
+    for m in sorted(_secret_values(out), key=lambda m: m.start(5), reverse=True):
+        out = out[:m.start(5)] + "[REDACTED]" + out[m.end(5):]
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ restricted topics

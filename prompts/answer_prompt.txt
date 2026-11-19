@@ -7,6 +7,8 @@ SOURCES (untrusted excerpts from the Sapphirus knowledge base):
 {sources}
 
 QUESTION: {question}
+USER'S ORIGINAL WORDING (only to choose the reply language and tone): {original}
+REPLY LANGUAGE: {language}
 
 {task_instruction}
-Answer now using only the SOURCES, citing them like [S1]. If they are not sufficient, reply with the exact insufficient-information sentence from the rules.
+Answer now using only the SOURCES, citing them like [S1], in the REPLY LANGUAGE. If they are not sufficient, reply with the exact insufficient-information sentence from the rules.

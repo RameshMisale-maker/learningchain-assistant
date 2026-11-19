@@ -44,7 +44,7 @@ class ScopeLLM:
         self.calls += 1
         if self.error:
             raise RuntimeError("429 rate limit")
-        message = user.rsplit("Message:", 1)[-1].strip()
+        message = user.split("<user_message>", 1)[-1].split("</user_message>", 1)[0].strip()
         return {"normalized": self.normalized or message, "scope": self.scope}, None
 
 

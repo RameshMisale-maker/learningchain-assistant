@@ -81,7 +81,8 @@ class Settings:
     rerank_price_per_1k: float = field(default_factory=lambda: _env_float("RERANK_PRICE_PER_1K", 0.0))
     insufficient_info_text: str = field(default_factory=lambda: _env(
         "INSUFFICIENT_INFO_TEXT",
-        "I couldn't find sufficient information in the available Sapphirus documentation to answer this question."))
+        "I don't have confirmed information on that. Let me connect you with our support team: email "
+        "info@sapphirus.in or call +91 96531 57225."))
     out_of_scope_text: str = field(default_factory=lambda: _env(
         "OUT_OF_SCOPE_TEXT",
         "I'm sorry, but that's outside what I can help with. I can answer questions about Sapphirus and its "

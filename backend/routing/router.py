@@ -93,26 +93,35 @@ class QueryRouter:
         return out
 
     def rewrite_follow_up(self, query: str, history: list[dict], force: bool = False) -> str:
-        """Make short follow-ups standalone ("what about sick leave?" -> uses the previous question).
+        """Standalone version of a follow-up (see resolve_follow_up)."""
+        return self.resolve_follow_up(query, history, force)[0]
+
+    def resolve_follow_up(self, query: str, history: list[dict], force: bool = False) -> tuple[str, list[str], bool]:
+        """(standalone query, extra queries for further questions in the message, tool_only).
+
+        Make short follow-ups standalone ("what about sick leave?" -> uses the previous question).
         force=True: the conversation layer already identified a follow-up ("tell me more", "explain the second
         point"), so the rewrite runs even without a pronoun, and the previous answer is given in full."""
         prev_user = next((h["content"] for h in reversed(history) if h["role"] == "user"), None)
         if not prev_user:
-            return query
+            return query, [], False
         words = tokenize(query)
         if not force and (len(words) > 6 or not FOLLOW_UP_RE.search(query)):
-            return query
+            return query, [], False
         if self.llm is not None:
             try:
                 from backend.generation.prompt_builder import format_history, load_prompt
 
                 prompt = load_prompt("rewrite_prompt.txt").format(
                     history=format_history(history, 3, last_answer_chars=1500 if force else None), question=query)
-                result = self.llm.complete("You rewrite questions. Output only the question.", prompt, max_tokens=120,
-                                           temperature=0.0)
-                rewritten = result.text.strip().strip('"')
-                if 5 < len(rewritten) < 400:
-                    return rewritten
+                result = self.llm.complete("You rewrite questions into search queries. Output only the query or "
+                                           "queries.", prompt, max_tokens=200, temperature=0.0)
+                lines = [ln.strip().strip('"').lstrip("-*0123456789. ").strip() for ln in result.text.splitlines()]
+                lines = [ln for ln in lines if ln][:3]
+                if lines and lines[0].upper().rstrip(".") == "TOOL_ONLY":
+                    return query, [], True              # needs this user's account data, not the documentation
+                if lines and all(5 < len(ln) < 400 for ln in lines):
+                    return lines[0], lines[1:], False
             except Exception as exc:
                 logger.warning("LLM query rewrite failed: %s", exc)
         if force:   # no LLM: "explain the second point" -> that point of the previous answer
@@ -120,10 +129,10 @@ class QueryRouter:
 
             item = ordinal_item(query, last_assistant_answer(history))
             if item:
-                return f"{item} (context: {prev_user})"
+                return f"{item} (context: {prev_user})", [], False
             if ELABORATE_RE.match(query):   # "tell me more" / "can you elaborate?" -> the previous topic itself
-                return prev_user
-        return f"{query} (context: {prev_user})"
+                return prev_user, [], False
+        return f"{query} (context: {prev_user})", [], False
 
     # ------------------------------------------------------------------ signals
     def _keyword_score(self, query: str, cfg: dict) -> float:

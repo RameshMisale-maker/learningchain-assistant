@@ -109,7 +109,10 @@ def format_history(history: list[dict], max_turns: int = 4, max_chars: int = 400
 
 
 def build_answer_prompt(question: str, refs: list[SourceRef], history: list[dict], comparison: bool = False,
-                        entities: list[str] | None = None) -> tuple[str, str]:
+                        entities: list[str] | None = None, original: str | None = None,
+                        language: str = "English") -> tuple[str, str]:
+    """`question` is the normalized question used for retrieval; `original` is the user's own wording, passed only so
+    the model replies in the user's language (e.g. Hindi / Hinglish)."""
     task = ""
     if comparison and entities:
         task = (f"The user wants a comparison of: {', '.join(entities)}. Present a Markdown table of the attributes "
@@ -117,6 +120,7 @@ def build_answer_prompt(question: str, refs: list[SourceRef], history: list[dict
     elif any(r.is_golden for r in refs):
         task = "An APPROVED ANSWER is available; prefer its wording and meaning."
     user = load_prompt("answer_prompt.txt").format(history=format_history(history), sources=format_sources(refs),
-                                                    question=neutralize_for_prompt(question), task_instruction=task)
+                                                    question=neutralize_for_prompt(question), task_instruction=task,
+                                                    original=neutralize_for_prompt(original or question), language=language)
     system = load_prompt("system_prompt.txt").replace("{insufficient_text}", get_settings().insufficient_info_text)
     return system, user

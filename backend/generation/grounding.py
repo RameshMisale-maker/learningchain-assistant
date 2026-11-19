@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 REFUSAL_TEXT = "I'm sorry, but the knowledge base does not contain sufficient information to answer that question."
 _REFUSAL_PATTERNS = re.compile(
-    r"(does not contain (sufficient|enough)|insufficient information|couldn't find sufficient verified information|could not find sufficient verified information|"
+    r"(don't have confirmed information|do not have confirmed information|does not contain (sufficient|enough)|insufficient information|couldn't find sufficient verified information|could not find sufficient verified information|"
     r"(couldn't|could not|could n't) find sufficient information|not (available|found) in the (knowledge base|sources)"
     r"|i (do not|don't) have (enough )?information|cannot find (any )?information|no information (is )?available)",
     re.IGNORECASE)

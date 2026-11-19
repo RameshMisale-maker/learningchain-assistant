@@ -40,8 +40,8 @@ def test_replies_redirect_and_self_harm_offers_help():
 
 def test_insufficient_sentence_is_the_mandated_text_and_recognised_as_refusal():
     text = get_settings().insufficient_info_text
-    assert text == ("I couldn't find sufficient information in the available Sapphirus documentation to answer "
-                    "this question.")
+    assert text == ("I don't have confirmed information on that. Let me connect you with our support team: email "
+                    "info@sapphirus.in or call +91 96531 57225.")
     assert is_refusal(text)
 
 

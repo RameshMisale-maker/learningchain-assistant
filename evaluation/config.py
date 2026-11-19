@@ -38,7 +38,7 @@ BEHAVIOR_BY_ANSWER_TYPE = {
     "extractive_fallback": "Answer",
     "refusal": "Abstain", "clarification": "Abstain",
     "out_of_scope": "Reject", "blocked": "Reject", "access_denied": "Reject", "restricted": "Reject",
-    "greeting": "Reject", "closing": "Reject",
+    "greeting": "Reject", "closing": "Reject", "sensitive": "Reject", "account": "Abstain", "escalation": "Abstain",
     "error": "Error",
 }
 

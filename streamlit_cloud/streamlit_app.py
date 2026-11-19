@@ -101,6 +101,12 @@ def load_assistant(version: str):
     return ChatService()
 
 
+def _display(text: str) -> str:
+    """Answer as shown to users: the [S1] citation tags are dropped (sources are in the panel below)."""
+    import re
+    return re.sub(r"\s?\[S\d+\]", "", text or "")
+
+
 def _user():
     from backend.security.auth import AuthenticatedUser
     return AuthenticatedUser("streamlit_guest", {"public"})
@@ -150,7 +156,7 @@ def _ask(question: str, service) -> None:
             resp = service.answer(question, _user(), session_id=st.session_state.session_id, persist=False,
                                   history=history, allowed_kbs=ASSISTANT_KBS, channel="streamlit",
                                   assistant="all", record_metrics=False)
-        st.markdown(resp.answer)
+        st.markdown(_display(resp.answer))
         _render_sources(resp.citations)
         st.caption(f"{resp.route.get('conversation_intent', resp.answer_type)} · {resp.latency_ms / 1000:.1f}s")
     st.session_state.messages.append({"role": "assistant", "content": resp.answer, "answer_type": resp.answer_type,
@@ -210,7 +216,7 @@ def main() -> None:
                         "certificates and the admin and user portals.")
     for m in st.session_state.messages:
         with st.chat_message(m["role"]):
-            st.markdown(m["content"])
+            st.markdown(_display(m["content"]))
             if m["role"] == "assistant":
                 _render_sources(m.get("citations") or [])
 

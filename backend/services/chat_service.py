@@ -31,10 +31,11 @@ from backend.retrieval.reranker import Reranker, get_reranker, weighted_coverage
 from backend.common.text_utils import STOPWORDS, stem
 from backend.routing import intent as convo
 from backend.routing.decompose import decompose
-from backend.routing.normalize import Understanding, llm_understand, understand
+from backend.routing.normalize import Understanding, llm_understand, reply_language, understand
 from backend.routing.router import QueryRouter, RouteDecision
 from backend.security.auth import AuthenticatedUser
-from backend.security.prompt_guard import BLOCKED_MESSAGE, check_query, restricted_topic, restricted_topic_reply
+from backend.security.prompt_guard import (BLOCKED_MESSAGE, SENSITIVE_DATA_MESSAGE, check_query, redact_sensitive,
+                                           restricted_topic, restricted_topic_reply, sensitive_data)
 from config.settings import Settings, get_settings
 from ingestion.embedding import Embedder, get_embedder
 
@@ -69,7 +70,7 @@ def small_talk_reply(text: str, roles: set[str]) -> str:
               "verifying blockchain certificates, and how-to guides")
     examples = ("e.g. *\"How do I verify a student certificate?\"*, *\"What are the key features of LearningChain?\"* "
                 "or *\"How do I revoke a certificate?\"*")
-    if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)", t):
+    if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)\b", t):
         return f"Great! What would you like to know? You can ask me about {topics}."
     if re.match(r"^(thanks|thank|thx|ty|great|cool|nice|awesome|perfect|ok|okay|got it)", t):
         return "You're welcome! Is there anything else you'd like to know about Sapphirus or LearningChain?"
@@ -184,6 +185,7 @@ class ChatService:
         session_id = repository.ensure_session(session_id, user.username) if persist else (session_id or "eval")
         if history is None:
             history = repository.get_history(session_id, user.username, limit=8) if persist else []
+        history = [h | {"content": redact_sensitive(str(h.get("content", "")))} for h in history]
         error = ""
         with request_timings() as timings:
             try:
@@ -203,7 +205,7 @@ class ChatService:
         if record_metrics if record_metrics is not None else persist:
             self._record_metrics(response, user, session_id, channel, assistant, error)
         if persist:
-            repository.add_message(session_id, "user", question[: self.settings.max_query_chars])
+            repository.add_message(session_id, "user", redact_sensitive(question)[: self.settings.max_query_chars])
             response.message_id = repository.add_message(
                 session_id, "assistant", response.answer, knowledge_bases=response.knowledge_bases,
                 citations=[asdict(c) for c in response.citations], route_info=response.route,
@@ -212,7 +214,8 @@ class ChatService:
                 cost_usd=response.cost_usd)
             if response.answer_type in ("blocked", "access_denied"):
                 repository.write_audit(user.username, f"chat_{response.answer_type}", ",".join(response.route.get("denied_kbs", [])),
-                                       outcome="denied", details={"question": question[:300]}, ip_address=ip_address)
+                                       outcome="denied", details={"question": redact_sensitive(question)[:300]},
+                                       ip_address=ip_address)
         return response
 
     # ================================================================== pipeline
@@ -229,6 +232,12 @@ class ChatService:
                                 answer_type="blocked" if check.reason == "prompt_injection" else "invalid",
                                 route={"intent": "blocked", "flags": check.flags}, warnings=check.flags)
         query = original = check.cleaned
+        # card numbers, CVV, OTP, UPI PIN or passwords: warn, never process them further (no LLM, no retrieval)
+        kind = sensitive_data(query)
+        if kind:
+            return ChatResponse(answer=SENSITIVE_DATA_MESSAGE, session_id=session_id, message_id=None,
+                                answer_type="sensitive", confidence=1.0,
+                                route={"intent": "sensitive", "kind": kind, "conversation_intent": "SENSITIVE_DATA"})
         # query normalization (backend/routing/normalize.py): typos, short forms and product-name variants are fixed
         # ("wt is saphirus?" -> "what is Sapphirus?"); the normalized text is used from here on, the original only
         # for logging. Greetings / small talk skip it (fixed replies, no LLM call).
@@ -236,7 +245,7 @@ class ChatService:
         if s.query_normalization and not convo.is_small_talk(query):
             with stage("normalize_ms"):
                 understanding = understand(query, known=self._known_word,
-                                           llm=self.llm if s.normalization_llm else None)
+                                           llm=self.llm if s.normalization_llm else None, history=history)
             query = understanding.normalized
         # guardrail: restricted topics (healthcare, banking, sexual, self-harm, violence, illegal) are refused before
         # any retrieval or LLM call - safety rules take precedence over the request (checked on both spellings)
@@ -259,8 +268,17 @@ class ChatService:
                     direct.route.update(understanding.to_dict())
                 return direct
         with stage("query_rewrite_ms"):
-            standalone = self.router.rewrite_follow_up(query, history, force=message.intent == convo.FOLLOW_UP)
+            standalone, extra_queries, tool_only = self.router.resolve_follow_up(
+                query, history, force=message.intent == convo.FOLLOW_UP)
             expanded = self.router.expand(standalone)
+        # the question needs this user's own account data (payment, receipt, status), not the help documentation:
+        # there are no account tools, so explain where to find it instead of searching the documents
+        if tool_only or (understanding and understanding.needs_account_tool and s.conversation_layer):
+            account = convo.MessageIntent(convo.ACCOUNT, reply=convo.ACCOUNT_REPLY,
+                                          reason="needs account data (LLM)", method="llm")
+            direct = self._conversational_response(account, query, user, session_id)
+            direct.route.update(understanding.to_dict() if understanding else {})
+            return direct
         with stage("query_embedding_ms"):
             qvec = self.embedder.embed_query(expanded)
         with stage("routing_ms"):
@@ -323,9 +341,17 @@ class ChatService:
 
         # ---------------- multi-part questions: each part is also retrieved on its own (backend/routing/decompose.py)
         sub_questions: list[str] = []
+        planned = list(dict.fromkeys(extra_queries + (understanding.search_queries if understanding else [])))
         if route.intent != "comparison":
-            with stage("decompose_ms"):
-                sub_questions = decompose(standalone, self.llm)
+            if len(planned) > 1 or extra_queries:
+                # several questions in one message: the normalizer / follow-up rewrite already split them (max 3),
+                # so no separate decomposition call is needed
+                sub_questions = [q for q in planned if q.strip().lower() != standalone.strip().lower()][:3]
+                if extra_queries and standalone not in sub_questions:
+                    sub_questions = [standalone] + sub_questions
+            else:
+                with stage("decompose_ms"):
+                    sub_questions = decompose(standalone, self.llm)
 
         # ---------------- retrieval + rerank
         with stage("retrieval_ms"):
@@ -401,7 +427,9 @@ class ChatService:
         if self.llm is not None:
             try:
                 with stage("context_ms"):
-                    system, user_prompt = build_answer_prompt(standalone, refs, history, comparison, route.entities)
+                    system, user_prompt = build_answer_prompt(
+                        standalone, refs, history, comparison, route.entities, original=original,
+                        language=reply_language(original, understanding.language if understanding else None))
                 llm_result = self.llm.complete(system, user_prompt)
                 timings.set("llm_ttft_ms", llm_result.ttft_ms)
                 timings.set("llm_generation_ms", llm_result.generation_ms)
@@ -492,6 +520,10 @@ class ChatService:
             return ChatResponse(answer=small_talk_reply(query, user.roles), session_id=session_id, message_id=None,
                                 answer_type="closing" if is_closing(query) else "greeting", confidence=1.0,
                                 route=route)
+        if message.intent in (convo.ACCOUNT, convo.ESCALATION):
+            return ChatResponse(answer=message.reply, session_id=session_id, message_id=None,
+                                answer_type="account" if message.intent == convo.ACCOUNT else "escalation",
+                                confidence=1.0, route=route | {"intent": message.intent.lower()})
         if message.intent == convo.OUT_OF_SCOPE:
             return ChatResponse(answer=OUT_OF_SCOPE_TEXT, session_id=session_id, message_id=None,
                                 answer_type="out_of_scope", route=route | {"intent": "out_of_scope"})
