@@ -1,13 +1,13 @@
 """Query normalization + lenient scope check: understand informal, misspelt questions like ChatGPT does.
 
-    "wt is sapphirus?"          -> "what is Sapphirus?"
-    "howw leaning chain works?" -> "how LearningChain works?"
-    "hw to verfy certificat"    -> "how to verify certificate"
-    "saphirus contact no"       -> "Sapphirus contact number"
+    "wt is <compny>?"            -> "what is <Company>?"         (glossary variant -> product name)
+    "howw <prodct> works?"       -> "how <Product> works?"
+    "hw to verfy certificat"     -> "how to verify certificate"    (short forms, truncated domain words)
+    "<compny> contact no"        -> "<Company> contact number"
 
 Two passes:
 1. fuzzy_normalize()  - free and instant: SMS short forms (wt, hw, r, u, pls, abt ...), product-name variants
-   (saphirus, leaning chain, LC ...) and fuzzy matching (rapidfuzz, score >= 80) of unknown words against the
+   (the product config's glossary) and fuzzy matching (rapidfuzz, score >= 80) of unknown words against the
    domain glossary. Words the knowledge base already knows are never "corrected".
 2. llm_understand()   - only when unknown words remain after pass 1: one LLM call rewrites the message into clean
    English (with the same glossary) AND classifies its scope: IN_SCOPE / OUT_OF_SCOPE / GREETING / UNCLEAR.
@@ -44,15 +44,21 @@ FUZZY_THRESHOLD_SHORT = 86    # shorter words need a closer match ("admit" must 
 SCOPES = ("IN_SCOPE", "OUT_OF_SCOPE", "GREETING", "UNCLEAR")
 
 # product / company names: canonical spelling -> known variants (matched as whole words, case-insensitive)
-GLOSSARY: dict[str, list[str]] = {
-    "Sapphirus": ["saphirus", "sapphiras", "sapirus", "sapphires", "saphiras", "sapphirous", "sapphiros", "safirus"],
-    "LearningChain": ["leaning chain", "learning chain", "lerning chain", "learnchain", "learn chain",
-                      "learningchian", "leaningchain", "lerningchain", "learning-chain", "lc"],
-}
-DOMAIN_TERMS = ["certificate", "certificates", "issue", "issuing", "verify", "verification", "verifier", "share",
-                "sharing", "blockchain", "admin", "portal", "user", "credential", "credentials", "revoke", "student",
-                "institution", "university", "login", "password", "account", "contact", "pricing", "services",
-                "company", "product", "products", "upload", "download", "template", "features", "transcript"]
+def _glossary() -> dict[str, list[str]]:
+    """Canonical product / company names -> the variants users type (config/products/<id>.yaml -> glossary)."""
+    from backend.products import current_product
+    return {g.term: [v.lower() for v in g.variants] for g in current_product().glossary}
+
+
+def _domain_terms() -> list[str]:
+    from backend.products import current_product
+    return list(current_product().domain_terms)
+
+
+def _canon() -> dict[str, str]:
+    return {name.lower(): name for name in _glossary()}
+
+
 QUESTION_WORDS = ["what", "how", "who", "why", "when", "where", "which", "does", "can", "tell", "explain"]
 SHORTFORMS = {
     "wt": "what", "wat": "what", "wht": "what", "whet": "what", "wut": "what", "wats": "what is", "whats": "what is",
@@ -61,7 +67,6 @@ SHORTFORMS = {
     "cn": "can", "shud": "should", "wen": "when", "whr": "where", "wch": "which", "nd": "and", "n": "and",
     "dis": "this", "da": "the", "d": "the", "frm": "from", "abt.": "about", "info": "information",
 }
-_CANON = {name.lower(): name for name in GLOSSARY}
 _WORD_RE = re.compile(r"[A-Za-z0-9']+")
 
 
@@ -95,8 +100,9 @@ def fuzzy_normalize(text: str, known: Callable[[str], bool] | None = None) -> tu
     out = text
     fixes: list[tuple[str, str]] = []
 
-    # 1. multi-word product-name variants first ("leaning chain" -> LearningChain)
-    for canon, variants in GLOSSARY.items():
+    glossary, domain_terms, canon_map = _glossary(), _domain_terms(), _canon()
+    # 1. multi-word product-name variants first (glossary: "<variant>" -> <Product>)
+    for canon, variants in glossary.items():
         for v in sorted(variants, key=len, reverse=True):
             pattern = re.compile(rf"(?<![A-Za-z]){re.escape(v)}(?![A-Za-z])", re.IGNORECASE)
             if pattern.search(out):
@@ -107,7 +113,7 @@ def fuzzy_normalize(text: str, known: Callable[[str], bool] | None = None) -> tu
     def fix_word(m: re.Match) -> str:
         w = m.group(0)
         lw = w.lower()
-        if lw in _CANON or w in GLOSSARY:
+        if lw in canon_map or w in glossary:
             return w
         # "contact no" / "phone no" -> number
         if lw == "no" and re.search(r"(contact|phone|mobile|helpline|whatsapp|cell)\s*$", out[:m.start()], re.I):
@@ -118,8 +124,8 @@ def fuzzy_normalize(text: str, known: Callable[[str], bool] | None = None) -> tu
             return SHORTFORMS[lw]
         # truncated domain word ("revok", "certificat", "verificatio"): complete it. These look "known" to the
         # knowledge base, whose vocabulary is stemmed, but the cross-encoder reranker scores the typo badly.
-        if len(lw) >= 5 and lw not in DOMAIN_TERMS:
-            completion = next((t for t in DOMAIN_TERMS if t.startswith(lw) and len(t) - len(lw) <= 2), None)
+        if len(lw) >= 5 and lw not in domain_terms:
+            completion = next((t for t in domain_terms if t.startswith(lw) and len(t) - len(lw) <= 2), None)
             if completion:
                 fixes.append((w, completion))
                 return completion
@@ -127,11 +133,11 @@ def fuzzy_normalize(text: str, known: Callable[[str], bool] | None = None) -> tu
             return w
         squeezed = re.sub(r"(.)\1{2,}", r"\1", lw)                     # "helppp" -> "help"
         threshold = FUZZY_THRESHOLD if len(squeezed) >= 6 else FUZZY_THRESHOLD_SHORT
-        name, score = _best(squeezed, list(_CANON))
+        name, score = _best(squeezed, list(canon_map))
         if score >= threshold:
-            fixes.append((w, _CANON[name]))
-            return _CANON[name]
-        pool = DOMAIN_TERMS + (QUESTION_WORDS if len(squeezed) <= 5 else [])
+            fixes.append((w, canon_map[name]))
+            return canon_map[name]
+        pool = domain_terms + (QUESTION_WORDS if len(squeezed) <= 5 else [])
         term, score = _best(squeezed, pool)
         if score >= threshold and term != lw:
             fixes.append((w, term))
@@ -144,7 +150,7 @@ def fuzzy_normalize(text: str, known: Callable[[str], bool] | None = None) -> tu
 
 def unknown_words(text: str, known: Callable[[str], bool]) -> list[str]:
     words = [w.lower() for w in _WORD_RE.findall(text)]
-    return [w for w in words if not w.isdigit() and w.lower() not in _CANON and not known(w)]
+    return [w for w in words if not w.isdigit() and w.lower() not in _canon() and not known(w)]
 
 
 _NUMBER_RE = re.compile(r"\d[\d,./-]*\d|\d")
@@ -214,8 +220,8 @@ def reply_language(original: str, label: str | None) -> str:
     if re.search(r"[\u0900-\u097f]", original or ""):
         return "Hindi, in Devanagari script"
     if (label or "en") in ("hi", "hinglish"):
-        return ("Hinglish - Hindi sentences written in English (Roman) letters, like the user, e.g. \"Pehle LearningChain "
-                "mein login karein, phir Dashboard par Verification URL par click karein.\" Do NOT reply in English "
+        return ("Hinglish - Hindi sentences written in English (Roman) letters, like the user, e.g. \"Pehle "
+                "login karein, phir Dashboard par Verification URL par click karein.\" Do NOT reply in English "
                 "and do NOT use Devanagari")
     if label == "other":
         return "the same language and script as the user's original wording"

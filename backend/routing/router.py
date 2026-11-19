@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import re
+from functools import lru_cache
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -27,8 +28,8 @@ from ingestion.embedding import Embedder, get_embedder
 
 logger = logging.getLogger(__name__)
 
-GREETING_RE = re.compile(
-    r"^\s*((hi+|hello+|hey+|hiya|helo|hai|yo|greetings|namaste|namaskar)(\s+(there|team|sapphirus|bot|all))?|"
+_GREETING_PATTERN = (
+    r"^\s*((hi+|hello+|hey+|hiya|helo|hai|yo|greetings|namaste|namaskar)(\s+(there|team|{names}bot|all))?|"
     r"good\s+(morning|afternoon|evening|day)|"
     r"(thanks|thank\s*(you|u)|thx|ty)(\s+(a\s+lot|so\s+much|very\s+much))?|great|cool|nice|awesome|perfect|"
     r"ok(ay)?|got\s+it|bye+|goodbye|good\s*bye|see\s+(you|ya)|take\s+care|"
@@ -36,7 +37,24 @@ GREETING_RE = re.compile(
     r"that'?s\s+(all|it)|that\s+is\s+(all|it)|i'?m\s+done|im\s+done|all\s+good|i'?m\s+good|"
     r"who\s+are\s+you|what\s+are\s+you|what\s+is\s+your\s+name|are\s+you\s+(a\s+)?(bot|human|robot)|"
     r"how\s+are\s+you(\s+doing)?|what\s+can\s+you\s+do|how\s+can\s+you\s+help(\s+me)?|help)"
-    r"\s*[!.?]*\s*$", re.IGNORECASE)
+    r"\s*[!.?]*\s*$")
+
+
+def names_alternation() -> str:
+    """'name1|name2|' - the current product's names, for patterns such as "hi <name>" (product config)."""
+    from backend.products import current_product
+
+    return "".join(re.escape(n) + "|" for n in current_product().names)
+
+
+@lru_cache(maxsize=32)
+def _compile_greeting(names: str) -> re.Pattern:
+    return re.compile(_GREETING_PATTERN.replace("{names}", names), re.IGNORECASE)
+
+
+def greeting_re() -> re.Pattern:
+    """Greeting / small-talk pattern for the current product ("hi <bot or company name>")."""
+    return _compile_greeting(names_alternation())
 COMPARISON_RE = re.compile(r"\b(compare|comparison|versus|vs\.?|difference(s)?\s+between|differ|better\s+than|"
                            r"which\s+is\s+better)\b", re.IGNORECASE)
 FOLLOW_UP_RE = re.compile(r"^\s*(and|also|what\s+about|how\s+about|and\s+what\s+about|same\s+for|what\s+of)\b|"
@@ -199,7 +217,7 @@ class QueryRouter:
 
     # ------------------------------------------------------------------ main entry
     def route(self, query: str, roles: set[str], query_vector: np.ndarray | None = None) -> RouteDecision:
-        if GREETING_RE.match(query):
+        if greeting_re().match(query):
             return RouteDecision(intent="greeting", method="rules", reason="greeting/small talk")
         rcfg = self.routing_cfg()
         blocked = [t for t in rcfg.get("out_of_scope_topics", []) or []

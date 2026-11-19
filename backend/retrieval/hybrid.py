@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from backend.generation.failover import dense_search_down
 from backend.common.text_utils import tokenize
 from backend.common.timing import stage
 from backend.retrieval.kb_index import KBIndex, KBIndexManager, get_index_manager
@@ -72,7 +73,7 @@ class HybridRetriever:
             with stage("query_embedding_ms"):
                 qvec = self.embedder.embed_query(query)
         with stage("vector_search_ms"):
-            dense = [c for c in self.store.query(kb, qvec, s.top_k_vector * 3) if can_access(c.metadata, roles)]
+            dense = [] if dense_search_down() else                 [c for c in self.store.query(kb, qvec, s.top_k_vector * 3) if can_access(c.metadata, roles)]
         for rank, chunk in enumerate(dense[: s.top_k_vector], start=1):
             candidates[chunk.id] = Candidate(chunk=chunk, kb=kb, vector_score=chunk.score, vector_rank=rank)
 

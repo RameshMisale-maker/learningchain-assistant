@@ -4,7 +4,7 @@ POST /api/v1/webhooks/content-updated
   Body (JSON): {"url": "<changed page URL>"} or {"source_id": 3}; with neither, every enabled help-centre/sitemap
   source on the same host is re-checked.
   Authentication - HMAC-SHA256 with WEBHOOK_SECRET, one of:
-    * X-Sapphirus-Signature: sha256=<hex(hmac(secret, raw_body))>          (generic CMS / custom scripts)
+    * <WEBHOOK_SIGNATURE_HEADER>: sha256=<hex(hmac(secret, raw_body))>     (generic CMS / custom scripts)
     * X-Zendesk-Webhook-Signature + X-Zendesk-Webhook-Signature-Timestamp  (Zendesk webhooks:
       base64(hmac(secret, timestamp + raw_body)))
   Unsigned or wrongly signed calls are rejected; if WEBHOOK_SECRET is not set the endpoint is disabled (503).
@@ -31,7 +31,8 @@ MAX_SKEW_SECONDS = 600
 
 def verify_signature(headers: dict[str, str], body: bytes, secret: str) -> bool:
     h = {k.lower(): v for k, v in headers.items()}
-    sig = h.get("x-sapphirus-signature", "")
+    from config.settings import get_settings
+    sig = h.get(get_settings().webhook_signature_header.lower(), "")
     if sig:
         expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
         return hmac.compare_digest(sig.strip(), expected)

@@ -222,10 +222,11 @@ def write_report(df: pd.DataFrame, summary: dict, out_dir: Path, k: int, config:
     order = ["overall", "company", "products", "faq_exact", "faq_paraphrase", "multi_part", "multi_article",
              "comparison", "exact_detail", "conflict", "ambiguous", "missing_answer", "misleading", "out_of_scope"]
     cols = [c for c in order if c in summary]
-    lines = [f"# Sapphirus AI Assistant - Evaluation Report", "",
+    from backend.products import get_product
+    lines = [f"# {get_product().bot_name} - Evaluation Report", "",
              f"Generated: {datetime.now(timezone.utc).isoformat(timespec='seconds')}  ",
              f"K = {k}  ", "Configuration: " + ", ".join(f"{a}={b}" for a, b in config.items()), "",
-             "> Knowledge: LearningChain help centre (products) and sapphirus.in (company). The test set is small,",
+             f"> Knowledge: {get_product().description} The test set is small,",
              "> so treat these numbers as indicative and grow it with real user questions over time.", ""]
     if config.get("llm") == "extractive-fallback" or str(config.get("embedding", "")).startswith("local_hash"):
         lines += ["> OFFLINE MODE: answers were produced by the extractive (no-LLM) answerer and/or the local hashed",
@@ -284,7 +285,7 @@ def run_ragas(df: pd.DataFrame) -> dict:
 def main(argv: list[str] | None = None) -> int:
     setup_logging()
     settings = get_settings()
-    parser = argparse.ArgumentParser(description="Evaluate the Sapphirus AI Assistant")
+    parser = argparse.ArgumentParser(description="Evaluate the RAG assistant")
     parser.add_argument("--dataset", default=str(settings.base_dir / "datasets/evaluation_dataset/evaluation_dataset.csv"))
     parser.add_argument("--out", default=str(settings.base_dir / "reports"))
     parser.add_argument("--category", default="")

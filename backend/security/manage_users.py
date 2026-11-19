@@ -16,7 +16,7 @@ from backend.security.auth import generate_token, hash_token, normalize_roles
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Manage Sapphirus assistant users")
+    parser = argparse.ArgumentParser(description="Manage assistant users")
     sub = parser.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("create")
     c.add_argument("--username", required=True)

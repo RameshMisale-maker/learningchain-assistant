@@ -1,0 +1,246 @@
+# Product configuration - see docs/adding-a-product.md. Everything product-specific lives here;
+# the pipeline code contains no product names. Validated at startup (backend/products/config.py).
+product_id: sapphirus
+display_name: Sapphirus Systems
+company: Sapphirus Systems
+company_short: Sapphirus
+bot_name: Sapphirus Assistant
+description: 'Combined assistant: Sapphirus Systems company information (services, products, offices, careers) and LearningChain
+  product help.'
+covers:
+- Sapphirus
+- LearningChain
+aliases:
+- all
+- company
+domains: []
+kb: company
+namespaces:
+- company
+- products
+scopes:
+  all:
+  - products
+  - company
+  company:
+  - company
+  products:
+  - products
+sources:
+  sitemaps:
+  - https://sapphirus.in/page-sitemap.xml
+  - https://sapphirus.in/post-sitemap.xml
+  - https://sapphirus.in/job_listing-sitemap.xml
+  include_paths: []
+  exclude_paths:
+  - /category/
+  - /author/
+  - /blog/$
+  allowed_domains:
+  - sapphirus.in
+glossary:
+- term: Sapphirus
+  variants:
+  - saphirus
+  - sapphiras
+  - sapirus
+  - sapphires
+  - saphiras
+  - sapphirous
+  - sapphiros
+  - safirus
+- term: LearningChain
+  variants:
+  - leaning chain
+  - learning chain
+  - lerning chain
+  - learnchain
+  - learn chain
+  - learningchian
+  - leaningchain
+  - lerningchain
+  - learning-chain
+  - lc
+help_topics: accounts and login, student certificate verification, fees and payments, product features, the admin and user
+  portals, policies and company information
+glossary_prompt: '- Sapphirus (the company; misspellings: saphirus, sapphiras, sapirus, sapphires)
+
+  - LearningChain (the product; also written: leaning chain, learning chain, lerning chain, learnchain, LC)
+
+  - Student Verification, Certificate Verification (verfication, verifiction, varification, verfy)
+
+  - certificate, issue, share, revoke, blockchain, credential, QR code, Bulk Upload
+
+  - Admin Portal, User Portal, Verifier, Dashboard, Profile, Reports, Generated Certificates
+
+  - DigiLocker
+
+  - Payment, Fee, Refund, Receipt, Invoice, Payment History
+
+  - Sapphirus products: BSecured, Doc Secure, ID Secure, Label Secure, Exam Secure, ProctAI, ARIA, Samvaad, Sutradhar, BFMS,
+  LearningTree
+
+  '
+domain_terms:
+- certificate
+- certificates
+- issue
+- issuing
+- verify
+- verification
+- verifier
+- share
+- sharing
+- blockchain
+- admin
+- portal
+- user
+- credential
+- credentials
+- revoke
+- student
+- institution
+- university
+- login
+- password
+- account
+- contact
+- pricing
+- services
+- company
+- product
+- products
+- upload
+- download
+- template
+- features
+- transcript
+other_products:
+- BSecured
+- Doc Secure
+- ID Secure
+- Label Secure
+- Exam Secure
+- ProctAI
+- ARIA
+- Samvaad
+- Sutradhar
+- BFMS
+- LearningTree
+topics:
+- certificates
+- blockchain credentials
+- issuing / sharing / verifying
+- portals
+- accounts
+- login
+- fees
+- payments
+- pricing
+- contact details
+- the company
+- team
+- services
+- products
+- careers
+examples:
+- What is LearningChain?
+- What services does Sapphirus provide?
+- How do I verify a student certificate?
+- How can I contact Sapphirus?
+incomplete_hints:
+  what: '"What is LearningChain?"'
+  how: '"How do I verify a certificate?"'
+  who: '"Who can issue certificates?"'
+  why: '"Why use blockchain certificates?"'
+  when: '"When is a certificate added to the blockchain?"'
+  where: '"Where does LearningChain store my data?"'
+  which: '"Which file formats can I upload?"'
+  can: '"Can I revoke a certificate?"'
+  tell: '"Tell me about the features of LearningChain"'
+  explain: '"Explain how certificate verification works"'
+enabled_tools: []
+languages:
+- en
+- hi
+- hinglish
+retrieval:
+  namespace: company
+  top_k: 5
+  rerank_top: 5
+  min_score: 0.15
+golden_threshold: 0.78
+semantic_cache_threshold: 0.95
+escalation:
+  email: info@sapphirus.in
+  phone: +91 96531 57225
+  hours: ''
+  contact_url: https://sapphirus.in/contacts/
+  careers_url: https://sapphirus.in/careers/
+models:
+  primary:
+    provider: groq
+    model: openai/gpt-oss-120b
+  fallback:
+  - provider: groq
+    model: openai/gpt-oss-20b
+prompt_version: 2026-11-19.1
+welcome_message: 'Hello! I''m the Sapphirus & LearningChain Assistant. Ask me about Sapphirus - our company, services and
+  products - or LearningChain: issuing, sharing and verifying blockchain certificates and the admin and user portals.'
+ui:
+  title: LearningChain Assistant
+  subtitle: Sapphirus Systems & LearningChain - company, services, products and how-to guides
+  placeholder: Ask about LearningChain…
+  footer: Answers come only from published Sapphirus and LearningChain content. Please verify important details with our team.
+  launcher_label: Ask Sapphirus
+  icon: 🎓
+  welcome: Hi! I'm the LearningChain Assistant. Ask me about LearningChain features, issuing and verifying blockchain certificates,
+    or how to do something in the platform
+  suggestions:
+  - What is LearningChain?
+  - What services does Sapphirus provide?
+  - How do I verify a student certificate?
+  - How can I contact Sapphirus?
+  spinner: Searching the LearningChain documentation...
+  api_model_id: ''
+  api_model_name: ''
+replies:
+  out_of_scope: I can only help with Sapphirus Systems and LearningChain - for example, I can explain how to verify a certificate.
+  no_confirmed_information: 'I don''t have confirmed information on that. Let me connect you with our support team: email
+    info@sapphirus.in or call +91 96531 57225.'
+  blocked: I can only help with your own account and Sapphirus / LearningChain questions.
+  restricted_topic: I'm sorry, but I can't help with that topic. I can help with questions about Sapphirus and its LearningChain
+    platform - for example issuing, sharing or verifying blockchain certificates, the admin and user portals, or Sapphirus
+    company information.
+  greeting_first: '{hello} I''m the Sapphirus Assistant. How can I help you with Sapphirus Systems or LearningChain today?'
+  who_are_you: I'm the Sapphirus Assistant - I answer questions about Sapphirus Systems and LearningChain.
+  what_can_you_do: I can answer questions about Sapphirus Systems and LearningChain - for example, how to issue, share or
+    verify certificates.
+  bye: Thank you for visiting Sapphirus! Have a great day. If you need anything later, reach us at info@sapphirus.in or +91
+    96531 57225.
+  closing: Thank you for chatting with the Sapphirus Assistant! Before you go, please rate this conversation below - your
+    feedback helps us improve. Have a nice day!
+  account: 'I can''t see your personal account details (payments, receipts or verification status) in this chat. Please log
+    in to your account to check it, or contact our support team: email **info@sapphirus.in** or call **+91 96531 57225**.'
+  escalation: I'm sorry about this. Our support team will look into it personally - please email **info@sapphirus.in** or
+    call **+91 96531 57225** and share the details there.
+  frustration_again: 'I''m really sorry this still isn''t working for you. Our support team can help you directly: email info@sapphirus.in
+    or call +91 96531 57225. Or tell me what went wrong and I''ll try again.'
+  rephrase: Sorry, I couldn't understand that. Could you rephrase your question? You can ask me about LearningChain - for
+    example *"What is LearningChain?"*, *"How do I verify a certificate?"* or *"What are the key features of LearningChain?"*
+  access_denied_guest: Information about {names} is internal and available to Sapphirus employees only. If you're interested
+    in working with us, see current openings at https://sapphirus.in/careers/ or write to info@sapphirus.in.
+  repeat_alternatives:
+    refusal: 'I still don''t have confirmed information on that. Our support team can help: email info@sapphirus.in or call
+      +91 96531 57225.'
+    error: I still couldn't get an answer for that. Please try again in a moment, or contact info@sapphirus.in.
+    out_of_scope: That's outside what I can help with, but I'm happy to answer anything about Sapphirus or LearningChain -
+      for example, what LearningChain's key features are.
+    clarification: Could you share a little more detail - for example, which feature or page you mean?
+    greeting: How can I help you today?
+    account: As mentioned, I can't see account details here - please log in to your account, or contact our support team at
+      info@sapphirus.in or +91 96531 57225.
+    escalation: Our support team is the best way to resolve this - please email info@sapphirus.in or call +91 96531 57225.
+    sensitive: Please don't share those details here - they aren't needed. How else can I help?
+    restricted: I can't help with that topic, but I'm happy to help with any Sapphirus or LearningChain question.
+    blocked: I can only help with your own account and Sapphirus / LearningChain questions. What do you need help with?

@@ -25,11 +25,12 @@ from __future__ import annotations
 import difflib
 import logging
 import re
+from functools import lru_cache
 from dataclasses import dataclass
 from typing import Callable
 
 from backend.common.text_utils import STOPWORDS
-from backend.routing.router import FOLLOW_UP_RE, GREETING_RE
+from backend.routing.router import FOLLOW_UP_RE, greeting_re, names_alternation
 
 logger = logging.getLogger(__name__)
 
@@ -47,20 +48,43 @@ FRUSTRATION = "FRUSTRATION"          # anger, insults, swearing: stay calm, ask 
 INTENTS = (GREETING, SMALL_TALK, TYPO_OR_INCOMPLETE, CLARIFICATION, KNOWLEDGE, FOLLOW_UP, OUT_OF_SCOPE, GIBBERISH, ACCOUNT,
            ESCALATION, FRUSTRATION)
 
-EXAMPLES = ('*"What is LearningChain?"*, *"How do I verify a certificate?"* or '
-            '*"What are the key features of LearningChain?"*')
 INCOMPLETE_REPLY = "Sure - what would you like to know? Please share your full question."
-FRUSTRATION_REPLY = ("Sorry you're having a frustrating time. What's going wrong? I'll do my best to help, or I can "
-                     "connect you with our support team.")
-FRUSTRATION_AGAIN_REPLY = ("I'm really sorry this still isn't working for you. Our support team can help you directly: "
-                           "email info@sapphirus.in or call +91 96531 57225. Or tell me what went wrong and I'll try again.")
-REPHRASE_TEXT = ("Sorry, I couldn't understand that. Could you rephrase your question? You can ask me about "
-                 f"LearningChain - for example {EXAMPLES}")
 
-GREETING_ONLY_RE = re.compile(
+
+# Product-specific replies come from the product config (config/products/<id>.yaml -> replies).
+def _replies():
+    from backend.products import current_product
+    return current_product().replies
+
+
+def rephrase_text() -> str:
+    return _replies().rephrase
+
+
+def account_reply() -> str:
+    return _replies().account
+
+
+def escalation_reply() -> str:
+    return _replies().escalation
+
+
+def frustration_text() -> str:
+    return _replies().frustration
+
+
+def frustration_again_text() -> str:
+    return _replies().frustration_again
+
+
+def incomplete_hints() -> dict[str, str]:
+    from backend.products import current_product
+    return current_product().incomplete_hints or {"what": ""}
+
+
+_GREETING_ONLY = (
     r"^\s*((hi+|hello+|hey+|hiya|helo+|hlo+|hllo|hellow|helllo|hai|hy|hie|yo|greetings|namaste|namaskar)"
-    r"(\s+(there|team|sapphirus|bot|all))?|(good|gud|gd)\s*(morning|afternoon|evening|day)|gm)\s*[!.?]*\s*$",
-    re.IGNORECASE)
+    r"(\s+(there|team|{names}bot|all))?|(good|gud|gd)\s*(morning|afternoon|evening|day)|gm)\s*[!.?]*\s*$")
 AFFIRM_RE = re.compile(r"^\s*(yes|yeah|yep|yup|sure|ya|of course|go ahead)\s*[!.?]*\s*$", re.IGNORECASE)
 
 QUESTION_WORDS = ["what", "how", "who", "why", "when", "where", "which", "can", "could", "does", "do", "is", "are",
@@ -74,13 +98,6 @@ TYPOS: dict[str, str | None] = {
     "tll": "tell", "expln": "explain", "explan": "explain", "m": "me", "wh": None, "w": None,
 }
 AMBIGUOUS_STARTS = ["What", "Where", "When", "Who", "Why", "Which"]
-INCOMPLETE_HINTS = {
-    "what": '"What is LearningChain?"', "how": '"How do I verify a certificate?"', "who": '"Who can issue certificates?"',
-    "why": '"Why use blockchain certificates?"', "when": '"When is a certificate added to the blockchain?"',
-    "where": '"Where does LearningChain store my data?"', "which": '"Which file formats can I upload?"',
-    "can": '"Can I revoke a certificate?"', "tell": '"Tell me about the features of LearningChain"',
-    "explain": '"Explain how certificate verification works"',
-}
 CLARIFY_ONLY_RE = re.compile(
     r"^\s*(what|when|where|who|why|which|which\s+one|what\s+do\s+you\s+mean|meaning|huh|sorry|pardon|come\s+again|"
     r"i\s+don'?t\s+understand|not\s+clear)\s*\?+\s*$|^\s*(huh|pardon|come again)\s*[!.]*\s*$", re.IGNORECASE)
@@ -101,8 +118,6 @@ OUT_OF_SCOPE_RE = re.compile(
     r"recipe|cook(ing)?\b|movie|film|song|lyrics|poem|horoscope|astrology|news\s+today|latest\s+news|"
     r"write\s+(me\s+)?(a\s+)?(code|program|essay|story|poem)|play\s+a\s+game|translate\b|capital\s+of|"
     r"president\s+of|prime\s+minister)\b", re.IGNORECASE)
-SUPPORT_CONTACT = "email **info@sapphirus.in** or call **+91 96531 57225**"
-SUPPORT_CONTACT_PLAIN = "email info@sapphirus.in or call +91 96531 57225"
 ACCOUNT_RE = re.compile(
     r"\b(has|have|did|is|was|were|are)\s+(my|our)\s+(payment|transaction|refund|order|subscription|verification|"
     r"certificate|application|receipt|invoice)s?\b|"
@@ -111,10 +126,9 @@ ACCOUNT_RE = re.compile(
     r"failed|went through|gone through|deducted|stuck)\b|"
     r"\b(check|show|send|get|download)\s+(me\s+)?(my|our)\s+(receipt|invoice|payment status|verification status|"
     r"transaction history)\b|\bmoney (was |got )?deducted\b", re.IGNORECASE)
-ESCALATION_RE = re.compile(
-    r"\b(complain\w*|harass\w*|abusive|legal action|legal notice|lawyer|lawsuit|sue (you|sapphirus)|consumer (court|forum)|"
-    r"(want|need|demand|give me)\s+(a\s+|my\s+)?(refund|money back)|refund\s+(is\s+)?(not|never|still)\b)",
-    re.IGNORECASE)
+_ESCALATION = (
+    r"\b(complain\w*|harass\w*|abusive|legal action|legal notice|lawyer|lawsuit|sue (you|{names}us)|consumer (court|forum)|"
+    r"(want|need|demand|give me)\s+(a\s+|my\s+)?(refund|money back)|refund\s+(is\s+)?(not|never|still)\b)")
 FRUSTRATION_RE = re.compile(
     r"\b(go to hell|shut up|get lost|screw (you|this)|damn|dammit|wtf|wth|f+u+c+k\w*|f\*+\w*|sh[i1]t\w*|bullshit|crap|"
     r"idiot\w*|stupid|dumb|moron\w*|useless|pathetic|rubbish|nonsense|garbage|trash|worthless|hopeless|"
@@ -122,10 +136,6 @@ FRUSTRATION_RE = re.compile(
     r"(worst|terrible|horrible|awful|bad) (bot|app|service|support|experience|chatbot|assistant)|"
     r"(i hate|hate) (you|this)|so annoying|frustrat\w*|fed up|sick of (this|you))\b|"
     r"\b(this|it|you) (sucks?|is (so )?bad)\b", re.IGNORECASE)
-ACCOUNT_REPLY = ("I can't see your personal account details (payments, receipts or verification status) in this chat. "
-                 "Please log in to your account to check it, or contact our support team: " + SUPPORT_CONTACT + ".")
-ESCALATION_REPLY = ("I'm sorry about this. Our support team will look into it personally - please " + SUPPORT_CONTACT +
-                    " and share the details there.")
 _KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm", "1234567890")
 _WORD_RE = re.compile(r"[a-z0-9']+")
 
@@ -149,9 +159,22 @@ class MessageIntent:
 
 
 # ------------------------------------------------------------------------------------------------ helpers
+@lru_cache(maxsize=32)
+def _compile_names(pattern: str, names: str) -> re.Pattern:
+    return re.compile(pattern.replace("{names}", names), re.IGNORECASE)
+
+
+def greeting_only_re() -> re.Pattern:
+    return _compile_names(_GREETING_ONLY, names_alternation())
+
+
+def escalation_re() -> re.Pattern:
+    return _compile_names(_ESCALATION, names_alternation())
+
+
 def is_small_talk(text: str) -> bool:
     """Greeting / thanks / bye / yes - handled by fixed replies, so no normalization or LLM call is needed."""
-    return bool(GREETING_ONLY_RE.match(text or "") or GREETING_RE.match(text or "") or AFFIRM_RE.match(text or ""))
+    return bool(greeting_only_re().match(text or "") or greeting_re().match(text or "") or AFFIRM_RE.match(text or ""))
 
 
 def _words(text: str) -> list[str]:
@@ -227,14 +250,14 @@ def frustration_reply(history: list[dict]) -> tuple[str, bool]:
     offer to retry the user's last real question when there is one."""
     last = _last_assistant(history)
     if last and last.get("answer_type") == "frustration":
-        return FRUSTRATION_AGAIN_REPLY, True
+        return frustration_again_text(), True
     prev_q = next((h.get("content", "") for h in reversed(history or []) if h.get("role") == "user"
                    and not FRUSTRATION_RE.search(h.get("content", "")) and len(_words(h.get("content", ""))) >= 3), "")
     if prev_q:
         topic = prev_q.strip().rstrip("?.!")[:80]
         return (f"Sorry you're having a frustrating time. Was it my answer about \"{topic}\"? Tell me what went wrong "
                 "and I'll try again, or I can connect you with our support team."), True
-    return FRUSTRATION_REPLY, False
+    return frustration_text(), False
 
 
 def _clarify_reply(history: list[dict], message: str) -> tuple[str, bool]:
@@ -260,9 +283,9 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     has_history = bool(last_assistant_answer(history))
 
     # 1. greetings / small talk (incl. typos such as "helo", "gud morning") - no retrieval, no LLM
-    if GREETING_ONLY_RE.match(t):
+    if greeting_only_re().match(t):
         return MessageIntent(GREETING, reason="greeting")
-    if GREETING_RE.match(t) or AFFIRM_RE.match(t):
+    if greeting_re().match(t) or AFFIRM_RE.match(t):
         return MessageIntent(SMALL_TALK, reason="small talk")
 
     # 1b. frustration, anger, insults or swearing: calm acknowledgement, ask what went wrong (support if repeated)
@@ -273,15 +296,15 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
 
     # 2. no letters at all ("@@@###", "???", "123")
     if not re.search(r"[^\W\d_]", t):
-        return MessageIntent(GIBBERISH, reply=REPHRASE_TEXT, reason="no words")
+        return MessageIntent(GIBBERISH, reply=rephrase_text(), reason="no words")
     if not words:                       # written only in another script (e.g. Devanagari): a question to answer
         return MessageIntent(KNOWLEDGE, reason="non-Latin script")
 
     # 2b. this user's own account (no lookup tools) and complaints / disputes (human support) - fixed replies
-    if ESCALATION_RE.search(t):
-        return MessageIntent(ESCALATION, reply=ESCALATION_REPLY, reason="complaint / dispute -> support")
+    if escalation_re().search(t):
+        return MessageIntent(ESCALATION, reply=escalation_reply(), reason="complaint / dispute -> support")
     if ACCOUNT_RE.search(t):
-        return MessageIntent(ACCOUNT, reply=ACCOUNT_REPLY, reason="personal account data")
+        return MessageIntent(ACCOUNT, reply=account_reply(), reason="personal account data")
 
     # 3. requests to continue / elaborate - resolved from the conversation, or clarified when there is none
     if ELABORATE_RE.match(t):
@@ -304,21 +327,18 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
         if matched and rest_ok and (first is None or first in QUESTION_WORDS):
             if first is None:
                 opts = ", ".join(f'"{w}"' for w in AMBIGUOUS_STARTS[:-1]) + f' or "{AMBIGUOUS_STARTS[-1]}"'
-                return MessageIntent(TYPO_OR_INCOMPLETE, reason=f"lone word: {words[0]}", reply=INCOMPLETE_REPLY.format(
-                    hint=INCOMPLETE_HINTS["what"]))
+                return MessageIntent(TYPO_OR_INCOMPLETE, reason=f"lone word: {words[0]}", reply=INCOMPLETE_REPLY)
             return MessageIntent(TYPO_OR_INCOMPLETE, suggestion=first.capitalize(), reason=f"lone word: {words[0]}",
-                                 reply=INCOMPLETE_REPLY.format(hint=INCOMPLETE_HINTS.get(first, INCOMPLETE_HINTS["what"])))
+                                 reply=INCOMPLETE_REPLY)
 
     # 6. only function words / truncated words: "What is", "How to", "Tell me", "Can you", "How t"
     if words and len(words) <= 5 and all(w in STOPWORDS or w in QUESTION_WORDS or w in TYPOS
                                                   or len(w) == 1 for w in words):
-        starter = next((TYPOS.get(w) or w for w in words if (TYPOS.get(w) or w) in INCOMPLETE_HINTS), "")
-        hint = INCOMPLETE_HINTS.get(starter, INCOMPLETE_HINTS["what"])
-        return MessageIntent(TYPO_OR_INCOMPLETE, reason="incomplete question", reply=INCOMPLETE_REPLY.format(hint=hint))
+        return MessageIntent(TYPO_OR_INCOMPLETE, reason="incomplete question", reply=INCOMPLETE_REPLY)
 
     # 7. random characters: "xyz123", "asdfghjkl"
     if len(words) <= 3 and all(_looks_gibberish(w, known) for w in words):
-        return MessageIntent(GIBBERISH, reply=REPHRASE_TEXT, reason="gibberish")
+        return MessageIntent(GIBBERISH, reply=rephrase_text(), reason="gibberish")
 
     # 8. clearly unrelated requests (the router's own out-of-scope checks still apply to everything else)
     if OUT_OF_SCOPE_RE.search(t):
@@ -329,7 +349,7 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
         return MessageIntent(FOLLOW_UP, uses_history=True, reason="reference to the previous turn")
 
     # 10. short message with words the rules can't place -> ask the LLM (if any); otherwise treat as a question
-    # (a question word followed by a subject - "What is LearningChain?" - is already a well-formed question)
+    # (a question word followed by a subject - "What is <Product>?" - is already a well-formed question)
     unknown = [w for w in words if not known(w)]
     question_shaped = words[0] in QUESTION_WORDS and len(words) >= 2
     if llm is not None and len(words) <= 3 and unknown and not question_shaped:
@@ -362,11 +382,11 @@ def _llm_classify(llm, text: str, history: list[dict]) -> MessageIntent | None:
         if len(_words(text)) >= 2:          # a misspelt question is still a question: answer it, never ask to retype
             result.intent, result.reason = KNOWLEDGE, "llm: misspelt question treated as a question"
         else:
-            result.reply = INCOMPLETE_REPLY.format(hint=INCOMPLETE_HINTS["what"])
+            result.reply = INCOMPLETE_REPLY
     elif intent == CLARIFICATION:
         result.reply, result.uses_history = _clarify_reply(history, text)
     elif intent == GIBBERISH:
-        result.reply = REPHRASE_TEXT
+        result.reply = rephrase_text()
     elif intent == FOLLOW_UP and not last_assistant_answer(history):
         result.intent, result.uses_history = KNOWLEDGE, False
     return result

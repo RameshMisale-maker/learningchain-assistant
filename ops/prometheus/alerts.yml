@@ -1,0 +1,45 @@
+# Prometheus alerting rules - the same signals as config/alerts.yaml, for teams that route alerts through
+# Prometheus / Alertmanager instead of the built-in alert checker (ALERTS_ENABLED).
+groups:
+  - name: assistant
+    rules:
+      - alert: AssistantHighRefusalRate
+        expr: |
+          sum by (product) (rate(assistant_refusals_total[1h]))
+            / clamp_min(sum by (product) (rate(assistant_requests_total[1h])), 1e-9) > 0.35
+          and sum by (product) (increase(assistant_requests_total[1h])) >= 20
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 35% of {{ $labels.product }} questions were refused in the last hour"
+
+      - alert: AssistantErrors
+        expr: |
+          sum by (product) (rate(assistant_errors_total[15m]))
+            / clamp_min(sum by (product) (rate(assistant_requests_total[15m])), 1e-9) > 0.05
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "More than 5% of {{ $labels.product }} requests failed (15 min)"
+
+      - alert: AssistantSlowAnswers
+        expr: |
+          histogram_quantile(0.95, sum by (le, product) (rate(assistant_request_latency_ms_bucket[30m]))) > 12000
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: "p95 answer latency of {{ $labels.product }} above 12 s"
+
+      - alert: AssistantLLMCircuitOpen
+        expr: max by (provider) (assistant_circuit_breaker_state) == 2
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: "LLM provider {{ $labels.provider }} circuit breaker is open"
+
+      - alert: AssistantReviewQueueGrowing
+        expr: sum(assistant_review_items_open) > 50
+        for: 1h
+        labels: {severity: info}
+        annotations:
+          summary: "More than 50 open review items"

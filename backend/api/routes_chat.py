@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from backend.api.deps import client_ip, current_user, rate_limited
 from backend.api.schemas import ChatRequest, ChatResponseOut, FeedbackRequest
 from backend.db import repository
+from backend.products import ProductConfig, ProductConfigError, get_product, resolve_product
 from backend.security.auth import AuthenticatedUser
 from backend.security.rbac import accessible_kbs, suggested_questions
 from backend.services.chat_service import get_chat_service
@@ -29,8 +30,29 @@ def suggestions(user: AuthenticatedUser = Depends(current_user)) -> dict:
     return {"questions": suggested_questions(user)}
 
 
-# This deployment answers LearningChain questions only - every assistant value maps to the products KB.
-ASSISTANT_KBS = {"all": ["products", "company"], "company": ["company"], "products": ["products"]}
+def assistant_kbs(assistant: str | None, product: ProductConfig | None = None) -> list[str]:
+    """Knowledge bases an assistant value may search, from the product config's `scopes` (else all namespaces)."""
+    return (product or get_product()).allowed_kbs(assistant)
+
+
+def request_scope(body: ChatRequest, request: Request) -> tuple[ProductConfig, list[str]]:
+    """Product for this request (id / legacy assistant alias / domain / default) and the knowledge bases it may use."""
+    try:
+        product = resolve_product(product=body.product, assistant=body.assistant, host=request.headers.get("host"))
+    except ProductConfigError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return product, product.allowed_kbs(body.assistant)
+
+
+@router.get("/ui")
+def ui_config(request: Request, product: str | None = None, assistant: str | None = None) -> dict:
+    """Display texts for the chat page / widget (title, subtitle, suggestions, welcome) from the product config."""
+    try:
+        cfg = resolve_product(product=product, assistant=assistant, host=request.headers.get("host"))
+    except ProductConfigError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"product_id": cfg.product_id, "bot_name": cfg.bot_name, "company": cfg.company, **cfg.ui.model_dump(
+        exclude={"api_model_id", "api_model_name"})}
 
 
 @router.post("/chat/stream")
@@ -42,6 +64,7 @@ async def chat_stream(body: ChatRequest, request: Request, user: AuthenticatedUs
     """
     received = time.perf_counter()
     service = get_chat_service()
+    product, allowed = request_scope(body, request)
 
     def sse(event: str, data: dict) -> str:
         return f"event: {event}\ndata: {json.dumps(data)}\n\n"
@@ -50,7 +73,7 @@ async def chat_stream(body: ChatRequest, request: Request, user: AuthenticatedUs
         try:
             resp = await run_in_threadpool(lambda: service.answer(
                 body.message, user, body.session_id, True, client_ip(request),
-                allowed_kbs=ASSISTANT_KBS[body.assistant], channel="widget", assistant=body.assistant))
+                allowed_kbs=allowed, channel="widget", assistant=body.assistant, product=product))
         except Exception:
             yield sse("error", {"message": "The assistant is temporarily unavailable. Please try again."})
             return
@@ -72,10 +95,10 @@ async def chat_stream(body: ChatRequest, request: Request, user: AuthenticatedUs
 @router.post("/chat", response_model=ChatResponseOut)
 async def chat(body: ChatRequest, request: Request, user: AuthenticatedUser = Depends(rate_limited)) -> dict:
     service = get_chat_service()
-    allowed = ASSISTANT_KBS[body.assistant]
+    product, allowed = request_scope(body, request)
     response = await run_in_threadpool(lambda: service.answer(
         body.message, user, body.session_id, True, client_ip(request), allowed_kbs=allowed, channel="api",
-        assistant=body.assistant))
+        assistant=body.assistant, product=product))
     data = response.to_dict()
     data.pop("retrieved", None)
     if not user.is_admin:  # keep internal diagnostics for administrators only
@@ -105,6 +128,9 @@ def feedback(body: FeedbackRequest, request: Request, user: AuthenticatedUser = 
         raise HTTPException(status_code=422, detail="stars (1-5) is required for a conversation rating")
     rating = f"stars_{body.stars}" if body.rating == "conversation" else body.rating
     fid = repository.add_feedback(body.message_id, user.username, rating, body.comment)
+    from backend.services.feedback_hooks import on_feedback
+
+    on_feedback(body.message_id, rating, body.comment, user.username)
     repository.write_audit(user.username, "feedback", str(body.message_id), details={"rating": body.rating},
                            ip_address=client_ip(request))
     return {"feedback_id": fid}

@@ -24,7 +24,7 @@ from rank_bm25 import BM25Okapi
 from backend.common.text_utils import tokenize
 from backend.db import repository
 from config.settings import get_settings
-from ingestion.vector_store import StoredChunk, VectorStore, get_vector_store
+from ingestion.vector_store import StoredChunk, VectorStore, collection_name, get_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ class KBIndex:
     entity_aliases: dict[str, str] = field(default_factory=dict)   # alias(lower) -> canonical name
     golden: list[StoredChunk] = field(default_factory=list)
     id_to_pos: dict[str, int] = field(default_factory=dict)
+    collection: str = ""            # vector collection the index was built from (index versioning)
 
     @property
     def size(self) -> int:
@@ -78,13 +79,15 @@ class KBIndexManager:
         if idx is not None and now - self._checked.get(kb, 0) < self.refresh_seconds:
             return idx
         revision = repository.get_kb_revision(kb)
+        collection = collection_name(kb)
         self._checked[kb] = now
-        if idx is not None and idx.revision == revision:
+        if idx is not None and idx.revision == revision and idx.collection == collection:
             return idx
         with self._lock:
             idx = self._indexes.get(kb)
-            if idx is None or idx.revision != revision:
+            if idx is None or idx.revision != revision or idx.collection != collection:
                 idx = self._build(kb, revision)
+                idx.collection = collection
                 self._indexes[kb] = idx
         return idx
 

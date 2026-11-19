@@ -155,6 +155,9 @@ class IngestionPipeline:
     def discover(self, kb: str) -> tuple[list[Path], list[Path]]:
         cfg = self.kb_cfg(kb)
         golden = [self._abs(p) for p in cfg.get("golden_files", [])]
+        reviewed = self.settings.data_dir / "golden" / f"{kb}_reviewed.csv"   # approved in the review queue
+        if reviewed.exists():
+            golden.append(reviewed)
         golden_set = {g.resolve() for g in golden}
         files: list[Path] = []
         for d in cfg.get("source_dirs", []):
@@ -296,7 +299,7 @@ class IngestionPipeline:
         if _GENERIC_TITLE.match(title):
             title = ""          # e.g. "PowerPoint Presentation" from slide decks exported to PDF
         if not title and path.suffix.lower() == ".pdf":
-            # exported slides/manuals start with cover text ("www.sapphirus.in", "USER OPERATIONS"); the file name
+            # exported slides/manuals start with cover text ("www.<company-site>", "USER OPERATIONS"); the file name
             # is the most descriptive title, and every chunk header carries it
             return path.stem.replace("_", " ").strip()
         if not title:
@@ -385,7 +388,13 @@ class IngestionPipeline:
         return results
 
     def reindex_kb(self, kb: str, uploaded_by: str = "system") -> list[IngestResult]:
-        """Drop the KB collection and registry entries, then re-ingest everything (e.g. after changing embedder)."""
+        """Drop the KB collection and registry entries, then re-ingest everything (e.g. after changing embedder).
+        With INDEX_VERSIONING_ENABLED the rebuild goes to a new index version instead (eval gate, then promote) and
+        users are served by the current version until the new one is live."""
+        if self.settings.index_versioning_enabled:
+            from backend.indexing.versions import build_version
+
+            return build_version(kb, uploaded_by, pipeline=self)["ingest_results"]
         # Preflight: prove the embedder works (API key, model access, network) BEFORE dropping anything, so a
         # misconfigured embedding model can never leave the KB empty.
         try:

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LearningChain Assistant</title>
+<title>Assistant</title>
 <style>
 /* Layout: full-height chat column - header with assistant switch, scrolling transcript, composer. */
 :root {
@@ -75,21 +75,22 @@ form button:disabled { opacity: .5; cursor: default; }
 <div class="app">
   <header>
     <div class="logo" aria-hidden="true">S</div>
-    <div class="titles"><h1>LearningChain Assistant</h1><p id="subtitle">LearningChain product help</p></div>
+    <div class="titles"><h1 id="title">Assistant</h1><p id="subtitle"></p></div>
     <button type="button" class="icon-btn" id="clear" title="Clear conversation">Clear</button>
   </header>
   <main id="log" aria-live="polite"></main>
   <form id="form">
     <label for="q" style="position:absolute;left:-9999px">Your question</label>
-    <textarea id="q" rows="1" maxlength="1000" placeholder="Ask about LearningChain…" required></textarea>
+    <textarea id="q" rows="1" maxlength="1000" placeholder="Ask a question…" required></textarea>
     <button id="send" type="submit">Send</button>
   </form>
-  <div class="foot">Answers come only from published Sapphirus and LearningChain content. Please verify important details with our team.</div>
+  <div class="foot" id="foot"></div>
 </div>
 <script>
 (() => {
   const params = new URLSearchParams(location.search);
-  const locked = "all";                                   // one chatbot: LearningChain product help + Sapphirus company info
+  const locked = "all";                                   // one combined chatbot (product: ?product=<id> or the default)
+  const product = params.get("product") || "";
   const API = "";                                         // same origin as this page
   const store = {
     get(k, d) { try { return JSON.parse(sessionStorage.getItem(k)) ?? d; } catch { return d; } },
@@ -99,13 +100,17 @@ form button:disabled { opacity: .5; cursor: default; }
   const state = store.get("chat:" + assistant, { session: null, messages: [] });
   const log = document.getElementById("log"), form = document.getElementById("form");
   const input = document.getElementById("q"), send = document.getElementById("send");
-  const SUBTITLE = { all: "Sapphirus Systems & LearningChain - company, services, products and how-to guides",
-                     products: "LearningChain product help - features, certificates, verification, how-to guides" };
-  const SUGGEST = {
-    all: ["What is LearningChain?", "What services does Sapphirus provide?", "How do I verify a student certificate?",
-          "How can I contact Sapphirus?"],
-    products: ["What is LearningChain?", "How do I verify a student certificate?", "How do I revoke a certificate?",
-               "How is a blockchain QR code safer than a normal QR code?"] };
+  // Display texts (title, subtitle, welcome, suggestions, footer) come from the product config via /api/v1/ui.
+  let UI = { title: "Assistant", subtitle: "", welcome: "", suggestions: [], footer: "", placeholder: "Ask a question…" };
+  async function loadUI() {
+    try {
+      const q = new URLSearchParams({ assistant }); if (product) q.set("product", product);
+      const r = await fetch(API + "/api/v1/ui?" + q.toString());
+      if (r.ok) UI = Object.assign(UI, await r.json());
+    } catch {}
+    document.title = UI.title; document.getElementById("title").textContent = UI.title;
+    document.getElementById("foot").textContent = UI.footer; input.placeholder = UI.placeholder;
+  }
 
 
   // ---------- minimal, safe Markdown (escape first, then format)
@@ -194,11 +199,11 @@ form button:disabled { opacity: .5; cursor: default; }
   }
   function renderAll() {
     log.innerHTML = "";
-    document.getElementById("subtitle").textContent = SUBTITLE[assistant];
+    document.getElementById("subtitle").textContent = UI.subtitle;
     if (!state.messages.length) {
-      const w = bubble("bot"); w.innerHTML = `<div class="welcome">Hi! I'm the LearningChain Assistant. Ask me about LearningChain features, issuing and verifying blockchain certificates, or how to do something in the platform.</div><div class="chips"></div>`;
+      const w = bubble("bot"); w.innerHTML = `<div class="welcome">${esc(UI.welcome)}</div><div class="chips"></div>`;
       const chips = w.querySelector(".chips");
-      SUGGEST[assistant].forEach(q => { const b = document.createElement("button"); b.type = "button"; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
+      (UI.suggestions || []).forEach(q => { const b = document.createElement("button"); b.type = "button"; b.textContent = q; b.onclick = () => ask(q); chips.appendChild(b); });
       return;
     }
     for (const m of state.messages) { if (m.role === "user") bubble("user").textContent = m.text; else renderBot(bubble("bot", m.error ? "error" : ""), m); }
@@ -228,7 +233,7 @@ form button:disabled { opacity: .5; cursor: default; }
     send.disabled = true; input.value = ""; save();
     try {
       const resp = await fetch(API + "/api/v1/chat/stream", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, session_id: state.session, assistant }) });
+        body: JSON.stringify(Object.assign({ message: text, session_id: state.session, assistant }, product ? { product } : {})) });
       if (resp.status === 429) throw new Error("You're sending messages too quickly. Please wait a moment and try again.");
       if (!resp.ok || !resp.body) throw new Error("The assistant is unavailable right now. Please try again shortly.");
       const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = "";
@@ -258,7 +263,7 @@ form button:disabled { opacity: .5; cursor: default; }
   input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
   input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; });
   document.getElementById("clear").addEventListener("click", () => { state.session = null; state.messages = []; save(); renderAll(); input.focus(); });
-  renderAll();
+  loadUI().finally(renderAll);
 })();
 </script>
 </body>

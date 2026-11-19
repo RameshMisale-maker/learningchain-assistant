@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sapphirus Assistant Admin</title>
+<title>Assistant Admin</title>
 <style>
 /* Layout: top bar + tab strip; each tab is a stack of panels (summary tiles first, detail tables after). */
 :root { --sapphire:#0f52ba; --ink:#142033; --muted:#5a6780; --line:#dfe5ef; --bg:#f4f7fc; --surface:#fff;
@@ -51,11 +51,12 @@ td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
     <div id="loginMsg"></div></div>
 </div>
 <div id="app" hidden>
-  <div class="top"><h1>Sapphirus Assistant · Admin</h1><span id="who" class="muted" style="color:#dbe6fb"></span><button id="logout">Sign out</button></div>
+  <div class="top"><h1>Assistant · Admin</h1><span id="who" class="muted" style="color:#dbe6fb"></span><button id="logout">Sign out</button></div>
   <nav id="tabs" role="tablist">
     <button data-tab="dashboard" aria-selected="true">Dashboard</button><button data-tab="documents">Documents</button>
     <button data-tab="upload">Upload</button><button data-tab="websites">Websites</button>
     <button data-tab="jobs">Ingestion jobs</button><button data-tab="feedback">Feedback</button>
+    <button data-tab="review">Review queue</button><button data-tab="versions">Index versions</button>
   </nav>
   <div class="wrap" id="view"></div>
 </div>
@@ -95,7 +96,7 @@ td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
   document.getElementById("tabs").addEventListener("click", e => { const t = e.target.dataset.tab; if (!t) return;
     document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t))); render(t); });
   const fail = err => view.innerHTML = `<div class="panel"><div class="msg bad">${esc(err.message)}</div></div>`;
-  const render = t => ({ dashboard, documents, upload, websites, jobs, feedback }[t]().catch(fail));
+  const render = t => ({ dashboard, documents, upload, websites, jobs, feedback, review, versions }[t]().catch(fail));
 
   // ------------------------------------------------------------------ dashboard
   function lineChart(series, key, label) {
@@ -116,7 +117,7 @@ td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
     const f = window.__dash || (window.__dash = { start: new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10), assistant: "", channel: "" });
     view.innerHTML = `<div class="panel"><form id="flt" class="row">
       <label>From<input type="date" name="start" value="${f.start}"></label><label>To<input type="date" name="end" value="${f.end}"></label>
-      <label>Chatbot<select name="assistant"><option value="">All</option><option value="products">LearningChain (products)</option><option value="company">Company</option><option value="all">Combined</option></select></label>
+      <label>Chatbot<select name="assistant"><option value="">All</option><option value="products">products</option><option value="company">Company</option><option value="all">Combined</option></select></label>
       <label>Channel<select name="channel"><option value="">All</option><option value="widget">Website widget</option><option value="openai">Open WebUI</option><option value="api">REST API</option><option value="eval">Evaluation</option></select></label>
       <button class="primary">Apply</button></form></div><div id="dash"><div class="panel muted">Loading…</div></div>`;
     const form = document.getElementById("flt"); form.assistant.value = f.assistant; form.channel.value = f.channel;
@@ -196,7 +197,7 @@ td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
   // ------------------------------------------------------------------ upload
   async function upload() {
     view.innerHTML = `<div class="panel"><h2>Upload a document</h2><p class="muted">PDF, DOCX, XLSX, CSV, TXT, MD, JSON or HTML. The file is validated and stored, then indexed in the background - you can leave this page.</p>
-      <form id="up" class="row"><label>Knowledge base<select name="kb"><option value="products">LearningChain product help</option><option value="company">Company information</option></select></label>
+      <form id="up" class="row"><label>Knowledge base<select name="kb"><option value="products">products</option><option value="company">Company information</option></select></label>
       <label>File<input type="file" name="file" required></label><label>Category (optional)<input name="category" placeholder="e.g. Product sheet"></label>
       <label><span><input type="checkbox" name="is_golden" value="true"> Approved Q&amp;A dataset</span></label><button class="primary">Upload</button></form><div id="upMsg"></div></div>`;
     document.getElementById("up").onsubmit = async e => {
@@ -214,8 +215,8 @@ td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
   async function websites() {
     const data = await api("/api/v1/admin/web-sources");
     view.innerHTML = `<div class="panel"><h2>Monitored websites</h2><p class="muted">Allowed domains: <span class="mono">${esc(data.allowed_domains.join(", "))}</span>. Pages are checked on their interval; only changed content is re-indexed. Use a webhook for instant updates where your CMS supports it.</p>
-      <form id="addSrc" class="row"><label style="flex:1;min-width:260px">URL<input name="url" type="url" required placeholder="https://learningchain.in/faqs/"></label>
-      <label>Type<select name="source_type"><option value="page">Web page</option><option value="sitemap">Sitemap</option><option value="zendesk">Zendesk help centre</option><option value="faq">LearningChain FAQ page</option></select></label>
+      <form id="addSrc" class="row"><label style="flex:1;min-width:260px">URL<input name="url" type="url" required placeholder="https://example.com/page"></label>
+      <label>Type<select name="source_type"><option value="page">Web page</option><option value="sitemap">Sitemap</option><option value="zendesk">Zendesk help centre</option><option value="faq">Product FAQ page</option></select></label>
       <label>Knowledge base<select name="kb"><option value="products">products</option><option value="company">company</option></select></label>
       <label>Check every (min)<input name="interval_minutes" type="number" min="5" value="360" style="width:110px"></label><button class="primary">Add &amp; crawl</button></form><div id="srcMsg"></div>
       <div class="tablewrap" style="margin-top:12px"><table><tr><th>URL</th><th>Type</th><th>KB</th><th>Every</th><th>Last check</th><th>Status</th><th></th></tr>
@@ -245,6 +246,50 @@ td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
     const data = await api("/api/v1/admin/feedback?limit=200");
     view.innerHTML = `<div class="panel"><h2>User feedback</h2><p class="muted">${esc(JSON.stringify(data.summary))}</p><div class="tablewrap"><table><tr><th>When</th><th>Rating</th><th>Question</th><th>Answer</th><th>Comment</th></tr>
       ${(data.items || []).map(f => `<tr><td>${esc((f.created_at || "").slice(0, 16).replace("T", " "))}</td><td><span class="pill ${f.rating === "helpful" ? "ok" : "bad"}">${esc(f.rating)}</span></td><td>${esc(f.question || "")}</td><td class="muted">${esc((f.answer || "").slice(0, 220))}</td><td>${esc(f.comment || "")}</td></tr>`).join("")}</table></div></div>`;
+  }
+
+  // ------------------------------------------------------------------ review queue (REVIEW_QUEUE_ENABLED)
+  async function review() {
+    const status = (document.getElementById("rvStatus") || {}).value || "open";
+    const data = await api("/api/v1/admin/review-items?status=" + encodeURIComponent(status));
+    view.innerHTML = `<div class="panel"><h2>Review queue</h2>
+      ${data.enabled ? "" : `<div class="msg">REVIEW_QUEUE_ENABLED is off - no new items are queued.</div>`}
+      <p class="muted">Thumbs-down answers, refusals and low-confidence answers, grouped by similar question. Approving
+      an answer adds it to the approved answers and to the eval cases; the next user gets it.</p>
+      <label>Status <select id="rvStatus"><option>open</option><option>resolved</option><option>dismissed</option></select></label>
+      <div id="rvMsg"></div><div class="tablewrap"><table><tr><th>#</th><th>Source</th><th class="num">Seen</th><th>Question</th><th>Answer given</th><th>Approved answer</th><th></th></tr>
+      ${(data.items || []).map(i => `<tr><td>${i.id}</td><td><span class="pill ${i.source === "thumbs_down" ? "bad" : ""}">${esc(i.source)}</span></td>
+        <td class="num">${i.occurrences}</td><td>${esc(i.question)}</td><td class="muted">${esc((i.answer || "").slice(0, 220))}</td>
+        <td>${i.status === "open" ? `<textarea data-answer="${i.id}" rows="3" style="width:100%"></textarea>` : esc(i.resolution || "")}</td>
+        <td>${i.status === "open" ? `<button data-approve="${i.id}">Approve</button> <button data-dismiss="${i.id}">Dismiss</button>` : esc(i.status)}</td></tr>`).join("")}</table></div></div>`;
+    const sel = document.getElementById("rvStatus"); sel.value = status; sel.onchange = () => review().catch(fail);
+    const act = async (id, action) => {
+      const answer = (view.querySelector(`[data-answer="${id}"]`) || {}).value || "";
+      try {
+        await api(`/api/v1/admin/review-items/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ action, answer }) });
+        review().catch(fail);
+      } catch (err) { document.getElementById("rvMsg").innerHTML = `<div class="msg bad">${esc(err.message)}</div>`; }
+    };
+    view.querySelectorAll("[data-approve]").forEach(b => b.onclick = () => act(b.dataset.approve, "approve"));
+    view.querySelectorAll("[data-dismiss]").forEach(b => b.onclick = () => act(b.dataset.dismiss, "dismiss"));
+  }
+
+  // ------------------------------------------------------------------ index versions (INDEX_VERSIONING_ENABLED)
+  async function versions() {
+    const data = await api("/api/v1/admin/index-versions");
+    view.innerHTML = `<div class="panel"><h2>Index versions</h2>
+      ${data.enabled ? "" : `<div class="msg">INDEX_VERSIONING_ENABLED is off - the classic per-KB index serves users.</div>`}
+      <div id="ivMsg"></div><div class="tablewrap"><table><tr><th>Version</th><th>KB</th><th>Status</th><th class="num">Eval</th><th class="num">Chunks</th><th>Created</th><th></th></tr>
+      ${(data.versions || []).map(v => `<tr><td>v${v.version_id}</td><td>${esc(v.kb)}</td>
+        <td><span class="pill ${v.is_live ? "ok" : ""}">${esc(v.status)}${v.is_live ? " · live" : ""}</span></td>
+        <td class="num">${v.eval_score == null ? "-" : fmt(v.eval_score, 3)}</td><td class="num">${fmt(v.chunk_count)}</td>
+        <td>${esc((v.created_at || "").slice(0, 16).replace("T", " "))}</td>
+        <td>${!v.is_live && ["ready", "retired"].includes(v.status) ? `<button data-promote="${v.version_id}">Make live</button>` : ""}
+            ${v.is_live ? `<button data-rollback="${esc(v.kb)}">Roll back</button>` : ""}</td></tr>`).join("")}</table></div></div>`;
+    const done = p => p.then(() => versions().catch(fail)).catch(err => document.getElementById("ivMsg").innerHTML = `<div class="msg bad">${esc(err.message)}</div>`);
+    view.querySelectorAll("[data-promote]").forEach(b => b.onclick = () => done(api(`/api/v1/admin/index-versions/${b.dataset.promote}/promote`, { method: "POST" })));
+    view.querySelectorAll("[data-rollback]").forEach(b => b.onclick = () => done(api(`/api/v1/admin/index-versions/rollback?kb=${encodeURIComponent(b.dataset.rollback)}`, { method: "POST" })));
   }
 
   async function start(me) { show(true); document.getElementById("who").textContent = me.display_name || me.username; render("dashboard"); }

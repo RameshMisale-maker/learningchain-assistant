@@ -1,0 +1,50 @@
+# Alert rules (ALERTS_ENABLED). Evaluated every ALERT_CHECK_MINUTES over the last `window_minutes` of request
+# metrics, per product. A rule fires when `metric` crosses `threshold` (above, unless `below: true`) and at least
+# `min_requests` requests were seen. A fired rule is not repeated for `cooldown_minutes`.
+# Each firing is stored in the alert_events table and posted to ALERT_SLACK_WEBHOOK_URL / ALERT_EMAIL_TO when set.
+#
+# metrics: refusal_rate | error_rate | p95_latency_ms | thumbs_down_rate | llm_unavailable | cache_hit_rate
+#          | eval_score_drop (nightly retrieval eval: drop vs the previous night, per knowledge base)
+rules:
+  - name: high_refusal_rate
+    metric: refusal_rate
+    threshold: 0.35
+    window_minutes: 60
+    min_requests: 20
+    severity: warning
+    cooldown_minutes: 180
+  - name: high_error_rate
+    metric: error_rate
+    threshold: 0.05
+    window_minutes: 15
+    min_requests: 10
+    severity: critical
+    cooldown_minutes: 60
+  - name: slow_answers
+    metric: p95_latency_ms
+    threshold: 12000
+    window_minutes: 30
+    min_requests: 20
+    severity: warning
+    cooldown_minutes: 120
+  - name: many_thumbs_down
+    metric: thumbs_down_rate
+    threshold: 0.25
+    window_minutes: 1440
+    min_requests: 8           # rated answers
+    severity: warning
+    cooldown_minutes: 720
+  - name: llm_providers_down
+    metric: llm_unavailable
+    threshold: 3              # requests answered with the static "service unavailable" reply
+    window_minutes: 15
+    min_requests: 1
+    severity: critical
+    cooldown_minutes: 60
+  - name: retrieval_quality_drop
+    metric: eval_score_drop
+    threshold: 0.05
+    window_minutes: 1440
+    min_requests: 1
+    severity: warning
+    cooldown_minutes: 1440

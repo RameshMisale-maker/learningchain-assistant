@@ -1,5 +1,5 @@
 Rewrite the user's latest message into a clear, standalone search query in English
-for searching the Sapphirus / LearningChain help documentation.
+for searching the [[covers_slash]] help documentation.
 - Resolve pronouns using the chat history ("that plan" -> "Annual plan", "it" -> the product or feature discussed).
 - If the latest message asks for more detail ("tell me more", "explain that", "can you elaborate"), ask for more details
   about the specific topic of the previous answer; if it refers to an item by position ("the second one"), name that item.

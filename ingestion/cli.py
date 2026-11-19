@@ -10,6 +10,10 @@ Examples
   python -m ingestion.cli delete --doc-id 1a2b3c4d5e6f7a8b
   python -m ingestion.cli purge --kb hr_policies    # remove indexed content (source files untouched)
   python -m ingestion.cli list-docs --kb company
+  python -m ingestion.cli build-version --kb products   # new index version -> eval gate -> promote if it passes
+  python -m ingestion.cli list-versions [--kb products] [--product <product_id>]
+  python -m ingestion.cli promote --version 7           # make an index version live
+  python -m ingestion.cli rollback --kb products        # or: rollback --product <product_id>
 """
 from __future__ import annotations
 
@@ -43,7 +47,7 @@ def _print_results(results) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     setup_logging()
-    parser = argparse.ArgumentParser(description="Sapphirus knowledge-base management")
+    parser = argparse.ArgumentParser(description="Knowledge-base management")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list-kbs")
     p = sub.add_parser("sync"); p.add_argument("--kb")
@@ -56,6 +60,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-copy", action="store_true", help="index in place instead of copying into the KB folder")
     p = sub.add_parser("delete"); p.add_argument("--doc-id", required=True)
     p = sub.add_parser("list-docs"); p.add_argument("--kb")
+    p = sub.add_parser("build-version"); p.add_argument("--kb"); p.add_argument("--no-promote", action="store_true")
+    p = sub.add_parser("list-versions"); p.add_argument("--kb"); p.add_argument("--product")
+    p = sub.add_parser("promote"); p.add_argument("--version", type=int, required=True)
+    p = sub.add_parser("rollback"); p.add_argument("--kb"); p.add_argument("--product")
     args = parser.parse_args(argv)
 
     pipeline = IngestionPipeline()
@@ -86,12 +94,50 @@ def main(argv: list[str] | None = None) -> int:
                                                          golden=args.golden or None)]) else 0
     if args.command == "delete":
         return 1 if _print_results([pipeline.delete_document(args.doc_id)]) else 0
+    if args.command in ("build-version", "list-versions", "promote", "rollback"):
+        return _versions_command(args, pipeline, kbs)
     if args.command == "list-docs":
         for d in registry.list_documents(args.kb):
             print(f"{d['doc_id']}  {d['kb']:12} v{d['version']:<3} {d['num_chunks']:>4} chunks  "
                   f"roles={','.join(d['access_roles'])}  {d['source_path']}")
         return 0
     return 1
+
+
+def _versions_command(args, pipeline, kbs) -> int:
+    from backend.indexing import versions
+    from config.settings import get_settings
+
+    if not get_settings().index_versioning_enabled and args.command != "list-versions":
+        print("note: INDEX_VERSIONING_ENABLED is off - versions are built/switched but users keep the classic index")
+    try:
+        if args.command == "build-version":
+            failed = 0
+            for kb in kbs:
+                out = versions.build_version(kb, "cli", promote_if_passed=not args.no_promote, pipeline=pipeline)
+                print(f"{kb}: version {out['version_id']} {out['status']} (eval {out['eval_score']}, "
+                      f"{out['chunk_count']} chunks, gate {'passed' if out['passed'] else 'FAILED'})")
+                failed += not out["passed"] or bool(_print_results([r for r in out["ingest_results"] if r.status == "failed"]))
+            return 1 if failed else 0
+        if args.command == "list-versions":
+            for v in versions.list_versions(args.kb, args.product):
+                print(f"v{v['version_id']:<4} {v['kb']:12} {v['status']:9}{' LIVE' if v['is_live'] else '     '} "
+                      f"eval={v['eval_score']}  chunks={v['chunk_count']}  {v['created_at']}  {v['collection']}")
+            return 0
+        if args.command == "promote":
+            print(json.dumps(versions.promote(args.version, "cli"), default=str))
+            return 0
+        if args.kb:
+            print(json.dumps(versions.rollback(args.kb, "cli"), default=str))
+            return 0
+        if args.product:
+            print(json.dumps(versions.rollback_product(args.product, "cli"), default=str))
+            return 0
+        print("rollback needs --kb or --product")
+        return 1
+    except ValueError as exc:
+        print(f"error: {exc}")
+        return 1
 
 
 if __name__ == "__main__":

@@ -56,6 +56,15 @@ def get_kb_embedding_model(kb: str) -> str:
 
 
 # ---------------------------------------------------------------- chat
+def _product_id() -> str:
+    """Product of the request being handled (rows are keyed by product - config/products/<id>.yaml)."""
+    try:
+        from backend.products import current_product
+        return current_product().product_id
+    except Exception:          # product config unavailable (e.g. a bare maintenance script): leave it empty
+        return ""
+
+
 def ensure_session(session_id: str | None, username: str) -> str:
     with db_session() as s:
         if session_id:
@@ -63,11 +72,12 @@ def ensure_session(session_id: str | None, username: str) -> str:
             if existing and existing.username == username and not existing.cleared:
                 return existing.id
         new_id = uuid.uuid4().hex
-        s.add(ChatSession(id=new_id, username=username))
+        s.add(ChatSession(id=new_id, username=username, product_id=_product_id()))
         return new_id
 
 
 def add_message(session_id: str, role: str, content: str, **fields: Any) -> int:
+    fields.setdefault("product_id", _product_id())
     with db_session() as s:
         msg = ChatMessage(session_id=session_id, role=role, content=content, **fields)
         s.add(msg)
@@ -185,6 +195,7 @@ def deactivate_user(username: str) -> bool:
 def write_request_metric(**fields: Any) -> int:
     from backend.db.models import RequestMetric
 
+    fields.setdefault("product_id", _product_id())
     with db_session() as s:
         row = RequestMetric(**fields)
         s.add(row)

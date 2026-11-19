@@ -75,7 +75,7 @@ def setup_logging() -> None:
     console.setFormatter(fmt)
     console.addFilter(redactor)
     root.addHandler(console)
-    file_handler = RotatingFileHandler(settings.logs_dir / "sapphirus_assistant.log", maxBytes=5_000_000,
+    file_handler = RotatingFileHandler(settings.logs_dir / settings.log_file_name, maxBytes=5_000_000,
                                        backupCount=5, encoding="utf-8")
     file_handler.setFormatter(fmt)
     file_handler.addFilter(redactor)

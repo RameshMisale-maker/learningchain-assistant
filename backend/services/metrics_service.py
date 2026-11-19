@@ -38,13 +38,15 @@ def _parse(ts: str | None, default: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
-def _rows(start: datetime, end: datetime, channel: str = "", assistant: str = "") -> list[RequestMetric]:
+def _rows(start: datetime, end: datetime, channel: str = "", assistant: str = "", product: str = "") -> list[RequestMetric]:
     with db_session() as s:
         q = select(RequestMetric).where(RequestMetric.created_at >= start, RequestMetric.created_at <= end)
         if channel:
             q = q.where(RequestMetric.channel == channel)
         if assistant:
             q = q.where(RequestMetric.assistant == assistant)
+        if product:
+            q = q.where(RequestMetric.product_id == product)
         return list(s.scalars(q).all())
 
 
@@ -76,11 +78,12 @@ def _aggregate(rows: list[RequestMetric], seconds: float) -> dict[str, Any]:
     return out
 
 
-def summary(start: str | None = None, end: str | None = None, channel: str = "", assistant: str = "") -> dict:
+def summary(start: str | None = None, end: str | None = None, channel: str = "", assistant: str = "",
+            product: str = "") -> dict:
     now = datetime.now(timezone.utc)
     t_end = _parse(end, now)
     t_start = _parse(start, t_end - timedelta(days=7))
-    rows = _rows(t_start, t_end, channel, assistant)
+    rows = _rows(t_start, t_end, channel, assistant, product)
     if rows:   # throughput over the active span, not the empty part of the window
         first = min(r.created_at for r in rows)
         last = max(r.created_at for r in rows)
@@ -104,13 +107,13 @@ def summary(start: str | None = None, end: str | None = None, channel: str = "",
 
 
 def timeseries(start: str | None = None, end: str | None = None, bucket: str = "hour", channel: str = "",
-               assistant: str = "") -> list[dict]:
+               assistant: str = "", product: str = "") -> list[dict]:
     now = datetime.now(timezone.utc)
     t_end = _parse(end, now)
     t_start = _parse(start, t_end - timedelta(days=7))
     fmt = "%Y-%m-%dT%H:00" if bucket == "hour" else "%Y-%m-%d"
     buckets: dict[str, list] = defaultdict(list)
-    for r in _rows(t_start, t_end, channel, assistant):
+    for r in _rows(t_start, t_end, channel, assistant, product):
         buckets[r.created_at.strftime(fmt)].append(r)
     out = []
     for key in sorted(buckets):

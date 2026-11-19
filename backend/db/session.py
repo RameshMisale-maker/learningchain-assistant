@@ -30,9 +30,36 @@ def get_engine() -> Engine:
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.execute("PRAGMA journal_mode=WAL")
                 cursor.close()
-        Base.metadata.create_all(_engine)
+        migrate(_engine)
         _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False, future=True)
     return _engine
+
+
+def migrate(engine: Engine) -> None:
+    """Bring the schema to the latest Alembic migration (migrations/versions). A database created before
+    migrations existed (tables but no alembic_version) is first stamped at the baseline 0001 - its data is untouched."""
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import inspect
+
+    from config.settings import BASE_DIR
+
+    cfg = Config(str(BASE_DIR / "alembic.ini"))
+    cfg.set_main_option("script_location", str(BASE_DIR / "migrations"))
+    sqlite = engine.url.get_backend_name() == "sqlite"
+    with engine.connect() as conn:
+        if sqlite:   # table rebuilds (batch mode) must not cascade-delete child rows
+            conn.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            conn.commit()
+        with conn.begin():
+            cfg.attributes["connection"] = conn
+            tables = set(inspect(conn).get_table_names())
+            if "alembic_version" not in tables and "documents" in tables:
+                command.stamp(cfg, "0001")
+            command.upgrade(cfg, "head")
+        if sqlite:
+            conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+            conn.commit()
 
 
 @contextmanager

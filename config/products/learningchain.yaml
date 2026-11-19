@@ -1,0 +1,313 @@
+# Product configuration - see docs/adding-a-product.md. Everything product-specific lives here;
+# the pipeline code contains no product names. Validated at startup (backend/products/config.py).
+company: Sapphirus Systems
+company_short: Sapphirus
+glossary:
+- term: Sapphirus
+  variants:
+  - saphirus
+  - sapphiras
+  - sapirus
+  - sapphires
+  - saphiras
+  - sapphirous
+  - sapphiros
+  - safirus
+- term: LearningChain
+  variants:
+  - leaning chain
+  - learning chain
+  - lerning chain
+  - learnchain
+  - learn chain
+  - learningchian
+  - leaningchain
+  - lerningchain
+  - learning-chain
+  - lc
+help_topics: accounts and login, student certificate verification, fees and payments, product features and the admin and user
+  portals
+glossary_prompt: '- Sapphirus (the company; misspellings: saphirus, sapphiras, sapirus, sapphires)
+
+  - LearningChain (the product; also written: leaning chain, learning chain, lerning chain, learnchain, LC)
+
+  - Student Verification, Certificate Verification (verfication, verifiction, varification, verfy)
+
+  - certificate, issue, share, revoke, blockchain, credential, QR code, Bulk Upload
+
+  - Admin Portal, User Portal, Verifier, Dashboard, Profile, Reports, Generated Certificates
+
+  - DigiLocker
+
+  - Payment, Fee, Refund, Receipt, Invoice, Payment History
+
+  '
+domain_terms:
+- certificate
+- certificates
+- issue
+- issuing
+- verify
+- verification
+- verifier
+- share
+- sharing
+- blockchain
+- admin
+- portal
+- user
+- credential
+- credentials
+- revoke
+- student
+- institution
+- university
+- login
+- password
+- account
+- contact
+- pricing
+- services
+- company
+- product
+- products
+- upload
+- download
+- template
+- features
+- transcript
+incomplete_hints:
+  what: '"What is LearningChain?"'
+  how: '"How do I verify a certificate?"'
+  who: '"Who can issue certificates?"'
+  why: '"Why use blockchain certificates?"'
+  when: '"When is a certificate added to the blockchain?"'
+  where: '"Where does LearningChain store my data?"'
+  which: '"Which file formats can I upload?"'
+  can: '"Can I revoke a certificate?"'
+  tell: '"Tell me about the features of LearningChain"'
+  explain: '"Explain how certificate verification works"'
+enabled_tools: []
+languages:
+- en
+- hi
+- hinglish
+golden_threshold: 0.78
+semantic_cache_threshold: 0.95
+escalation:
+  email: info@sapphirus.in
+  phone: +91 96531 57225
+  hours: ''
+  contact_url: https://sapphirus.in/contacts/
+  careers_url: https://sapphirus.in/careers/
+models:
+  primary:
+    provider: groq
+    model: openai/gpt-oss-120b
+  fallback:
+  - provider: groq
+    model: openai/gpt-oss-20b
+prompt_version: 2026-11-19.1
+product_id: learningchain
+display_name: LearningChain
+bot_name: LearningChain Assistant
+description: 'LearningChain product help: features, blockchain certificates, user / admin / verifier how-to guides.'
+covers:
+- LearningChain
+aliases:
+- products
+domains: []
+kb: products
+namespaces:
+- products
+scopes: {}
+sources:
+  sitemaps: []
+  include_paths: []
+  exclude_paths: []
+  allowed_domains:
+  - learningchain.in
+  - learningchainai.zendesk.com
+  faq_document: LearningChain_00_Website_FAQ.md
+  document_header: 'Product: LearningChain by Sapphirus - blockchain-powered academic credentialing platform.'
+  help_centre_name: LearningChain Help Centre
+  help_centre_categories:
+    Introduction to LearningChain:
+    - LearningChain_01_Introduction.md
+    - ''
+    - What LearningChain is, why to choose it, key features and how it works for universities.
+    Introduction to Blockchain Technology:
+    - LearningChain_02_Blockchain_Technology.md
+    - ''
+    - Blockchain basics and why blockchain-secured certificates and QR codes are safer.
+    My Landing Page:
+    - LearningChain_03_Getting_Started.md
+    - ''
+    - Logging in, resetting a forgotten password and navigating the modules.
+    I'm a User:
+    - LearningChain_04_User_Guide.md
+    - User (institution staff)
+    - 'Step-by-step guides for institution users: securing/generating certificates, reports, bulk emails, profile.'
+    I'm a Admin:
+    - LearningChain_05_Admin_Guide.md
+    - Admin
+    - 'Step-by-step guides for institution administrators: users, certificate types, student review, revoke/recall/approve,
+      payments, credits, settings.'
+    I'm a Verifier:
+    - LearningChain_06_Verifier_Guide.md
+    - Verifier (employer / third party)
+    - How employers and third parties verify student certificates.
+    General:
+    - LearningChain_07_FAQ_and_Release_Notes.md
+    - ''
+    - Frequently asked questions and product release notes (what's new in each release).
+  faq_alternates:
+    what is learningchain?:
+    - Tell me about LearningChain
+    - What does LearningChain do?
+    - Explain LearningChain
+    - What is the LearningChain platform?
+    what is blockchain technology?:
+    - What is blockchain?
+    - Explain blockchain
+    - How does blockchain work?
+    why do we need learningchain?:
+    - Why should we use LearningChain?
+    - What problems does LearningChain solve?
+    - What are the benefits of LearningChain?
+    how does blockchain make my documents tamper-proof?:
+    - How are certificates made tamper-proof?
+    - Can blockchain certificates be tampered with?
+    - How does blockchain prevent tampering?
+    where does learningchain store my data?:
+    - Where is the data stored?
+    - Which cloud does LearningChain use?
+    - Is LearningChain hosted on Azure?
+    how does learningchain work?:
+    - How does the LearningChain process work?
+    - Explain how LearningChain works
+    - How are certificates secured in LearningChain?
+    how is a blockchain qr code safer:
+    - Why is a blockchain QR code more secure than a normal QR code?
+    - Blockchain QR code vs normal QR code
+    - Is the LearningChain QR code secure?
+    what are blockchain-based digital credentials?:
+    - What are blockchain credentials?
+    - What is a blockchain digital certificate?
+    what happens if i make changes to a document:
+    - What if I edit a document after sharing the QR code?
+    - Do I need a new QR code if the document changes?
+    - Can I modify a certificate after issuing it?
+    what makes learningchain's verification process different?:
+    - How is LearningChain verification different from manual verification?
+    - Why is LearningChain verification faster?
+    - How fast is certificate verification?
+    does learningchain support different file formats:
+    - Which file formats are supported?
+    - Can I upload Word or image files?
+    - Does LearningChain accept only PDF?
+    what is the validity of the data on the blockchain network:
+    - How long is the data valid?
+    - Do blockchain certificates expire?
+    - How long are records kept on the blockchain?
+    can we integrate learningchain with other existing applications?:
+    - Does LearningChain have an API?
+    - Can LearningChain integrate with our ERP?
+    - Can LearningChain connect to our existing systems?
+    does learningchain have control over the data?:
+    - Can LearningChain access our data?
+    - Who controls the data in LearningChain?
+    - Is our data private?
+    what is the difference between learningchain and digilocker?:
+    - LearningChain vs DigiLocker
+    - Is LearningChain better than DigiLocker?
+    - How is LearningChain different from DigiLocker?
+    how will students access and share their records?:
+    - How do students get their certificates?
+    - How can students share their credentials?
+    - Do students get a digital wallet?
+    how does learningchain help in institute brand building?:
+    - How does LearningChain help our institution's brand?
+    - What are the branding benefits for universities?
+    does the institution need to pay repeatedly:
+    - Do we pay every year to keep certificates?
+    - Is there a recurring fee to maintain records?
+    - Is it a one-time payment per certificate?
+other_products: []
+topics:
+- certificates
+- blockchain credentials
+- issuing / sharing / verifying
+- portals
+- accounts
+- login
+- fees
+- payments
+- pricing
+- contact details
+examples:
+- What is LearningChain?
+- How do I verify a student certificate?
+- How do I revoke a certificate?
+- How is a blockchain QR code safer than a normal QR code?
+retrieval:
+  namespace: products
+  top_k: 5
+  rerank_top: 5
+  min_score: 0.15
+welcome_message: Hi! I'm the LearningChain Assistant. Ask me about LearningChain features, issuing and verifying blockchain
+  certificates, or how to do something in the platform.
+ui:
+  title: LearningChain Assistant
+  subtitle: LearningChain product help - features, certificates, verification, how-to guides
+  placeholder: Ask about LearningChain…
+  footer: Answers come only from published LearningChain content. Please verify important details with our team.
+  launcher_label: Ask LearningChain
+  icon: 🎓
+  welcome: Hi! I'm the LearningChain Assistant. Ask me about LearningChain features, issuing and verifying blockchain certificates,
+    or how to do something in the platform
+  suggestions:
+  - What is LearningChain?
+  - How do I verify a student certificate?
+  - How do I revoke a certificate?
+  - How is a blockchain QR code safer than a normal QR code?
+  spinner: Searching the LearningChain documentation...
+  api_model_id: sapphirus-assistant
+  api_model_name: LearningChain Assistant
+replies:
+  out_of_scope: I can only help with LearningChain - for example, I can explain how to verify a certificate.
+  no_confirmed_information: 'I don''t have confirmed information on that. Let me connect you with our support team: email
+    info@sapphirus.in or call +91 96531 57225.'
+  blocked: I can only help with your own account and LearningChain questions.
+  restricted_topic: I'm sorry, but I can't help with that topic. I can help with questions about LearningChain - for example
+    issuing, sharing or verifying blockchain certificates and the admin and user portals.
+  greeting_first: '{hello} I''m the LearningChain Assistant. How can I help you with LearningChain today?'
+  who_are_you: I'm the LearningChain Assistant - I answer questions about LearningChain by Sapphirus Systems.
+  what_can_you_do: I can answer questions about LearningChain - for example, how to issue, share or verify certificates.
+  bye: Thank you for using LearningChain! Have a great day. If you need anything later, reach us at info@sapphirus.in or +91
+    96531 57225.
+  closing: Thank you for chatting with the LearningChain Assistant! Before you go, please rate this conversation below - your
+    feedback helps us improve. Have a nice day!
+  account: 'I can''t see your personal account details (payments, receipts or verification status) in this chat. Please log
+    in to your account to check it, or contact our support team: email **info@sapphirus.in** or call **+91 96531 57225**.'
+  escalation: I'm sorry about this. Our support team will look into it personally - please email **info@sapphirus.in** or
+    call **+91 96531 57225** and share the details there.
+  frustration_again: 'I''m really sorry this still isn''t working for you. Our support team can help you directly: email info@sapphirus.in
+    or call +91 96531 57225. Or tell me what went wrong and I''ll try again.'
+  rephrase: Sorry, I couldn't understand that. Could you rephrase your question? You can ask me about LearningChain - for
+    example *"What is LearningChain?"*, *"How do I verify a certificate?"* or *"What are the key features of LearningChain?"*
+  access_denied_guest: Information about {names} is internal and available to Sapphirus employees only. Please write to info@sapphirus.in.
+  repeat_alternatives:
+    refusal: 'I still don''t have confirmed information on that. Our support team can help: email info@sapphirus.in or call
+      +91 96531 57225.'
+    error: I still couldn't get an answer for that. Please try again in a moment, or contact info@sapphirus.in.
+    out_of_scope: That's outside what I can help with, but I'm happy to answer anything about LearningChain - for example,
+      what its key features are.
+    clarification: Could you share a little more detail - for example, which feature or page you mean?
+    greeting: How can I help you today?
+    account: As mentioned, I can't see account details here - please log in to your account, or contact our support team at
+      info@sapphirus.in or +91 96531 57225.
+    escalation: Our support team is the best way to resolve this - please email info@sapphirus.in or call +91 96531 57225.
+    sensitive: Please don't share those details here - they aren't needed. How else can I help?
+    restricted: I can't help with that topic, but I'm happy to help with any LearningChain question.
+    blocked: I can only help with your own account and LearningChain questions. What do you need help with?

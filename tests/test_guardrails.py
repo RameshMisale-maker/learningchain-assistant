@@ -2,7 +2,7 @@
 import pytest
 
 from backend.generation.grounding import is_refusal
-from backend.security.prompt_guard import (RESTRICTED_TOPIC_MESSAGE, SELF_HARM_MESSAGE, restricted_topic,
+from backend.security.prompt_guard import (SELF_HARM_MESSAGE, restricted_topic, restricted_topic_message,
                                            restricted_topic_reply)
 from config.settings import get_settings
 
@@ -33,9 +33,9 @@ def test_legitimate_questions_are_not_blocked(question):
 
 
 def test_replies_redirect_and_self_harm_offers_help():
-    assert "LearningChain" in RESTRICTED_TOPIC_MESSAGE and "Sapphirus" in RESTRICTED_TOPIC_MESSAGE
+    assert "LearningChain" in restricted_topic_message() and "Sapphirus" in restricted_topic_message()
     assert restricted_topic_reply("self_harm") == SELF_HARM_MESSAGE and "14416" in SELF_HARM_MESSAGE
-    assert restricted_topic_reply("healthcare") == RESTRICTED_TOPIC_MESSAGE
+    assert restricted_topic_reply("healthcare") == restricted_topic_message()
 
 
 def test_insufficient_sentence_is_the_mandated_text_and_recognised_as_refusal():
@@ -50,4 +50,4 @@ def test_restricted_question_never_reaches_retrieval(chat, public_user, monkeypa
         raise AssertionError("retrieval must not run for a restricted topic")
     monkeypatch.setattr(chat, "_retrieve", boom)
     resp = chat.answer("Should I invest my savings in mutual funds?", public_user, persist=False)
-    assert resp.answer_type == "restricted" and resp.answer == RESTRICTED_TOPIC_MESSAGE and not resp.citations
+    assert resp.answer_type == "restricted" and resp.answer == restricted_topic_message() and not resp.citations

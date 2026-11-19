@@ -50,19 +50,27 @@ async def lifespan(_: FastAPI):
     settings = get_settings()
     for warning in validate_production_config(settings):
         logger.warning("Configuration: %s", warning)
-    get_engine()
+    from backend.products import default_product_id, load_products
+    products = load_products()      # fail fast: an invalid config/products/*.yaml stops startup with a clear error
+    logger.info("Products: %s (default %s, per-request resolution %s)", ", ".join(sorted(products)),
+                default_product_id(), "on" if settings.product_config_enabled else "off")
+    get_engine()                    # also applies pending Alembic migrations
     created = bootstrap_users()
     if created:
         logger.info("Bootstrap users ready: %s", ", ".join(created))
     purged = repository.purge_old_history(settings.chat_retention_days)
     if purged:
         logger.info("Retention: purged %d old chat messages", purged)
-    logger.info("Sapphirus AI Assistant API started (env=%s, llm=%s, embeddings=%s, vector=%s, auth=%s)",
+    logger.info("Assistant API started (env=%s, llm=%s, embeddings=%s, vector=%s, auth=%s)",
                 settings.app_env, settings.llm_model_name, settings.embedding_backend, settings.vector_backend,
                 settings.auth_mode)
     if settings.app_env == "production" and settings.llm_provider != "extractive" and             settings.effective_llm_provider == "extractive":
         logger.error("LLM_PROVIDER=%s but its API key is missing - serving degraded extractive answers",
                      settings.llm_provider)
+    from backend.observability import scheduler
+    if scheduler.start():
+        logger.info("Ops scheduler running (alerts %s, nightly eval %s)", "on" if settings.alerts_enabled else "off",
+                    "on" if settings.nightly_eval_enabled else "off")
     from ingestion.automation import start_worker, stop_worker
     worker = start_worker()
     if worker:
@@ -70,10 +78,11 @@ async def lifespan(_: FastAPI):
                     "on" if settings.web_monitor_enabled else "off")
     yield
     stop_worker()
+    scheduler.stop()
 
 
-app = FastAPI(title="Sapphirus AI Assistant API", version="1.0.0", lifespan=lifespan,
-              description="Multi-knowledge-base RAG assistant for the Sapphirus company portal.")
+app = FastAPI(title="RAG Assistant API", version="1.0.0", lifespan=lifespan,
+              description="Multi-product, multi-knowledge-base RAG assistant (products: config/products/*.yaml).")
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=True,
                    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
                    allow_headers=["Authorization", "Content-Type", "X-Requested-With"])
@@ -115,6 +124,25 @@ def health() -> dict:
             "embedding_backend": settings.embedding_backend, "vector_backend": settings.vector_backend}
 
 
+@app.get("/metrics", include_in_schema=False)
+def prometheus_metrics(request: Request):
+    """Prometheus scrape endpoint (METRICS_ENABLED). Protect it with METRICS_TOKEN or keep it on a private network."""
+    from fastapi.responses import PlainTextResponse
+
+    settings = get_settings()
+    if not settings.metrics_enabled:
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    if settings.metrics_token:
+        import hmac
+
+        given = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+        if not hmac.compare_digest(given, settings.metrics_token):
+            return JSONResponse(status_code=401, content={"detail": "metrics token required"})
+    from backend.observability.metrics import render
+
+    return PlainTextResponse(render(), media_type="text/plain; version=0.0.4")
+
+
 @app.get("/health/live", tags=["system"])
 def liveness() -> dict:
     """Liveness: the process is running and serving HTTP (no dependency checks - restart only if this fails)."""
@@ -151,6 +179,11 @@ def readiness() -> JSONResponse:
     checks["llm"] = {"ok": True, "provider": settings.effective_llm_provider,
                      "note": "" if settings.effective_llm_provider != "extractive" else
                      "No LLM key configured - answers are extractive (degraded, still grounded)"}
+    from backend.generation.llm_client import get_llm
+
+    llm = get_llm()
+    if hasattr(llm, "status"):           # LLM_FAILOVER_ENABLED: per-provider circuit breaker state
+        checks["llm"]["providers"] = llm.status()
     ready = all(c.get("ok") for c in checks.values())
     return JSONResponse(status_code=200 if ready else 503, content={"status": "ready" if ready else "not_ready",
                                                                    "checks": checks})

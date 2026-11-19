@@ -1,413 +1,340 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1800" height="2030" viewBox="0 0 1800 2030" xmlns="http://www.w3.org/2000/svg" font-family="Open Sans, Segoe UI, sans-serif">
+<svg viewBox="0 0 1800 2410" xmlns="http://www.w3.org/2000/svg" font-family="Open Sans, Segoe UI, sans-serif">
   <defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#ffffff"/>
-    </marker>
-    <marker id="ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#7d9bbb"/>
-    </marker>
-    <marker id="aha" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#48aaee"/>
-    </marker>
-    <symbol id="nn" viewBox="0 0 180 130">
-      <g stroke="#48aaee" stroke-width="1.6" fill="none">
-        <path d="M10 35 L60 10 M10 35 L60 50 M10 35 L60 85 M10 35 L60 120 M10 95 L60 10 M10 95 L60 50 M10 95 L60 85 M10 95 L60 120"/>
-        <path d="M60 10 L115 35 M60 50 L115 35 M60 85 L115 35 M60 120 L115 35 M60 10 L115 95 M60 50 L115 95 M60 85 L115 95 M60 120 L115 95"/>
-        <path d="M115 35 L170 65 M115 95 L170 65"/>
-      </g>
-      <g fill="#ffffff">
-        <circle cx="10" cy="35" r="9"/><circle cx="10" cy="95" r="9"/>
-        <circle cx="60" cy="10" r="9"/><circle cx="60" cy="50" r="9"/><circle cx="60" cy="85" r="9"/><circle cx="60" cy="120" r="9"/>
-        <circle cx="115" cy="35" r="9"/><circle cx="115" cy="95" r="9"/>
-        <circle cx="170" cy="65" r="9"/>
-      </g>
-    </symbol>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ffffff"/></marker>
+    <marker id="ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7d9bbb"/></marker>
+    <marker id="aha" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#48aaee"/></marker>
   </defs>
-
-  <rect width="1800" height="2030" fill="#072b4b"/>
-
-  <!-- ============ INDEXING REGION ============ -->
-  <rect x="30" y="30" width="1740" height="340" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
-  <text x="60" y="80" fill="#fff" font-size="28" font-weight="600">Indexing</text>
-
-  <!-- Sources -->
-  <rect x="60" y="100" width="250" height="256" rx="12" fill="#0a4a80"/>
-  <text x="80" y="138" fill="#fff" font-size="22" font-weight="600">Sources</text>
-  <g fill="#a9cdee" font-size="15">
-    <text x="80" y="172">Help-centre articles · FAQ</text>
-    <text x="80" y="200">learningchain.in pages</text>
-    <text x="80" y="228" fill="#ffffff">sapphirus.in · 57 pages</text>
-    <text x="80" y="256">Training manuals + deck (PDF)</text>
-    <text x="80" y="284">Golden Q&amp;A · 2 CSVs</text>
-    <text x="80" y="312">Admin uploads</text>
-    <text x="80" y="340">PDF · DOCX · MD · CSV</text>
-  </g>
-  <rect x="245" y="214" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="268" y="227" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
-  <line x1="310" y1="180" x2="344" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Queue -->
-  <rect x="350" y="120" width="230" height="120" rx="12" fill="#0a4a80"/>
-  <text x="370" y="158" fill="#fff" font-size="21" font-weight="600">Ingestion queue</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="370" y="185">upload · CLI sync · crawl</text>
-    <text x="370" y="205">web monitor · webhook</text>
-    <text x="370" y="225">3 tries, backoff</text>
-  </g>
-  <line x1="580" y1="180" x2="614" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Validate & load -->
-  <rect x="620" y="120" width="240" height="120" rx="12" fill="#0a4a80"/>
-  <text x="640" y="158" fill="#fff" font-size="21" font-weight="600">Validate &amp; load</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="640" y="185">type · size · macros</text>
-    <text x="640" y="205">SHA-256 dedupe</text>
-    <text x="640" y="225">clean text · OCR off (PII)</text>
-  </g>
-  <text x="905" y="165" fill="#48aaee" font-size="18" text-anchor="middle">Chunking</text>
-  <line x1="860" y1="180" x2="944" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Chunks -->
-  <rect x="950" y="120" width="300" height="120" rx="12" fill="#0a4a80"/>
-  <text x="972" y="160" fill="#fff" font-size="22" font-weight="600">Parent → child</text>
-  <text x="972" y="190" fill="#a9cdee" font-size="14">parent ≤ 1,800 · child 400</text>
-  <text x="972" y="210" fill="#a9cdee" font-size="14">heading path + recursive</text>
-  <text x="972" y="230" fill="#a9cdee" font-size="13">overlap 80 · whole sentences</text>
-  <rect x="1150" y="140" width="85" height="22" rx="3" fill="#1d78c1" stroke="#ffffff" stroke-width="1"/>
-  <text x="1192" y="156" fill="#fff" font-size="12" text-anchor="middle">parent</text>
-  <g stroke="#48aaee" stroke-width="1.2">
-    <line x1="1163" y1="162" x2="1163" y2="182"/><line x1="1192" y1="162" x2="1192" y2="182"/><line x1="1221" y1="162" x2="1221" y2="182"/>
-  </g>
-  <g fill="#3a9be3">
-    <rect x="1152" y="182" width="22" height="34"/>
-    <rect x="1181" y="182" width="22" height="34"/>
-    <rect x="1210" y="182" width="22" height="34"/>
-  </g>
-  <text x="1192" y="232" fill="#a9cdee" font-size="11" text-anchor="middle">children</text>
-  <text x="1375" y="165" fill="#48aaee" font-size="15" text-anchor="middle">injection scan</text>
-  <line x1="1250" y1="180" x2="1494" y2="180" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Embedding model (indexing) -->
-  <text x="1600" y="78" fill="#fff" font-size="19" font-weight="600" text-anchor="middle">Embedding model</text>
-  <text x="1600" y="100" fill="#a9cdee" font-size="14" text-anchor="middle">BAAI/bge-small-en-v1.5 (local)</text>
-  <use href="#nn" x="1510" y="112" width="180" height="125"/>
-  <line x1="1600" y1="242" x2="1600" y2="282" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1614" y="268" fill="#48aaee" font-size="17">Vectorize children</text>
-
-  <!-- vectors -->
-  <rect x="1500" y="288" width="200" height="68" rx="10" fill="#0a4a80"/>
-  <g stroke="#ffffff" stroke-width="1">
-    <g fill="#3a9be3">
-      <rect x="1515" y="297" width="34" height="22"/><rect x="1549" y="297" width="34" height="22"/><rect x="1583" y="297" width="34" height="22"/><rect x="1617" y="297" width="34" height="22"/><rect x="1651" y="297" width="34" height="22"/>
-    </g>
-    <g fill="#1d78c1">
-      <rect x="1515" y="325" width="34" height="22"/><rect x="1549" y="325" width="34" height="22"/><rect x="1583" y="325" width="34" height="22"/><rect x="1617" y="325" width="34" height="22"/><rect x="1651" y="325" width="34" height="22"/>
-    </g>
-  </g>
-
-  <!-- ============ ROW A: question understanding ============ -->
-  <text x="40" y="425" fill="#7d9bbb" font-size="15" font-weight="600" letter-spacing="1">ANSWERING</text>
-
-  <!-- User -->
-  <rect x="40" y="440" width="145" height="120" rx="12" fill="#0a4a80"/>
-  <text x="112" y="482" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">User</text>
-  <text x="112" y="510" fill="#a9cdee" font-size="13" text-anchor="middle">website · /chat</text>
-  <text x="112" y="529" fill="#a9cdee" font-size="13" text-anchor="middle">Streamlit demo</text>
-  <text x="112" y="548" fill="#a9cdee" font-size="13" text-anchor="middle">Open WebUI</text>
-  <line x1="185" y1="500" x2="204" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- API -->
-  <rect x="210" y="440" width="165" height="120" rx="12" fill="#0a4a80"/>
-  <text x="228" y="478" fill="#fff" font-size="21" font-weight="600">API</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="228" y="505">token auth · roles</text>
-    <text x="228" y="525">rate limit</text>
-    <text x="228" y="545">streams the reply</text>
-  </g>
-  <line x1="375" y1="500" x2="394" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Safety guard -->
-  <rect x="400" y="440" width="195" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="418" y="478" fill="#fff" font-size="21" font-weight="600">Safety guard</text>
-  <rect x="540" y="448" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="563" y="461" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="418" y="505">injection · restricted topics</text>
-    <text x="418" y="525">card / CVV / OTP / PIN /</text>
-    <text x="418" y="545">password → redacted</text>
-  </g>
-  <line x1="595" y1="500" x2="614" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Normalize (NEW) -->
-  <rect x="620" y="440" width="215" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="638" y="478" fill="#fff" font-size="21" font-weight="600">Normalize</text>
-  <rect x="772" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="795" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="638" y="505">typos · Hindi / Hinglish → EN</text>
-    <text x="638" y="525">glossary · fuzzy ≥ 80</text>
-    <text x="638" y="545">LLM: queries · language</text>
-  </g>
-  <line x1="835" y1="500" x2="854" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Conversation layer (NEW) -->
-  <rect x="860" y="440" width="225" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="878" y="478" fill="#fff" font-size="21" font-weight="600">Conversation</text>
-  <rect x="1022" y="462" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="1045" y="475" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="878" y="505">11 intents · rules first</text>
-    <text x="878" y="525">follow-ups use memory</text>
-    <text x="878" y="545">frustration · account</text>
-  </g>
-  <line x1="1085" y1="500" x2="1104" y2="500" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Router + scope (NEW scope check) -->
-  <rect x="1110" y="440" width="215" height="120" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="1128" y="478" fill="#fff" font-size="21" font-weight="600">Router + scope</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="1128" y="505">which KB? LearningChain,</text>
-    <text x="1128" y="525">Sapphirus or both</text>
-    <text x="1128" y="545">lenient LLM / semantic</text>
-  </g>
-
-  <!-- PostgreSQL (memory) -->
-  <line x1="292" y1="560" x2="292" y2="618" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <path d="M197 636 V716 A95 12 0 0 0 387 716 V636 Z" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-  <ellipse cx="292" cy="636" rx="95" ry="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="292" y="670" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Database</text>
-  <text x="292" y="692" fill="#a9cdee" font-size="13" text-anchor="middle">history = memory</text>
-  <text x="292" y="710" fill="#a9cdee" font-size="13" text-anchor="middle">feedback · cost · latency</text>
-  <path d="M387 676 H905 V566" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <text x="540" y="668" fill="#7d9bbb" font-size="13" text-anchor="middle">last 8 messages of this session</text>
-
-  <!-- short-circuit pills, row A -->
-  <line x1="497" y1="560" x2="497" y2="596" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="405" y="602" width="185" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="497" y="623" fill="#a9cdee" font-size="13" text-anchor="middle">refusal · safety warning,</text>
-  <text x="497" y="641" fill="#a9cdee" font-size="13" text-anchor="middle">never sent to the LLM</text>
-
-  <line x1="1050" y1="560" x2="1050" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="945" y="604" width="200" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
-  <text x="1045" y="626" fill="#a9cdee" font-size="12.5" text-anchor="middle">greeting (intro once) · upset ·</text>
-  <text x="1045" y="644" fill="#a9cdee" font-size="12.5" text-anchor="middle">account → short reply / support</text>
-
-  <line x1="1300" y1="560" x2="1300" y2="598" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="1210" y="604" width="210" height="52" rx="26" fill="none" stroke="#48aaee" stroke-width="1.5"/>
-  <text x="1315" y="626" fill="#a9cdee" font-size="13" text-anchor="middle">clearly unrelated</text>
-  <text x="1315" y="644" fill="#a9cdee" font-size="13" text-anchor="middle">→ polite out-of-scope</text>
-
-  <!-- Router -> Golden -->
-  <line x1="1160" y1="560" x2="1160" y2="694" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1148" y="676" fill="#48aaee" font-size="14" text-anchor="end">embed query</text>
-
-  <!-- ============ ROW B: retrieval ============ -->
-  <rect x="1060" y="700" width="200" height="120" rx="12" fill="#0a4a80"/>
-  <text x="1078" y="738" fill="#fff" font-size="21" font-weight="600">Golden match</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="1078" y="765">approved Q&amp;A (2 KBs)</text>
-    <text x="1078" y="785">≥ 0.78 → direct answer</text>
-    <text x="1078" y="805">≥ 0.50 → context</text>
-  </g>
-  <line x1="1060" y1="760" x2="1036" y2="760" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="800" y="734" width="230" height="52" rx="26" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="915" y="756" fill="#a9cdee" font-size="13" text-anchor="middle">strong match → approved</text>
-  <text x="915" y="774" fill="#a9cdee" font-size="13" text-anchor="middle">answer, LLM skipped</text>
-
-  <!-- Search to vector store -->
-  <line x1="1260" y1="760" x2="1464" y2="760" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1350" y="748" fill="#48aaee" font-size="17" text-anchor="middle">Hybrid search</text>
-  <text x="1345" y="784" fill="#a9cdee" font-size="13" text-anchor="middle">question + rephrasings</text>
-  <text x="1345" y="802" fill="#a9cdee" font-size="13" text-anchor="middle">(LLM clean-up queries)</text>
-
-  <!-- ============ VECTOR STORE REGION ============ -->
-  <rect x="1440" y="690" width="330" height="240" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
-  <text transform="translate(1757 812) rotate(-90)" fill="#fff" font-size="20" font-weight="600" text-anchor="middle">Vector store</text>
-  <line x1="1600" y1="356" x2="1600" y2="712" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1614" y="420" fill="#48aaee" font-size="17">Index</text>
-  <path d="M1470 735 V870 A130 18 0 0 0 1730 870 V735 Z" fill="#0a4a80" stroke="#ffffff" stroke-width="2"/>
-  <ellipse cx="1600" cy="735" rx="130" ry="18" fill="#0d5a98" stroke="#ffffff" stroke-width="2"/>
-  <text x="1600" y="776" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">Chroma · dense vectors</text>
-  <text x="1600" y="802" fill="#fff" font-size="17" font-weight="600" text-anchor="middle">BM25 · keyword index</text>
-  <text x="1600" y="828" fill="#a9cdee" font-size="13" text-anchor="middle">LearningChain: 22 docs · 841 chunks</text>
-  <text x="1600" y="848" fill="#ffffff" font-size="13" text-anchor="middle">Sapphirus: 61 docs · 438 chunks</text>
-  <text x="1600" y="868" fill="#a9cdee" font-size="13" text-anchor="middle">parent text + access metadata</text>
-
-  <line x1="1600" y1="890" x2="1600" y2="954" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1614" y="914" fill="#48aaee" font-size="17">Retrieve</text>
-
-  <!-- Hybrid fusion (NEW) -->
-  <rect x="1470" y="960" width="260" height="125" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
-  <text x="1490" y="995" fill="#fff" font-size="21" font-weight="600">Hybrid fusion</text>
-  <rect x="1666" y="978" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="1689" y="991" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="1490" y="1020">dense 40 + BM25 40 per query</text>
-    <text x="1490" y="1040">relative score fusion</text>
-    <text x="1490" y="1060">multi-query (RAG-Fusion)</text>
-    <text x="1490" y="1078" font-size="13">+ each sub-question</text>
-  </g>
-  <line x1="1600" y1="1085" x2="1600" y2="1114" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- Rerank -->
-  <rect x="1470" y="1120" width="260" height="105" rx="12" fill="#0a4a80"/>
-  <text x="1490" y="1156" fill="#fff" font-size="21" font-weight="600">Rerank</text>
-  <text x="1490" y="1180" fill="#a9cdee" font-size="14">cross-encoder: header + child</text>
-  <text x="1490" y="1200" fill="#a9cdee" font-size="14">top 5 · min score 0.15</text>
-  <text x="1490" y="1218" fill="#a9cdee" font-size="13">+ best source per sub-question</text>
-
-  <!-- question path into Augment -->
-  <path d="M727 560 V1250 H930 V1304" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text transform="translate(717 980) rotate(-90)" fill="#48aaee" font-size="14" text-anchor="middle">normalized question</text>
-
-  <!-- Rerank -> Augment -->
-  <path d="M1600 1225 V1375 H1406" fill="none" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <text x="1500" y="1365" fill="#48aaee" font-size="14" text-anchor="middle">top passages</text>
-
-  <!-- Augment frame -->
-  <rect x="830" y="1290" width="570" height="170" rx="14" fill="none" stroke="#ffffff" stroke-width="2"/>
-  <rect x="855" y="1310" width="150" height="125" rx="12" fill="#0a4a80"/>
-  <text x="930" y="1380" fill="#fff" font-size="22" text-anchor="middle">Query</text>
-  <text x="1025" y="1335" fill="#fff" font-size="17">Child → parent section</text>
-  <g fill="#a9cdee" font-size="13.5">
-    <text x="1025" y="1360">one source per parent [S1]–[S5]</text>
-    <text x="1025" y="1380">answer only from sources · cite [S#]</text>
-    <text x="1025" y="1400">reply in EN · Hindi · Hinglish</text>
-    <text x="1025" y="1420">untrusted data · ≤ 9,000 chars</text>
-  </g>
-  <g fill="#3a9be3">
-    <rect x="1300" y="1432" width="60" height="4"/>
-    <rect x="1300" y="1442" width="75" height="4"/>
-  </g>
-  <text x="1115" y="1490" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Augment</text>
-
-  <!-- ============ GENERATE ROW ============ -->
-  <line x1="830" y1="1375" x2="776" y2="1375" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <rect x="570" y="1320" width="200" height="115" rx="12" fill="#0a4a80"/>
-  <text x="670" y="1355" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">LLM</text>
-  <text x="670" y="1380" fill="#a9cdee" font-size="14" text-anchor="middle">gpt-oss-120b · Groq</text>
-  <text x="670" y="1400" fill="#a9cdee" font-size="14" text-anchor="middle">fallback gpt-oss-20b</text>
-  <text x="670" y="1420" fill="#a9cdee" font-size="13" text-anchor="middle">temperature 0 · 900 tokens</text>
-  <line x1="570" y1="1375" x2="526" y2="1375" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <rect x="300" y="1320" width="220" height="115" rx="12" fill="#0a4a80"/>
-  <text x="318" y="1356" fill="#fff" font-size="21" font-weight="600">Grounding check</text>
-  <g fill="#a9cdee" font-size="14">
-    <text x="318" y="1382">citations valid?</text>
-    <text x="318" y="1402">facts &amp; numbers in sources?</text>
-    <text x="318" y="1422">≥ 60% support</text>
-  </g>
-  <line x1="300" y1="1375" x2="256" y2="1375" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-  <line x1="410" y1="1435" x2="410" y2="1460" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <rect x="270" y="1466" width="285" height="50" rx="25" fill="none" stroke="#7d9bbb" stroke-width="1.5"/>
-  <text x="412" y="1487" fill="#a9cdee" font-size="13" text-anchor="middle">fails → quote the source extract,</text>
-  <text x="412" y="1505" fill="#a9cdee" font-size="13" text-anchor="middle">or "no confirmed info → support"</text>
-
-  <rect x="40" y="1320" width="210" height="115" rx="12" fill="#0a4a80"/>
-  <text x="145" y="1360" fill="#fff" font-size="22" font-weight="600" text-anchor="middle">Response</text>
-  <text x="145" y="1387" fill="#a9cdee" font-size="14" text-anchor="middle">streamed answer</text>
-  <text x="145" y="1407" fill="#a9cdee" font-size="14" text-anchor="middle">+ source links</text>
-  <line x1="112" y1="1320" x2="112" y2="566" stroke="#fff" stroke-width="3" marker-end="url(#ah)"/>
-
-  <!-- ============ DEPLOYMENT ============ -->
-  <rect x="30" y="1555" width="1740" height="450" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
-  <text x="60" y="1600" fill="#fff" font-size="28" font-weight="600">Deployment</text>
-  <text x="250" y="1598" fill="#7d9bbb" font-size="14">release steps are run by hand today · no CI pipeline yet</text>
-
-  <!-- row 1: release -->
-  <g font-size="14" fill="#a9cdee">
-    <rect x="60" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
-    <text x="80" y="1652" fill="#fff" font-size="20" font-weight="600">Code</text>
-    <text x="80" y="1677">Azure DevOps · Ramesh_Misale</text>
-    <text x="80" y="1697">GitHub · learningchain-assistant</text>
-    <rect x="410" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
-    <text x="430" y="1652" fill="#fff" font-size="20" font-weight="600">Test</text>
-    <text x="430" y="1677">pytest suite · 304 tests</text>
-    <text x="430" y="1697">mocked APIs · no keys needed</text>
-    <rect x="760" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
-    <text x="780" y="1652" fill="#fff" font-size="20" font-weight="600">Evaluate</text>
-    <text x="780" y="1677">dashboard :8502 · CSV export</text>
-    <text x="780" y="1697">retrieval · RAGAS · fusion A/B</text>
-    <rect x="1110" y="1620" width="300" height="96" rx="12" fill="#0a4a80"/>
-    <text x="1130" y="1652" fill="#fff" font-size="20" font-weight="600">Docker build</text>
-    <text x="1130" y="1677">python 3.12-slim · non-root</text>
-    <text x="1130" y="1697">embedder + reranker preloaded</text>
-    <rect x="1460" y="1620" width="280" height="96" rx="12" fill="#0a4a80"/>
-    <text x="1480" y="1652" fill="#fff" font-size="20" font-weight="600">docker compose up</text>
-    <text x="1480" y="1677">secrets from server .env</text>
-    <text x="1480" y="1697">healthcheck /health/live</text>
-  </g>
-  <g stroke="#fff" stroke-width="3">
-    <line x1="360" y1="1668" x2="404" y2="1668" marker-end="url(#ah)"/>
-    <line x1="710" y1="1668" x2="754" y2="1668" marker-end="url(#ah)"/>
-    <line x1="1060" y1="1668" x2="1104" y2="1668" marker-end="url(#ah)"/>
-    <line x1="1410" y1="1668" x2="1454" y2="1668" marker-end="url(#ah)"/>
-  </g>
-
-  <!-- row 2: production target -->
-  <text x="60" y="1752" fill="#7d9bbb" font-size="14" font-weight="600" letter-spacing="1">PRODUCTION TARGET · DOCKER COMPOSE</text>
-  <line x1="1600" y1="1716" x2="1600" y2="1756" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-  <g font-size="14" fill="#a9cdee">
-    <rect x="60" y="1762" width="220" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="80" y="1794" fill="#fff" font-size="18" font-weight="600">Visitors</text>
-    <text x="80" y="1818">website widget</text>
-    <text x="80" y="1838">chat.sapphirus.in</text>
-    <rect x="330" y="1762" width="300" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="350" y="1794" fill="#fff" font-size="18" font-weight="600">nginx</text>
-    <text x="350" y="1818">TLS 1.2/1.3 · ports 80/443</text>
-    <text x="350" y="1838">chat 20 req/min · admin 60</text>
-    <rect x="680" y="1762" width="380" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="700" y="1794" fill="#fff" font-size="18" font-weight="600">api container (uvicorn)</text>
-    <text x="700" y="1818">chat · admin · OpenAI-compatible API</text>
-    <text x="700" y="1838">ingestion worker · web monitor</text>
-    <rect x="1110" y="1762" width="300" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="1130" y="1794" fill="#fff" font-size="18" font-weight="600">Volumes</text>
-    <text x="1130" y="1818">PostgreSQL 16 (pgdata)</text>
-    <text x="1130" y="1838">Chroma index (appdata)</text>
-    <rect x="1460" y="1762" width="280" height="96" rx="12" fill="#0d3a63" stroke="#7d9bbb" stroke-width="1.5"/>
-    <text x="1480" y="1794" fill="#fff" font-size="18" font-weight="600">Operations</text>
-    <text x="1480" y="1818">backup.sh · 14-day retention</text>
-    <text x="1480" y="1838">Open WebUI (staff profile)</text>
-  </g>
-  <g stroke="#fff" stroke-width="3">
-    <line x1="280" y1="1810" x2="324" y2="1810" marker-end="url(#ah)"/>
-    <line x1="630" y1="1810" x2="674" y2="1810" marker-end="url(#ah)"/>
-    <line x1="1060" y1="1810" x2="1104" y2="1810" marker-end="url(#ah)"/>
-  </g>
-  <line x1="1410" y1="1810" x2="1454" y2="1810" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ahm)"/>
-
-  <!-- row 3: live demo (NEW) -->
-  <text x="60" y="1894" fill="#48aaee" font-size="14" font-weight="600" letter-spacing="1">LIVE DEMO · STREAMLIT COMMUNITY CLOUD</text>
-  <rect x="402" y="1881" width="46" height="18" rx="4" fill="#48aaee"/>
-  <text x="425" y="1894" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
-  <g font-size="14" fill="#a9cdee">
-    <rect x="60" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
-    <text x="80" y="1934" fill="#fff" font-size="18" font-weight="600">GitHub push</text>
-    <text x="80" y="1958">RameshMisale-maker /</text>
-    <text x="80" y="1977">learningchain-assistant · main</text>
-    <rect x="410" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
-    <text x="430" y="1934" fill="#fff" font-size="18" font-weight="600">Streamlit Cloud build</text>
-    <text x="430" y="1958">Python 3.12 · CPU-only torch</text>
-    <text x="430" y="1977">no training PDFs (student data)</text>
-    <rect x="760" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
-    <text x="780" y="1934" fill="#fff" font-size="18" font-weight="600">streamlit_app.py</text>
-    <text x="780" y="1958">same pipeline, in-process</text>
-    <text x="780" y="1977">index built on start · LLM status</text>
-    <rect x="1110" y="1904" width="300" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
-    <text x="1130" y="1934" fill="#fff" font-size="18" font-weight="600">Secrets</text>
-    <text x="1130" y="1958">OPENAI_API_KEY (Groq key)</text>
-    <text x="1130" y="1977">set in app settings, not in git</text>
-    <rect x="1460" y="1904" width="280" height="88" rx="12" fill="#0d3a63" stroke="#48aaee" stroke-width="1.5"/>
-    <text x="1480" y="1934" fill="#fff" font-size="18" font-weight="600">Demo users</text>
-    <text x="1480" y="1958">public link</text>
-    <text x="1480" y="1977">10 questions/min per session</text>
-  </g>
-  <g stroke="#fff" stroke-width="3">
-    <line x1="360" y1="1948" x2="404" y2="1948" marker-end="url(#ah)"/>
-    <line x1="710" y1="1948" x2="754" y2="1948" marker-end="url(#ah)"/>
-    <line x1="1060" y1="1948" x2="1104" y2="1948" marker-end="url(#ah)"/>
-    <line x1="1410" y1="1948" x2="1454" y2="1948" marker-end="url(#ah)"/>
-  </g>
+  <rect width="1800" height="2410" fill="#072b4b"/>
+  <rect x="30" y="30" width="1740" height="170" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="74" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">Product config</text>
+  <text x="277.0" y="74" fill="#a9cdee" font-size="15" font-weight="400" text-anchor="start">  config/products/&lt;id&gt;.yaml · validated at startup · no product names in code</text>
+  <rect x="60" y="92" width="1090" height="73" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="78" y="125" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">sapphirus.yaml · learningchain.yaml · &lt;your product&gt;.yaml</text>
+  <text x="78" y="151" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">names · glossary · fixed replies · prompt [[placeholders]] · KB namespaces + scopes · sitemaps · UI texts</text>
+  <rect x="1073.4" y="81" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1106.7" y="95" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P1</text>
+  <rect x="1180" y="92" width="530" height="73" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1198" y="125" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Resolve product per request</text>
+  <text x="1198" y="151" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">id → alias → host → API key → default</text>
+  <rect x="1633.4" y="81" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1666.7" y="95" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P1</text>
+  <path d="M1150 128.5 L1174 128.5" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="30" y="240" width="1740" height="470" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="284" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">Indexing</text>
+  <rect x="60" y="315" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="78" y="348" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Sources</text>
+  <text x="78" y="374" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">help centre · FAQ · web pages</text>
+  <text x="78" y="395" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">sapphirus.in sitemaps (config)</text>
+  <text x="78" y="416" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">training PDFs · approved Q&amp;A</text>
+  <text x="78" y="437" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">reviewed answers (P6)</text>
+  <rect x="340" y="315" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="358" y="348" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Ingestion queue</text>
+  <text x="358" y="374" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">upload · CLI · webhook</text>
+  <text x="358" y="395" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">daily crawl of sitemaps</text>
+  <text x="358" y="416" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">3 tries, backoff</text>
+  <rect x="620" y="315" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="638" y="348" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Validate &amp; load</text>
+  <text x="638" y="374" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">type · size · macros</text>
+  <text x="638" y="395" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">SHA-256 dedupe</text>
+  <text x="638" y="416" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">clean text · OCR off</text>
+  <rect x="900" y="315" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="918" y="348" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Parent → child</text>
+  <text x="918" y="374" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">parent ≤ 1,800 chars</text>
+  <text x="918" y="395" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">child 400 · overlap 80</text>
+  <text x="918" y="416" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">heading path kept</text>
+  <rect x="1180" y="315" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="1198" y="348" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Embed</text>
+  <text x="1198" y="374" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">bge-small-en-v1.5</text>
+  <text x="1198" y="395" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">local · free</text>
+  <text x="1198" y="416" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">+ BM25 tokens</text>
+  <rect x="1460" y="315" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1478" y="348" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Build version vₙ</text>
+  <text x="1478" y="374" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">new collection</text>
+  <text x="1478" y="395" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">&lt;prefix&gt;&lt;kb&gt;_v&lt;n&gt;</text>
+  <text x="1478" y="416" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">users stay on live</text>
+  <rect x="1633.4" y="304" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1666.7" y="318" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P2</text>
+  <path d="M310 390.0 L334 390.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M590 390.0 L614 390.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M870 390.0 L894 390.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1150 390.0 L1174 390.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1430 390.0 L1454 390.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="60" y="520" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="78" y="553" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Freshness tracking</text>
+  <text x="78" y="579" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">seen · changed · missed</text>
+  <text x="78" y="600" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">tombstone after 2 misses</text>
+  <text x="78" y="621" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">changed → recheck answers</text>
+  <rect x="233.4" y="509" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="266.7" y="523" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P3</text>
+  <path d="M185.0 520 L185.0 473" fill="none" stroke="#48aaee" stroke-width="2.5" marker-end="url(#aha)"/>
+  <rect x="620" y="520" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="638" y="553" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Live index</text>
+  <text x="638" y="579" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Chroma collection per KB</text>
+  <text x="638" y="600" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">BM25 rebuilt on switch</text>
+  <text x="638" y="621" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">kb revision bumped</text>
+  <rect x="900" y="520" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="918" y="553" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Alias switch</text>
+  <text x="918" y="579" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">promote · rollback (1 row)</text>
+  <text x="918" y="600" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">keep 5 versions</text>
+  <text x="918" y="621" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">baseline never dropped</text>
+  <rect x="1073.4" y="509" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1106.7" y="523" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P2</text>
+  <rect x="1460" y="520" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1478" y="553" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Eval gate</text>
+  <text x="1478" y="579" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">hit@5 + MRR, no LLM</text>
+  <text x="1478" y="600" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">pass: ≥ live − 0.02</text>
+  <text x="1478" y="621" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">fail: version dropped</text>
+  <rect x="1633.4" y="509" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1666.7" y="523" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P2</text>
+  <path d="M1585.0 465 L1585.0 512" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1585.0 670 L1585.0 688 L1025.0 688 L1025.0 678" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="1575.0" y="682" fill="#48aaee" font-size="13" font-weight="600" text-anchor="end">pass → promote</text>
+  <path d="M900 595.0 L878 595.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="1180" y="540" width="250" height="110" rx="12" fill="#0a4a80"/>
+  <text x="1198" y="573" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Eval cases</text>
+  <text x="1198" y="599" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">evals/&lt;id&gt;.jsonl</text>
+  <text x="1198" y="620" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">approved Q&amp;A · review (P6)</text>
+  <path d="M1430 595.0 L1454 595.0" fill="none" stroke="#7d9bbb" stroke-width="2" marker-end="url(#ahm)"/>
+  <rect x="30" y="750" width="1740" height="790" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="794" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">Answering a question</text>
+  <rect x="60" y="825" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="78" y="858" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Clients</text>
+  <text x="78" y="884" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">chat page · widget</text>
+  <text x="78" y="905" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Streamlit demo</text>
+  <text x="78" y="926" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">OpenAI API · Open WebUI</text>
+  <rect x="340" y="825" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="358" y="858" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Product context</text>
+  <text x="358" y="884" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">replies · glossary · prompts</text>
+  <text x="358" y="905" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">allowed KBs</text>
+  <rect x="513.4" y="814" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="546.7" y="828" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P1</text>
+  <rect x="620" y="825" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="638" y="858" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Safety guard</text>
+  <text x="638" y="884" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">prompt injection</text>
+  <text x="638" y="905" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">card / OTP / PIN redacted</text>
+  <text x="638" y="926" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">restricted topics</text>
+  <rect x="900" y="825" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="918" y="858" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Normalize</text>
+  <text x="918" y="884" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">typos · short forms</text>
+  <text x="918" y="905" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">reply language</text>
+  <text x="918" y="926" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">EN / HI / Hinglish</text>
+  <rect x="1180" y="825" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="1198" y="858" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Conversation layer</text>
+  <text x="1198" y="884" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">greeting · small talk</text>
+  <text x="1198" y="905" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">frustration · account</text>
+  <text x="1198" y="926" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">→ direct reply</text>
+  <rect x="1460" y="825" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="1478" y="858" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Follow-up rewrite</text>
+  <text x="1478" y="884" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">standalone question</text>
+  <text x="1478" y="905" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">multi-part → split</text>
+  <path d="M310 890.0 L334 890.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M590 890.0 L614 890.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M870 890.0 L894 890.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1150 890.0 L1174 890.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1430 890.0 L1454 890.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="1460" y="1035" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1478" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Query embedding</text>
+  <text x="1478" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">dense vector</text>
+  <text x="1478" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">outage → BM25 only</text>
+  <rect x="1633.4" y="1024" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1666.7" y="1038" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P5</text>
+  <rect x="1180" y="1035" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1198" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Response cache</text>
+  <text x="1198" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">exact key, then semantic</text>
+  <text x="1198" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">cos ≥ 0.95 · TTL 24 h</text>
+  <text x="1198" y="1136" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">miss → router</text>
+  <rect x="1353.4" y="1024" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1386.7" y="1038" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P4</text>
+  <rect x="900" y="1035" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="918" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Router + scope</text>
+  <text x="918" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">intent · KB routing · ACL</text>
+  <text x="918" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">lenient scope check</text>
+  <rect x="620" y="1035" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="638" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Golden match</text>
+  <text x="638" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">approved Q&amp;A</text>
+  <text x="638" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">≥ 0.78 → verbatim</text>
+  <text x="638" y="1136" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">no match → search</text>
+  <rect x="340" y="1035" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="358" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Hybrid search</text>
+  <text x="358" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">dense 40 + BM25 40</text>
+  <text x="358" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">relative score fusion</text>
+  <text x="358" y="1136" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">multi-query (RAG-Fusion)</text>
+  <rect x="60" y="1035" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="78" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Rerank</text>
+  <text x="78" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">cross-encoder MiniLM</text>
+  <text x="78" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">top 5 · min 0.15</text>
+  <path d="M1585.0 955 L1585.0 1027" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1460 1100.0 L1438 1100.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1180 1100.0 L1158 1100.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M900 1100.0 L878 1100.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M620 1100.0 L598 1100.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M340 1100.0 L318 1100.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M685.0 670 L685.0 732 L605 732 L605 995 L505.0 995 L505.0 1027" fill="none" stroke="#48aaee" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#aha)"/>
+  <text x="675.0" y="724" fill="#48aaee" font-size="13" font-weight="600" text-anchor="end">reads the live version</text>
+  <rect x="60" y="1245" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="78" y="1278" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Context</text>
+  <text x="78" y="1304" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">parent sections</text>
+  <text x="78" y="1325" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">dedupe · 9,000 chars</text>
+  <rect x="340" y="1245" width="530" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="358" y="1278" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">LLM failover chain</text>
+  <text x="358" y="1304" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Groq gpt-oss-120b → 20b</text>
+  <text x="358" y="1325" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">→ 2nd provider (optional key)</text>
+  <text x="358" y="1346" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">→ static reply + sources</text>
+  <text x="358" y="1367" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">breaker 5 / 60 s / 120 s · 15 s</text>
+  <rect x="793.4" y="1234" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="826.7" y="1248" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P5</text>
+  <rect x="900" y="1245" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="918" y="1278" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Grounding</text>
+  <text x="918" y="1304" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">claims vs sources</text>
+  <text x="918" y="1325" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">fails → extractive</text>
+  <text x="918" y="1346" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">citations · URLs checked</text>
+  <rect x="1180" y="1245" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="1198" y="1278" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Reply</text>
+  <text x="1198" y="1304" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">answer + sources</text>
+  <text x="1198" y="1325" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">never repeats a reply</text>
+  <text x="1198" y="1346" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">product wording</text>
+  <path d="M185.0 1165 L185.0 1237" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M310 1320.0 L334 1320.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M870 1320.0 L894 1320.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1150 1320.0 L1174 1320.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1305.0 1165 L1305.0 1237" fill="none" stroke="#48aaee" stroke-width="2.5" marker-end="url(#aha)"/>
+  <text x="1315.0" y="1205" fill="#48aaee" font-size="14" font-weight="600" text-anchor="start">hit</text>
+  <path d="M745.0 1165 L745.0 1195 L1235.0 1195 L1235.0 1237" fill="none" stroke="#48aaee" stroke-width="2.5" marker-end="url(#aha)"/>
+  <text x="755.0" y="1189" fill="#48aaee" font-size="13" font-weight="600" text-anchor="start">direct</text>
+  <rect x="1460" y="1245" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="1478" y="1278" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Back to client</text>
+  <text x="1478" y="1304" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">JSON or stream</text>
+  <text x="1478" y="1325" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">message id for 👍 / 👎</text>
+  <path d="M1444 920.0 L1735 920.0 L1735 1290.0 L1718 1290.0" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahm)"/>
+  <path d="M1430 1360.0 L1454 1360.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="30" y="1580" width="1740" height="260" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="1624" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">After the answer</text>
+  <rect x="60" y="1655" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="78" y="1688" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Request log</text>
+  <text x="78" y="1714" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">index + prompt version</text>
+  <text x="78" y="1735" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">provider · intent · hits</text>
+  <text x="78" y="1756" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">retrieved ids · message id</text>
+  <rect x="233.4" y="1644" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="266.7" y="1658" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P2</text>
+  <rect x="340" y="1655" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="358" y="1688" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Cache store</text>
+  <text x="358" y="1714" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">only confident answers</text>
+  <text x="358" y="1735" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">never refusals / account</text>
+  <text x="358" y="1756" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">👎 deletes the entry</text>
+  <rect x="513.4" y="1644" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="546.7" y="1658" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P4</text>
+  <rect x="620" y="1655" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="638" y="1688" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Review queue</text>
+  <text x="638" y="1714" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">👎 · refusal · low conf.</text>
+  <text x="638" y="1735" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">stale pages (P3)</text>
+  <text x="638" y="1756" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">similar questions clustered</text>
+  <rect x="793.4" y="1644" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="826.7" y="1658" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P6</text>
+  <rect x="900" y="1655" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="918" y="1688" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Approve in admin</text>
+  <text x="918" y="1714" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">edit + approve answer</text>
+  <text x="918" y="1735" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">or dismiss</text>
+  <rect x="1073.4" y="1644" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1106.7" y="1658" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P6</text>
+  <rect x="1180" y="1655" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1198" y="1688" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">golden_qa + eval_cases</text>
+  <text x="1198" y="1714" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">&lt;kb&gt;_reviewed.csv</text>
+  <text x="1198" y="1735" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">re-ingested at once</text>
+  <text x="1198" y="1756" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">CSV import too</text>
+  <rect x="1353.4" y="1644" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1386.7" y="1658" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P6</text>
+  <rect x="1460" y="1655" width="250" height="150" rx="12" fill="#0a4a80"/>
+  <text x="1478" y="1688" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Chat history</text>
+  <text x="1478" y="1714" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">per session · product</text>
+  <text x="1478" y="1735" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">retention purge</text>
+  <path d="M1305.0 1395 L1305.0 1566 L185.0 1566 L185.0 1647" fill="none" stroke="#ffffff" stroke-width="2.5" marker-end="url(#ah)"/>
+  <path d="M310 1730.0 L334 1730.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M590 1730.0 L614 1730.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M870 1730.0 L894 1730.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1150 1730.0 L1174 1730.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1345.0 1395 L1345.0 1550 L1585.0 1550 L1585.0 1647" fill="none" stroke="#7d9bbb" stroke-width="2" marker-end="url(#ahm)"/>
+  <path d="M1400 1655 L1400 1602 L1750 1602 L1750 390 L1730 390 L1730 280 L185.0 280 L185.0 307" fill="none" stroke="#48aaee" stroke-width="2.5" stroke-dasharray="9 7" marker-end="url(#aha)"/>
+  <text x="1390" y="1596" fill="#48aaee" font-size="13" font-weight="600" text-anchor="end">approved answers + eval cases → index and eval gate</text>
+  <rect x="30" y="1880" width="1740" height="230" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="1924" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">Observability</text>
+  <text x="261.5" y="1924" fill="#a9cdee" font-size="15" font-weight="400" text-anchor="start">  all self-hosted and free · Langfuse off</text>
+  <rect x="60" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="78" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">/metrics</text>
+  <text x="78" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Prometheus text format</text>
+  <text x="78" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">requests · refusals · cost</text>
+  <text x="78" y="2051" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">latency · breakers</text>
+  <rect x="233.4" y="1939" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="266.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
+  <rect x="340" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="358" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Prometheus + Grafana</text>
+  <text x="358" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">ops/prometheus/*.yml</text>
+  <text x="358" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">ops/grafana dashboard</text>
+  <rect x="513.4" y="1939" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="546.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
+  <rect x="620" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="638" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Alert rules</text>
+  <text x="638" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">config/alerts.yaml</text>
+  <text x="638" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">refusal · error · p95 · 👎</text>
+  <text x="638" y="2051" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">every 5 min, cool-down</text>
+  <rect x="793.4" y="1939" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="826.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
+  <rect x="900" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="918" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Nightly eval</text>
+  <text x="918" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">retrieval of live indexes</text>
+  <text x="918" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">02:00 UTC · saved per night</text>
+  <text x="918" y="2051" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">drop → alert</text>
+  <rect x="1073.4" y="1939" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1106.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
+  <rect x="1180" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1198" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">alert_events</text>
+  <text x="1198" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">stored in the database</text>
+  <text x="1198" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">admin API</text>
+  <rect x="1353.4" y="1939" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1386.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
+  <rect x="1460" y="1950" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="1478" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Notify</text>
+  <text x="1478" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Slack webhook</text>
+  <text x="1478" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">e-mail (SMTP)</text>
+  <text x="1478" y="2051" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">optional</text>
+  <path d="M310 2015.0 L334 2015.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M870 1990.0 L888 1990.0 L888 1924 L1305.0 1924 L1305.0 1942" fill="none" stroke="#ffffff" stroke-width="2.5" marker-end="url(#ah)"/>
+  <path d="M1150 2015.0 L1174 2015.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <path d="M1430 2015.0 L1454 2015.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="30" y="2150" width="1740" height="230" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
+  <text x="60" y="2194" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">Data and deployment</text>
+  <rect x="60" y="2220" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="78" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Database</text>
+  <text x="78" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">SQLite · PostgreSQL 16</text>
+  <text x="78" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Alembic 0001 – 0007</text>
+  <text x="78" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">migrated at startup</text>
+  <rect x="233.4" y="2209" width="66.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="266.7" y="2223" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P1</text>
+  <rect x="340" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="358" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Vector store</text>
+  <text x="358" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">embedded Chroma</text>
+  <text x="358" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">versioned collections</text>
+  <text x="358" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">single writer</text>
+  <rect x="620" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="638" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">FastAPI service</text>
+  <text x="638" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">1 worker · ingestion thread</text>
+  <text x="638" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">ops scheduler thread</text>
+  <text x="638" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">/health/ready</text>
+  <rect x="900" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="918" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Admin console</text>
+  <text x="918" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">documents · websites · jobs</text>
+  <text x="918" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">review queue · versions</text>
+  <text x="918" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">dashboard</text>
+  <rect x="1180" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
+  <text x="1198" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Hosting</text>
+  <text x="1198" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Docker Compose + nginx</text>
+  <text x="1198" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Streamlit Community Cloud</text>
+  <text x="1198" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Azure DevOps + GitHub</text>
+  <rect x="1460" y="2220" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
+  <text x="1478" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Feature flags</text>
+  <text x="1478" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">8 flags, all off by default</text>
+  <text x="1478" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">behaviour unchanged</text>
+  <text x="1478" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">until switched on</text>
+  <rect x="1669.4" y="2209" width="30.6" height="20" rx="4" fill="#48aaee"/>
+  <text x="1684.7" y="2223" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW</text>
 </svg>

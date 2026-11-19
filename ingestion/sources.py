@@ -2,7 +2,7 @@
 
 * Zendesk Help Center  -> one Markdown file per help-centre category (article = "## " section with its URL and
   last-updated date), so a change in one article re-indexes only that category file.
-* LearningChain FAQ page -> approved Q&A rows (golden dataset) + a searchable FAQ document.
+* Product website FAQ page -> approved Q&A rows (golden dataset) + a searchable FAQ document.
 
 All HTTP goes through ingestion.web.fetch (SSRF-validated, size-limited). Content is treated as untrusted data.
 """
@@ -18,16 +18,15 @@ from urllib.parse import urlsplit
 
 from ingestion.web import fetch
 
-# category id -> (file name, audience label used in article headings, intro line)
-CATEGORY_FILES = {
-    "Introduction to LearningChain": ("LearningChain_01_Introduction.md", "", "What LearningChain is, why to choose it, key features and how it works for universities."),
-    "Introduction to Blockchain Technology": ("LearningChain_02_Blockchain_Technology.md", "", "Blockchain basics and why blockchain-secured certificates and QR codes are safer."),
-    "My Landing Page": ("LearningChain_03_Getting_Started.md", "", "Logging in, resetting a forgotten password and navigating the modules."),
-    "I'm a User": ("LearningChain_04_User_Guide.md", "User (institution staff)", "Step-by-step guides for institution users: securing/generating certificates, reports, bulk emails, profile."),
-    "I'm a Admin": ("LearningChain_05_Admin_Guide.md", "Admin", "Step-by-step guides for institution administrators: users, certificate types, student review, revoke/recall/approve, payments, credits, settings."),
-    "I'm a Verifier": ("LearningChain_06_Verifier_Guide.md", "Verifier (employer / third party)", "How employers and third parties verify student certificates."),
-    "General": ("LearningChain_07_FAQ_and_Release_Notes.md", "", "Frequently asked questions and product release notes (what's new in each release)."),
-}
+def _source_product(product=None):
+    """Product whose help-centre data is used: the given one, else the product that defines help-centre data."""
+    from backend.products import current_product, load_products
+    if product is not None:
+        return product
+    return next((p for p in load_products().values()
+                 if p.sources.help_centre_categories or p.sources.faq_alternates), None) or current_product()
+
+
 SKIP_TITLES = {"Welcome to your Help Centre!"}  # Zendesk placeholder article
 
 
@@ -122,8 +121,11 @@ def zendesk_export(base_url: str, locale: str = "en-gb") -> dict[str, list]:
     return out
 
 
-def zendesk_to_markdown(export: dict[str, list], help_centre_url: str) -> dict[str, str]:
+def zendesk_to_markdown(export: dict[str, list], help_centre_url: str, product=None) -> dict[str, str]:
     """Convert a Help Center export to {file name: markdown}. Unknown categories get their own file."""
+    cfg = _source_product(product)
+    centre = cfg.sources.help_centre_name or f"{cfg.display_name} Help Centre"
+    prefix = cfg.display_name.replace(" ", "") + "_"
     cats = {c["id"]: c for c in export["categories"]}
     secs = {s["id"]: s for s in export["sections"]}
     by_file: dict[str, list] = {}
@@ -135,8 +137,8 @@ def zendesk_to_markdown(export: dict[str, list], help_centre_url: str) -> dict[s
         if not sec:
             continue
         cat = cats.get(sec["category_id"], {}).get("name", "General").strip()
-        fname, audience, intro = CATEGORY_FILES.get(cat) or (
-            "LearningChain_" + re.sub(r"[^A-Za-z0-9]+", "_", cat).strip("_") + ".md", "", f"Help-centre articles: {cat}.")
+        fname, audience, intro = (tuple(cfg.sources.help_centre_categories.get(cat) or ()) or (
+            prefix + re.sub(r"[^A-Za-z0-9]+", "_", cat).strip("_") + ".md", "", f"Help-centre articles: {cat}."))
         meta[fname] = (cat, intro)
         by_file.setdefault(fname, []).append((sec, a, audience))
     files: dict[str, str] = {}
@@ -145,9 +147,8 @@ def zendesk_to_markdown(export: dict[str, list], help_centre_url: str) -> dict[s
         items.sort(key=lambda x: (x[0].get("position", 0), x[1].get("position", 0),
                                   -int(x[1]["id"]) if "Release" in x[0]["name"] else 0))
         title = cat.replace("I'm a Admin", "I'm an Admin")
-        lines = [f"# LearningChain Help Centre - {title}", "",
-                 "Product: LearningChain by Sapphirus - blockchain-powered academic credentialing platform.",
-                 f"Source: LearningChain Help Centre {help_centre_url}", "", intro, ""]
+        lines = [f"# {centre} - {title}", "", cfg.sources.document_header,
+                 f"Source: {centre} {help_centre_url}", "", intro, ""]
         for sec, a, audience in items:
             t = re.sub(r"\s+", " ", a["title"]).strip().rstrip(":")
             heading = f"{audience.split(' (')[0]}: {t}" if audience else t
@@ -166,60 +167,11 @@ def zendesk_to_markdown(export: dict[str, list], help_centre_url: str) -> dict[s
     return files
 
 
-# ----------------------------------------------------------------------------- LearningChain FAQ page
+# ----------------------------------------------------------------------------- product website FAQ page
 GOLDEN_COLS = ["Question ID", "Category", "Question", "Approved Answer", "Keywords", "Alternate Questions",
                "Access Roles", "Status", "Source URL"]
 ROLES = "public;employee;hr;admin"
 
-# Extra phrasings people use for each FAQ (matched by the start of the official question, lower-case).
-ALTERNATES = {
-    "what is learningchain?": ["Tell me about LearningChain", "What does LearningChain do?", "Explain LearningChain",
-                               "What is the LearningChain platform?"],
-    "what is blockchain technology?": ["What is blockchain?", "Explain blockchain", "How does blockchain work?"],
-    "why do we need learningchain?": ["Why should we use LearningChain?", "What problems does LearningChain solve?",
-                                      "What are the benefits of LearningChain?"],
-    "how does blockchain make my documents tamper-proof?": ["How are certificates made tamper-proof?",
-                                                            "Can blockchain certificates be tampered with?",
-                                                            "How does blockchain prevent tampering?"],
-    "where does learningchain store my data?": ["Where is the data stored?", "Which cloud does LearningChain use?",
-                                                "Is LearningChain hosted on Azure?"],
-    "how does learningchain work?": ["How does the LearningChain process work?", "Explain how LearningChain works",
-                                     "How are certificates secured in LearningChain?"],
-    "how is a blockchain qr code safer": ["Why is a blockchain QR code more secure than a normal QR code?",
-                                          "Blockchain QR code vs normal QR code",
-                                          "Is the LearningChain QR code secure?"],
-    "what are blockchain-based digital credentials?": ["What are blockchain credentials?",
-                                                       "What is a blockchain digital certificate?"],
-    "what happens if i make changes to a document": ["What if I edit a document after sharing the QR code?",
-                                                     "Do I need a new QR code if the document changes?",
-                                                     "Can I modify a certificate after issuing it?"],
-    "what makes learningchain's verification process different?": [
-        "How is LearningChain verification different from manual verification?",
-        "Why is LearningChain verification faster?", "How fast is certificate verification?"],
-    "does learningchain support different file formats": ["Which file formats are supported?",
-                                                          "Can I upload Word or image files?",
-                                                          "Does LearningChain accept only PDF?"],
-    "what is the validity of the data on the blockchain network": ["How long is the data valid?",
-                                                                   "Do blockchain certificates expire?",
-                                                                   "How long are records kept on the blockchain?"],
-    "can we integrate learningchain with other existing applications?": [
-        "Does LearningChain have an API?", "Can LearningChain integrate with our ERP?",
-        "Can LearningChain connect to our existing systems?"],
-    "does learningchain have control over the data?": ["Can LearningChain access our data?",
-                                                       "Who controls the data in LearningChain?",
-                                                       "Is our data private?"],
-    "what is the difference between learningchain and digilocker?": [
-        "LearningChain vs DigiLocker", "Is LearningChain better than DigiLocker?",
-        "How is LearningChain different from DigiLocker?"],
-    "how will students access and share their records?": ["How do students get their certificates?",
-                                                          "How can students share their credentials?",
-                                                          "Do students get a digital wallet?"],
-    "how does learningchain help in institute brand building?": [
-        "How does LearningChain help our institution's brand?", "What are the branding benefits for universities?"],
-    "does the institution need to pay repeatedly": ["Do we pay every year to keep certificates?",
-                                                    "Is there a recurring fee to maintain records?",
-                                                    "Is it a one-time payment per certificate?"],
-}
 
 
 def clean(fragment: str) -> str:
@@ -237,9 +189,10 @@ def parse(page: str) -> list[tuple[str, str]]:
     return [(clean(q), clean(a)) for q, a in items if clean(q) and clean(a)]
 
 
-def alternates_for(question: str) -> list[str]:
+def alternates_for(question: str, product=None) -> list[str]:
     q = question.lower()
-    return next((alts for key, alts in ALTERNATES.items() if q.startswith(key)), [])
+    alternates = _source_product(product).sources.faq_alternates
+    return next((list(alts) for key, alts in alternates.items() if q.startswith(key)), [])
 
 
 def keywords_for(question: str) -> str:
@@ -251,13 +204,14 @@ def keywords_for(question: str) -> str:
 
 
 
-def faq_golden_csv(faqs: list[tuple[str, str]], url: str, existing_csv: str = "") -> str:
+def faq_golden_csv(faqs: list[tuple[str, str]], url: str, existing_csv: str = "", product=None) -> str:
     """Approved-answer CSV: previous non-FAQ rows (P001...) are kept, FAQ rows F01.. are regenerated."""
     kept = []
     if existing_csv.strip():
         kept = [r for r in csv.DictReader(io.StringIO(existing_csv)) if not re.fullmatch(r"F\d+", r["Question ID"])]
-    rows = kept + [{"Question ID": f"F{i:02d}", "Category": "LearningChain FAQ", "Question": q, "Approved Answer": a,
-                    "Keywords": keywords_for(q), "Alternate Questions": " | ".join(alternates_for(q)),
+    cfg = _source_product(product)
+    rows = kept + [{"Question ID": f"F{i:02d}", "Category": f"{cfg.display_name} FAQ", "Question": q, "Approved Answer": a,
+                    "Keywords": keywords_for(q), "Alternate Questions": " | ".join(alternates_for(q, cfg)),
                     "Access Roles": ROLES, "Status": "Approved", "Source URL": url}
                    for i, (q, a) in enumerate(faqs, 1)]
     buf = io.StringIO()
@@ -267,9 +221,10 @@ def faq_golden_csv(faqs: list[tuple[str, str]], url: str, existing_csv: str = ""
     return buf.getvalue()
 
 
-def faq_document(faqs: list[tuple[str, str]], url: str) -> str:
-    lines = ["# LearningChain - Frequently Asked Questions (official website)", "",
-             "Product: LearningChain by Sapphirus - blockchain-powered academic credentialing platform.",
+def faq_document(faqs: list[tuple[str, str]], url: str, product=None) -> str:
+    cfg = _source_product(product)
+    lines = [f"# {cfg.display_name} - Frequently Asked Questions (official website)", "",
+             cfg.sources.document_header,
              f"Source: {url}", ""]
     for q, a in faqs:
         lines += [f"## FAQ: {q}", "", a, ""]

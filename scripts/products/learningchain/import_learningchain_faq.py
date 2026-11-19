@@ -17,7 +17,7 @@ import re
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]   # scripts/products/<id>/ -> project root
 GOLDEN = ROOT / "datasets/products_golden_dataset.csv"
 DOC = ROOT / "knowledge_bases/products/LearningChain_00_Website_FAQ.md"
 COLS = ["Question ID", "Category", "Question", "Approved Answer", "Keywords", "Alternate Questions", "Access Roles",

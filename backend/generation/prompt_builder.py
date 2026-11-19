@@ -6,6 +6,8 @@ or impersonate system/assistant turns (prompt-injection hardening).
 """
 from __future__ import annotations
 
+import re
+
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -33,10 +35,24 @@ class SourceRef:
         return self.candidate.chunk.text
 
 
-@lru_cache(maxsize=16)
+@lru_cache(maxsize=None)
+def _read_prompt(name: str) -> str:
+    return (get_settings().prompts_dir / name).read_text(encoding="utf-8")
+
+
+_PLACEHOLDER = re.compile(r"\[\[([a-z_]+)\]\]")
+
+
 def load_prompt(name: str) -> str:
-    path: Path = get_settings().prompts_dir / name
-    return path.read_text(encoding="utf-8")
+    """Prompt template with the current product's values filled into its [[placeholders]] (config/products/*.yaml).
+    The remaining {fields} are filled by the caller with str.format()."""
+    from backend.products import current_product
+
+    values = current_product().prompt_vars()
+    return _PLACEHOLDER.sub(lambda m: values.get(m.group(1), m.group(0)), _read_prompt(name))
+
+
+load_prompt.cache_clear = _read_prompt.cache_clear  # type: ignore[attr-defined]  (tests reset prompt caches)
 
 
 def describe_source(meta: dict) -> str:

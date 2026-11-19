@@ -10,7 +10,10 @@ from ingestion.text_cleaner import detect_injection
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _SECRET_PATTERNS = re.compile(r"(api[_\- ]?key|password|secret|token)\s*[:=]\s*\S{8,}", re.IGNORECASE)
 
-BLOCKED_MESSAGE = "I can only help with your own account and Sapphirus / LearningChain questions."
+def blocked_message() -> str:
+    """Reply to prompt-injection attempts (config/products/<id>.yaml -> replies.blocked)."""
+    from backend.products import current_product
+    return current_product().replies.blocked
 
 # ------------------------------------------------------------------------------------------------ sensitive data
 # Card numbers, CVV, OTP, UPI PIN and passwords must never be requested, accepted or stored. A message containing one
@@ -74,11 +77,14 @@ def redact_sensitive(text: str) -> str:
 
 # ------------------------------------------------------------------------------------------------ restricted topics
 # Guardrail: healthcare, banking/financial advice, sexual content, suicide/self-harm, violence and illegal activity are
-# refused before any retrieval or LLM call. Patterns are phrase-level on purpose: LearningChain questions about
+# refused before any retrieval or LLM call. Patterns are phrase-level on purpose: product questions about
 # "fake certificates", "hacking" blockchain records or verification "payments" must still be answered.
-_REDIRECT = ("I can help with questions about Sapphirus and its LearningChain platform - for example issuing, sharing "
-             "or verifying blockchain certificates, the admin and user portals, or Sapphirus company information.")
-RESTRICTED_TOPIC_MESSAGE = "I'm sorry, but I can't help with that topic. " + _REDIRECT
+def restricted_topic_message() -> str:
+    """Polite refusal for restricted topics, redirecting to the product (replies.restricted_topic)."""
+    from backend.products import current_product
+    return current_product().replies.restricted_topic
+
+
 SELF_HARM_MESSAGE = ("I'm really sorry you're going through this, but I can't help with that here. You don't have to "
                      "face it alone - please reach out to someone you trust, or call the Tele-MANAS mental health "
                      "helpline on 14416 (India, free, 24x7). If you are in immediate danger, call 112.")
@@ -117,7 +123,7 @@ def restricted_topic(query: str) -> str | None:
 
 
 def restricted_topic_reply(topic: str) -> str:
-    return SELF_HARM_MESSAGE if topic == "self_harm" else RESTRICTED_TOPIC_MESSAGE
+    return SELF_HARM_MESSAGE if topic == "self_harm" else restricted_topic_message()
 
 
 @dataclass

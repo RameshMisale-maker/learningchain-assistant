@@ -16,10 +16,12 @@ def _reset_singletons() -> None:
     from backend.retrieval import kb_index, reranker
     from backend.services import chat_service
     from backend.api import deps, routes_admin
+    from backend.products import reset_products
     from config.settings import reset_settings
     from ingestion import embedding, vector_store
 
     reset_settings()
+    reset_products()
     reset_engine()
     embedding.get_embedder.cache_clear()
     vector_store.get_vector_store.cache_clear()

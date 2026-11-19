@@ -141,12 +141,12 @@ class ChatbotAdapter:
     """Calls the real ChatService. One instance per evaluation run (models are loaded once)."""
 
     def __init__(self, assistant: str = config.ASSISTANT) -> None:
-        from backend.api.routes_chat import ASSISTANT_KBS
+        from backend.api.routes_chat import assistant_kbs
         from backend.services import chat_service as cs
 
         self._cs = cs
         self.assistant = assistant
-        self.allowed_kbs = ASSISTANT_KBS.get(assistant, ASSISTANT_KBS["all"])
+        self.allowed_kbs = assistant_kbs(assistant)   # scopes from the product config
         self.service = cs.ChatService()
         self.settings = self.service.settings
         self._rec = _Recorder()

@@ -1,4 +1,5 @@
-"""LearningChain Assistant - Streamlit UI (Streamlit Community Cloud demo).
+"""Assistant - Streamlit UI (Streamlit Community Cloud demo). Texts and scope come from the product config
+(config/products/<id>.yaml; PRODUCT_ID selects the product, default: the default product).
 
 Runs the SAME chatbot pipeline as the FastAPI service (ChatService: conversational layer, guardrails, hybrid
 retrieval (dense + BM25, multi-query), reranking, grounding, citations) in-process - no separate API server is needed.
@@ -57,12 +58,17 @@ def _load_config() -> None:
 
 _load_config()
 
-st.set_page_config(page_title="LearningChain Assistant", page_icon="🎓", layout="centered")
+def _product():
+    from backend.products import get_product
+    return get_product(os.getenv("PRODUCT_ID") or None)
 
-ASSISTANT_KBS = ["products", "company"]   # LearningChain product help + Sapphirus company information
+
+PRODUCT = _product()
+st.set_page_config(page_title=PRODUCT.ui.title, page_icon=PRODUCT.ui.icon or None, layout="centered")
+
+ASSISTANT_KBS = PRODUCT.allowed_kbs("all")   # knowledge bases from the product config
 MAX_QUESTIONS_PER_MINUTE = 10           # per browser session - protects the shared LLM quota
-EXAMPLES = ["What is LearningChain?", "How do I verify a student certificate?",
-            "What services does Sapphirus provide?", "How can I contact Sapphirus?"]
+EXAMPLES = PRODUCT.ui.suggestions or PRODUCT.examples
 
 
 def content_version() -> str:
@@ -90,6 +96,8 @@ def load_assistant(version: str):
 
     # drop module-level singletons from an earlier version (settings incl. knowledge_bases.yaml, prompts, index)
     reset_settings()
+    from backend.products import reset_products
+    reset_products()
     llm_client.get_llm.cache_clear()
     prompt_builder.load_prompt.cache_clear()
     kb_index._manager = None
@@ -152,10 +160,10 @@ def _ask(question: str, service) -> None:
             return
         history = [{"role": m["role"], "content": m["content"], "answer_type": m.get("answer_type", "generated")}
                    for m in st.session_state.messages[:-1]][-8:]
-        with st.spinner("Searching the LearningChain documentation..."):
+        with st.spinner(PRODUCT.ui.spinner):
             resp = service.answer(question, _user(), session_id=st.session_state.session_id, persist=False,
                                   history=history, allowed_kbs=ASSISTANT_KBS, channel="streamlit",
-                                  assistant="all", record_metrics=False)
+                                  assistant="all", record_metrics=False, product=PRODUCT)
         st.markdown(_display(resp.answer))
         _render_sources(resp.citations)
         st.caption(f"{resp.route.get('conversation_intent', resp.answer_type)} · {resp.latency_ms / 1000:.1f}s")
@@ -169,8 +177,8 @@ def main() -> None:
     st.session_state.setdefault("ask_times", [])
 
     with st.sidebar:
-        st.markdown("### 🎓 LearningChain Assistant")
-        st.caption("Answers come only from approved Sapphirus and LearningChain content, with sources.")
+        st.markdown(f"### {PRODUCT.ui.icon} {PRODUCT.ui.title}")
+        st.caption(f"Answers come only from approved {PRODUCT.covers_text()} content, with sources.")
         st.markdown("**Try asking**")
         for q in EXAMPLES:
             if st.button(q, use_container_width=True):
@@ -179,9 +187,9 @@ def main() -> None:
         if st.button("🧹 New conversation", use_container_width=True):
             st.session_state.messages, st.session_state.session_id = [], uuid.uuid4().hex
             st.rerun()
-        st.caption("Demo build · hybrid search + reranking + Corrective RAG · Sapphirus Systems")
+        st.caption(f"Demo build · hybrid search + reranking · {PRODUCT.company}")
 
-    st.title("LearningChain Assistant")
+    st.title(PRODUCT.ui.title)
 
     try:
         with st.spinner("Preparing the knowledge base (first start takes 1-2 minutes)..."):
@@ -211,16 +219,14 @@ def main() -> None:
 
     if not st.session_state.messages:
         with st.chat_message("assistant"):
-            st.markdown("Hello! I'm the Sapphirus & LearningChain Assistant. Ask me about Sapphirus - our company, "
-                        "services and products - or LearningChain: issuing, sharing and verifying blockchain "
-                        "certificates and the admin and user portals.")
+            st.markdown(PRODUCT.welcome_message)
     for m in st.session_state.messages:
         with st.chat_message(m["role"]):
             st.markdown(_display(m["content"]))
             if m["role"] == "assistant":
                 _render_sources(m.get("citations") or [])
 
-    question = st.chat_input("Ask about Sapphirus or LearningChain...")
+    question = st.chat_input(f"Ask about {PRODUCT.covers_text('or')}...")
     question = question or st.session_state.pop("pending", None)
     if question:
         _ask(question.strip()[:2000], service)

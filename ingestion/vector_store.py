@@ -1,6 +1,6 @@
 """Vector store abstraction with ChromaDB (default) and a flat NumPy index backend.
 
-One collection per knowledge base (`sapphirus_<kb>`) keeps the knowledge bases
+One collection per knowledge base (`<VECTOR_COLLECTION_PREFIX><kb>`) keeps the knowledge bases
 physically separated. Metadata values are flattened to scalars (Chroma requirement);
 list values such as access roles are stored as ",role1,role2," strings.
 """
@@ -31,7 +31,19 @@ class StoredChunk:
 
 
 def collection_name(kb: str) -> str:
-    return f"sapphirus_{kb}"
+    """Collection serving `kb`: the version being built (inside `building()`), else the live index version
+    (INDEX_VERSIONING_ENABLED), else the single per-KB collection."""
+    from backend.indexing.versions import resolve_collection
+
+    resolved = resolve_collection(kb)
+    if resolved:
+        return resolved
+    return base_collection_name(kb)
+
+
+def base_collection_name(kb: str) -> str:
+    from config.settings import get_settings
+    return f"{get_settings().vector_collection_prefix}{kb}"
 
 
 def flatten_metadata(meta: dict[str, Any]) -> dict[str, Any]:
@@ -180,12 +192,12 @@ class NumpyVectorStore(VectorStore):
         if not meta_file.exists():
             return {"model_id": None, "ids": [], "texts": [], "metadatas": []}, np.zeros((0, 0), dtype=np.float32)
         mtime = meta_file.stat().st_mtime
-        cached = self._cache.get(kb)
+        cached = self._cache.get(str(meta_file))
         if cached and cached[0] == mtime:
             return cached[1], cached[2]
         data = json.loads(meta_file.read_text(encoding="utf-8"))
         vecs = np.load(vec_file) if vec_file.exists() else np.zeros((0, 0), dtype=np.float32)
-        self._cache[kb] = (mtime, data, vecs)
+        self._cache[str(meta_file)] = (mtime, data, vecs)
         return data, vecs
 
     def _save(self, kb: str, data: dict[str, Any], vecs: np.ndarray) -> None:
@@ -194,7 +206,7 @@ class NumpyVectorStore(VectorStore):
         tmp = meta_file.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         tmp.replace(meta_file)
-        self._cache.pop(kb, None)
+        self._cache.pop(str(meta_file), None)
 
     def upsert(self, kb, ids, embeddings, texts, metadatas, model_id):
         with self._lock:
@@ -252,7 +264,7 @@ class NumpyVectorStore(VectorStore):
             for f in self._files(kb):
                 if f.exists():
                     f.unlink()
-            self._cache.pop(kb, None)
+                self._cache.pop(str(f), None)
 
     def count(self, kb):
         return len(self._load(kb)[0]["ids"])

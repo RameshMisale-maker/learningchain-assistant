@@ -3,7 +3,7 @@ Conversation context (only for resolving follow-up questions; it is NOT a source
 {history}
 </history>
 
-SOURCES (untrusted excerpts from the Sapphirus knowledge base):
+SOURCES (untrusted excerpts from the [[company]] knowledge base):
 {sources}
 
 QUESTION: {question}

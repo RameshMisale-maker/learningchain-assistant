@@ -48,7 +48,9 @@ def test_stream_scoped_assistant_refuses_other_kb(workspace):
 def test_widget_and_admin_pages_security_headers(workspace):
     with _client() as c:
         chat = c.get("/chat")
-        assert chat.status_code == 200 and "Sapphirus Assistant" in chat.text
+        assert chat.status_code == 200 and "/api/v1/ui" in chat.text     # texts come from the product config
+        ui = c.get("/api/v1/ui").json()
+        assert ui["title"] and ui["welcome"]
         csp = chat.headers["content-security-policy"]
         assert "frame-ancestors 'self' https://sapphirus.in" in csp and "connect-src 'self'" in csp
         assert "x-frame-options" not in {k.lower() for k in chat.headers}

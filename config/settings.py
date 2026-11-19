@@ -79,14 +79,9 @@ class Settings:
     price_output_per_1m: float = field(default_factory=lambda: _env_float("LLM_PRICE_OUTPUT_PER_1M", 0.0))
     embedding_price_per_1m: float = field(default_factory=lambda: _env_float("EMBEDDING_PRICE_PER_1M", 0.0))
     rerank_price_per_1k: float = field(default_factory=lambda: _env_float("RERANK_PRICE_PER_1K", 0.0))
-    insufficient_info_text: str = field(default_factory=lambda: _env(
-        "INSUFFICIENT_INFO_TEXT",
-        "I don't have confirmed information on that. Let me connect you with our support team: email "
-        "info@sapphirus.in or call +91 96531 57225."))
-    out_of_scope_text: str = field(default_factory=lambda: _env(
-        "OUT_OF_SCOPE_TEXT",
-        "I can only help with Sapphirus Systems and LearningChain - for example, I can explain how to verify a "
-        "certificate."))
+    # Optional overrides; by default these replies come from the product config (config/products/*.yaml -> replies).
+    insufficient_info_override: str = field(default_factory=lambda: _env("INSUFFICIENT_INFO_TEXT", ""))
+    out_of_scope_override: str = field(default_factory=lambda: _env("OUT_OF_SCOPE_TEXT", ""))
 
     # ---- Automated ingestion (queue worker, website monitor, webhooks) ----
     ingest_worker_enabled: bool = field(default_factory=lambda: _env_bool("INGEST_WORKER_ENABLED", True))
@@ -155,6 +150,71 @@ class Settings:
     grounding_min_support: float = field(default_factory=lambda: _env_float("GROUNDING_MIN_SUPPORT", 0.6))
 
 
+    # ---- Product configuration (config/products/*.yaml, backend/products/) ----
+    # Off: every request uses the default product (today's combined assistant); the legacy `assistant` value still
+    # narrows the knowledge bases. On: the product is resolved per request (id / alias / domain / API key / default).
+    product_config_enabled: bool = field(default_factory=lambda: _env_bool("PRODUCT_CONFIG_ENABLED", False))
+    vector_collection_prefix: str = field(default_factory=lambda: _env("VECTOR_COLLECTION_PREFIX", "sapphirus_"))
+    crawler_user_agent: str = field(default_factory=lambda: _env(
+        "CRAWLER_USER_AGENT", "SapphirusAssistantCrawler/1.0 (+knowledge-base indexer)"))
+    webhook_signature_header: str = field(default_factory=lambda: _env("WEBHOOK_SIGNATURE_HEADER", "x-sapphirus-signature"))
+    log_file_name: str = field(default_factory=lambda: _env("LOG_FILE_NAME", "sapphirus_assistant.log"))
+
+    # ---- Index versioning (backend/indexing/versions.py) ----
+    # Off: one collection per KB, rebuilt in place (today). On: a rebuild fills a new collection, is scored by the
+    # retrieval eval gate and only then becomes live; the previous version stays for an instant rollback.
+    index_versioning_enabled: bool = field(default_factory=lambda: _env_bool("INDEX_VERSIONING_ENABLED", False))
+    eval_tolerance: float = field(default_factory=lambda: _env_float("EVAL_TOLERANCE", 0.02))
+    keep_index_versions: int = field(default_factory=lambda: _env_int("KEEP_INDEX_VERSIONS", 5))
+    eval_gate_max_cases: int = field(default_factory=lambda: _env_int("EVAL_GATE_MAX_CASES", 40))
+    evals_dir: Path = field(default_factory=lambda: _resolve(_env("EVALS_DIR", "evals")))
+
+    # ---- Provider failover (backend/generation/failover.py) ----
+    # Off: today's behaviour (one provider + its same-endpoint fallback models; LLM errors -> extractive answer).
+    # On: per-provider circuit breakers, a provider chain, a static reply when all are down, BM25-only search when
+    # the query embedder fails.
+    llm_failover_enabled: bool = field(default_factory=lambda: _env_bool("LLM_FAILOVER_ENABLED", False))
+    llm_failover_timeout_seconds: int = field(default_factory=lambda: _env_int("LLM_FAILOVER_TIMEOUT_SECONDS", 15))
+    breaker_failures: int = field(default_factory=lambda: _env_int("BREAKER_FAILURES", 5))
+    breaker_window_seconds: float = field(default_factory=lambda: _env_float("BREAKER_WINDOW_SECONDS", 60))
+    breaker_cooldown_seconds: float = field(default_factory=lambda: _env_float("BREAKER_COOLDOWN_SECONDS", 120))
+    # optional second provider: any OpenAI-compatible endpoint (e.g. a free-tier Gemini / OpenRouter key)
+    llm_secondary_base_url: str = field(default_factory=lambda: _env("LLM_SECONDARY_BASE_URL", ""))
+    llm_secondary_api_key: str = field(default_factory=lambda: _env("LLM_SECONDARY_API_KEY", ""))
+    llm_secondary_model: str = field(default_factory=lambda: _env("LLM_SECONDARY_MODEL", ""))
+
+    # ---- Response cache (backend/services/response_cache.py; a database table - no Redis) ----
+    response_cache_enabled: bool = field(default_factory=lambda: _env_bool("RESPONSE_CACHE_ENABLED", False))
+    cache_ttl_hours: float = field(default_factory=lambda: _env_float("CACHE_TTL_HOURS", 24))
+    cache_min_confidence: float = field(default_factory=lambda: _env_float("CACHE_MIN_CONFIDENCE", 0.5))
+
+    # ---- Review queue / approved answers / eval cases (backend/services/review.py) ----
+    review_queue_enabled: bool = field(default_factory=lambda: _env_bool("REVIEW_QUEUE_ENABLED", False))
+    review_low_confidence: float = field(default_factory=lambda: _env_float("REVIEW_LOW_CONFIDENCE", 0.35))
+
+    # ---- Document freshness tracking (ingestion/freshness.py) ----
+    # Off: a 404 page is deleted at once (today). On: misses are counted and a page is tombstoned after N misses;
+    # product sitemaps (config/products/*.yaml) are crawled every CRAWL_INTERVAL_MINUTES.
+    doc_tracking_enabled: bool = field(default_factory=lambda: _env_bool("DOC_TRACKING_ENABLED", False))
+    tombstone_after_misses: int = field(default_factory=lambda: _env_int("TOMBSTONE_AFTER_MISSES", 2))
+    crawl_interval_minutes: int = field(default_factory=lambda: _env_int("CRAWL_INTERVAL_MINUTES", 1440))
+
+    # ---- Observability (backend/observability/): Prometheus /metrics, alerts, nightly retrieval eval ----
+    metrics_enabled: bool = field(default_factory=lambda: _env_bool("METRICS_ENABLED", False))
+    metrics_token: str = field(default_factory=lambda: _env("METRICS_TOKEN", ""))   # optional bearer token for /metrics
+    alerts_enabled: bool = field(default_factory=lambda: _env_bool("ALERTS_ENABLED", False))
+    alert_check_minutes: float = field(default_factory=lambda: _env_float("ALERT_CHECK_MINUTES", 5))
+    nightly_eval_enabled: bool = field(default_factory=lambda: _env_bool("NIGHTLY_EVAL_ENABLED", False))
+    nightly_eval_hour: int = field(default_factory=lambda: _env_int("NIGHTLY_EVAL_HOUR", 2))     # UTC
+    alert_slack_webhook_url: str = field(default_factory=lambda: _env("ALERT_SLACK_WEBHOOK_URL", ""))
+    alert_email_to: str = field(default_factory=lambda: _env("ALERT_EMAIL_TO", ""))
+    smtp_host: str = field(default_factory=lambda: _env("SMTP_HOST", ""))
+    smtp_port: int = field(default_factory=lambda: _env_int("SMTP_PORT", 587))
+    smtp_user: str = field(default_factory=lambda: _env("SMTP_USER", ""))
+    smtp_password: str = field(default_factory=lambda: _env("SMTP_PASSWORD", ""))
+    smtp_from: str = field(default_factory=lambda: _env("SMTP_FROM", "assistant-alerts@localhost"))
+    smtp_starttls: bool = field(default_factory=lambda: _env_bool("SMTP_STARTTLS", True))
+
     # ---- Query normalization + lenient scope check (backend/routing/normalize.py) ----
     # Fix typos / short forms / product-name variants before scope, retrieval and answering; the LLM is used only
     # when unknown words remain or to double-check an out-of-scope decision.
@@ -220,6 +280,17 @@ class Settings:
         if provider == "anthropic":
             return self.anthropic_model
         return "extractive-fallback"
+
+    @property
+    def insufficient_info_text(self) -> str:
+        """The "no confirmed information" reply of the current product (or the INSUFFICIENT_INFO_TEXT override)."""
+        from backend.products import current_product
+        return self.insufficient_info_override or current_product().replies.no_confirmed_information
+
+    @property
+    def out_of_scope_text(self) -> str:
+        from backend.products import current_product
+        return self.out_of_scope_override or current_product().replies.out_of_scope
 
     def kb_config(self) -> dict[str, Any]:
         return load_kb_config(str(self.kb_config_path))

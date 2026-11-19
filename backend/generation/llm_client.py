@@ -210,6 +210,13 @@ class AnthropicClient(LLMClient):
 @lru_cache(maxsize=1)
 def get_llm() -> LLMClient | None:
     settings = get_settings()
+    if settings.llm_failover_enabled:
+        from backend.generation.failover import build_failover_llm
+
+        chain = build_failover_llm(settings)
+        if chain is not None:
+            logger.info("LLM failover chain: %s", " -> ".join(name for name, _ in chain.providers))
+            return chain
     provider = settings.effective_llm_provider
     if provider != settings.llm_provider:
         logger.warning("LLM_PROVIDER=%s has no API key configured - using %s", settings.llm_provider,

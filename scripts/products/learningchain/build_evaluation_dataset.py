@@ -10,7 +10,7 @@ Usage: python scripts/build_evaluation_dataset.py
 import csv
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]   # scripts/products/<id>/ -> project root
 OUT = ROOT / "datasets/evaluation_dataset/evaluation_dataset.csv"
 COLS = ["eval_id", "category", "question", "expected_kb", "expected_answer", "key_facts", "relevant_sources", "role",
         "expect_refusal", "needs_human_review"]

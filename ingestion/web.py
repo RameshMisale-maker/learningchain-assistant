@@ -33,7 +33,12 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_CONTENT_TYPES = ("text/html", "application/xhtml+xml", "text/plain", "application/json", "application/xml",
                          "text/xml")
-USER_AGENT = "SapphirusAssistantCrawler/1.0 (+knowledge-base indexer)"
+def _user_agent() -> str:
+    from config.settings import get_settings
+    return get_settings().crawler_user_agent
+
+
+
 
 
 class UnsafeURLError(ValueError):
@@ -102,7 +107,7 @@ def fetch(url: str, etag: str = "", last_modified: str = "", allowed_domains: li
     """GET a URL safely. Uses conditional headers so unchanged pages cost a 304 only."""
     s = get_settings()
     limit = s.web_max_page_mb * 1024 * 1024
-    headers = {"User-Agent": USER_AGENT, "Accept": "text/html,application/json;q=0.9,*/*;q=0.5"}
+    headers = {"User-Agent": _user_agent(), "Accept": "text/html,application/json;q=0.9,*/*;q=0.5"}
     if etag:
         headers["If-None-Match"] = etag
     if last_modified:

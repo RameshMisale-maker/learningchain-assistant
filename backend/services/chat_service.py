@@ -21,6 +21,8 @@ from backend.generation.extractive import extractive_answer
 from backend.generation.grounding import (REFUSAL_TEXT, GroundingReport, cited_ids, is_refusal, lexical_grounding,
                                           llm_grounding, normalize_citations, remove_invalid_citations,
                                           remove_unknown_urls)
+from backend.generation.failover import AllProvidersDown, reset_dense_flag
+from backend.services import response_cache
 from backend.generation.llm_client import LLMClient, LLMRefusal, LLMResult, get_llm
 from backend.generation.prompt_builder import SourceRef, build_answer_prompt, select_context
 from backend.retrieval.golden_matcher import GoldenMatch, GoldenMatcher
@@ -33,42 +35,24 @@ from backend.routing.decompose import decompose
 from backend.routing.normalize import Understanding, llm_understand, reply_language, understand
 from backend.routing.router import QueryRouter, RouteDecision
 from backend.security.auth import AuthenticatedUser
-from backend.security.prompt_guard import (BLOCKED_MESSAGE, SENSITIVE_DATA_MESSAGE, check_query, redact_sensitive,
+from backend.products import current_product, use_product
+from backend.security.prompt_guard import (SENSITIVE_DATA_MESSAGE, blocked_message, check_query, redact_sensitive,
                                            restricted_topic, restricted_topic_reply, sensitive_data)
 from config.settings import Settings, get_settings
 from ingestion.embedding import Embedder, get_embedder
 
 logger = logging.getLogger(__name__)
 
-GREETING_TEXT = ("Hello! I'm the Sapphirus AI Assistant. Ask me about our company, services, products or "
-                 "policies, and I'll answer from the approved knowledge base with sources.")
-OUT_OF_SCOPE_TEXT = ("I can only help with Sapphirus Systems and LearningChain - for example, I can explain how to "
-                     "verify a certificate.")
-# Never send the same reply twice in a row: second wording for the fixed replies (by answer_type).
-REPEAT_ALTERNATIVES = {
-    "refusal": ("I still don't have confirmed information on that. Our support team can help: email "
-                "info@sapphirus.in or call +91 96531 57225."),
-    "error": "I still couldn't get an answer for that. Please try again in a moment, or contact info@sapphirus.in.",
-    "out_of_scope": ("That's outside what I can help with, but I'm happy to answer anything about Sapphirus or "
-                     "LearningChain - for example, what LearningChain's key features are."),
-    "clarification": "Could you share a little more detail - for example, which feature or page you mean?",
-    "greeting": "How can I help you today?",
-    "account": ("As mentioned, I can't see account details here - please log in to your account, or contact our "
-                "support team at info@sapphirus.in or +91 96531 57225."),
-    "escalation": ("Our support team is the best way to resolve this - please email info@sapphirus.in or call "
-                   "+91 96531 57225."),
-    "sensitive": "Please don't share those details here - they aren't needed. How else can I help?",
-    "restricted": "I can't help with that topic, but I'm happy to help with any Sapphirus or LearningChain question.",
-    "blocked": "I can only help with your own account and Sapphirus / LearningChain questions. What do you need help with?",
-}
+# Product texts (greetings, fixed replies, contacts) come from config/products/<id>.yaml via current_product().
+def _replies():
+    return current_product().replies
+
 
 
 CLOSING_RE = re.compile(r"^\s*(no|nope|nah|no\s*,?\s*thanks?|no\s*,?\s*thank\s*(you|u)|no\s+more(\s+questions?)?|"
                         r"nothing(\s+else)?|that'?s\s+(all|it)|that\s+is\s+(all|it)|i'?m\s+done|im\s+done|"
                         r"all\s+good|i'?m\s+good|bye+|goodbye|good\s*bye|see\s+(you|ya)|take\s+care)\s*[!.?]*\s*$",
                         re.IGNORECASE)
-CLOSING_TEXT = ("Thank you for chatting with the Sapphirus Assistant! Before you go, please rate this conversation "
-                "below - your feedback helps us improve. Have a nice day!")
 
 
 def is_closing(text: str) -> bool:
@@ -79,35 +63,33 @@ def is_closing(text: str) -> bool:
 def small_talk_reply(text: str, roles: set[str], first: bool = True) -> str:
     """Short reply for greetings / small talk (one sentence). The assistant introduces itself only on the first
     message of a conversation."""
+    r = _replies()
     t = text.strip().lower()
     if is_closing(t):
-        return CLOSING_TEXT
+        return r.closing
     if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)\b", t):
-        return "Great - what would you like to know?"
+        return r.yes
     if re.match(r"^(thanks|thank|thx|ty)", t):
-        return "You're welcome! Anything else I can help with?"
+        return r.thanks
     if re.match(r"^(great|cool|nice|awesome|perfect|ok|okay|got it)", t):
-        return "Glad that helps - anything else I can help with?"
+        return r.acknowledged
     if re.match(r"^(bye|goodbye|good\s*bye|see you|see ya|take care)", t):
-        return ("Thank you for visiting Sapphirus! Have a great day. If you need anything later, reach us at "
-                "info@sapphirus.in or +91 96531 57225.")
+        return r.bye
     if re.match(r"^how are you", t):
-        return "I'm doing well, thanks for asking! How can I help?"
+        return r.how_are_you
     if re.match(r"^(who are you|what are you|what is your name|are you)", t):
-        return "I'm the Sapphirus Assistant - I answer questions about Sapphirus Systems and LearningChain."
+        return r.who_are_you
     if re.match(r"^(what can you do|how can you help|help)", t):
-        return ("I can answer questions about Sapphirus Systems and LearningChain - for example, how to issue, share or "
-                "verify certificates.")
+        return r.what_can_you_do
     m = re.match(r"^(good|gud|gd)\s*(morning|afternoon|evening|day)", t)
     hello = f"Good {m.group(2)}!" if m else "Hello!"
     if first:
-        return f"{hello} I'm the Sapphirus Assistant. How can I help you with Sapphirus Systems or LearningChain today?"
-    return f"{hello} How can I help?" if m else "Hi again! How can I help?"
-CONTACT_HINT = (" Our team will be happy to help - please contact us at info@sapphirus.in, call +91 96531 57225, "
-                "or use https://sapphirus.in/contacts/.")
+        return r.greeting_first.format(hello=hello)
+    return r.greeting_again_timed.format(hello=hello) if m else r.greeting_again
 AMBIGUOUS_MIN_SCORE = 0.35
 LLM_CONFIDENT_RERANK = 0.5        # with an LLM, skip the lexical pre-refusal when the top passage scores this high
 GOLDEN_MAX_MISSING_INTENT = 0.35   # max IDF share of query terms absent from the approved question side
+REFUSED_ANSWER_TYPES = ("refusal", "out_of_scope", "blocked", "access_denied", "error", "restricted")
 GOLDEN_COMPARISON_MIN = 0.92   # golden match score needed to answer a comparison question with an approved answer
 GOLDEN_EXTRA_ASSISTS = 2       # approved answers (>= assist threshold) added as candidates besides the best match
 SUB_QUESTION_TOP_N = 12        # candidates retrieved per sub-question of a multi-part question
@@ -177,6 +159,9 @@ class ChatService:
                  llm: LLMClient | None | bool = True) -> None:
         self.settings = settings or get_settings()
         self.embedder = embedder or get_embedder()
+        if self.settings.llm_failover_enabled:      # embedding outage -> BM25-only search instead of an error
+            from backend.generation.failover import ResilientEmbedder
+            self.embedder = ResilientEmbedder(self.embedder, self.settings)
         self.llm: LLMClient | None = get_llm() if llm is True else (llm or None)
         self.retriever = retriever or HybridRetriever(self.settings, embedder=self.embedder)
         self.reranker = reranker or get_reranker()
@@ -187,7 +172,7 @@ class ChatService:
     def answer(self, question: str, user: AuthenticatedUser, session_id: str | None = None,
                persist: bool = True, ip_address: str = "", history: list[dict] | None = None,
                allowed_kbs: list[str] | None = None, channel: str = "api", assistant: str = "all",
-               record_metrics: bool | None = None) -> ChatResponse:
+               record_metrics: bool | None = None, product=None) -> ChatResponse:
         """Answer one question.
 
         history      : prior turns [{"role", "content"}] supplied by the client (Open WebUI sends the whole
@@ -195,49 +180,66 @@ class ChatService:
         allowed_kbs  : restrict this assistant to these knowledge bases (e.g. the product-only chatbot); questions
                        routed elsewhere get the out-of-scope reply, so one assistant can never read another's KB.
         channel/assistant : labels for the performance metrics (dashboard filters).
+        product            : the product (config/products/<id>.yaml) this request belongs to; its replies, glossary and
+                             prompts are used for the whole request. Default: the default product.
         """
-        started = time.perf_counter()
-        session_id = repository.ensure_session(session_id, user.username) if persist else (session_id or "eval")
-        if history is None:
-            history = repository.get_history(session_id, user.username, limit=8) if persist else []
-        history = [h | {"content": redact_sensitive(str(h.get("content", "")))} for h in history]
-        error = ""
-        with request_timings() as timings:
-            try:
-                response = self._answer(question, user, session_id, history, allowed_kbs, timings)
-            except Exception as exc:   # never leak internals; record the failure for the dashboard
-                logger.exception("Chat request failed")
-                error = f"{type(exc).__name__}: {str(exc)[:300]}"
-                response = ChatResponse(answer=self.settings.insufficient_info_text, session_id=session_id,
-                                        message_id=None, answer_type="error", warnings=["internal_error"])
-        if response.answer_type in ("refusal", "error"):
-            # in scope, but no verified evidence: the fixed "insufficient information" reply, no sources
-            response.answer, response.citations = self.settings.insufficient_info_text, []
-        elif response.answer_type == "out_of_scope":
-            response.answer, response.citations = self.settings.out_of_scope_text, []
-        # never send exactly the same reply twice in a row
-        previous = next((h for h in reversed(history) if h.get("role") == "assistant"), None)
-        if previous and str(previous.get("content", "")).strip() == response.answer.strip():
-            alternative = REPEAT_ALTERNATIVES.get(response.answer_type)
-            if alternative and alternative.strip() != response.answer.strip():
-                response.answer = alternative
-        response.latency_ms = round((time.perf_counter() - started) * 1000, 1)
-        response.timings = timings.as_dict() | {"end_to_end_ms": response.latency_ms}
-        if record_metrics if record_metrics is not None else persist:
-            self._record_metrics(response, user, session_id, channel, assistant, error)
-        if persist:
-            repository.add_message(session_id, "user", redact_sensitive(question)[: self.settings.max_query_chars])
-            response.message_id = repository.add_message(
-                session_id, "assistant", response.answer, knowledge_bases=response.knowledge_bases,
-                citations=[asdict(c) for c in response.citations], route_info=response.route,
-                answer_type=response.answer_type, latency_ms=response.latency_ms,
-                prompt_tokens=response.prompt_tokens, completion_tokens=response.completion_tokens,
-                cost_usd=response.cost_usd)
-            if response.answer_type in ("blocked", "access_denied"):
-                repository.write_audit(user.username, f"chat_{response.answer_type}", ",".join(response.route.get("denied_kbs", [])),
-                                       outcome="denied", details={"question": redact_sensitive(question)[:300]},
-                                       ip_address=ip_address)
-        return response
+        with use_product(product):
+            reset_dense_flag()
+            response_cache.clear_pending()
+            started = time.perf_counter()
+            session_id = repository.ensure_session(session_id, user.username) if persist else (session_id or "eval")
+            if history is None:
+                history = repository.get_history(session_id, user.username, limit=8) if persist else []
+            history = [h | {"content": redact_sensitive(str(h.get("content", "")))} for h in history]
+            error = ""
+            with request_timings() as timings:
+                try:
+                    response = self._answer(question, user, session_id, history, allowed_kbs, timings)
+                except Exception as exc:   # never leak internals; record the failure for the dashboard
+                    logger.exception("Chat request failed")
+                    error = f"{type(exc).__name__}: {str(exc)[:300]}"
+                    response = ChatResponse(answer=self.settings.insufficient_info_text, session_id=session_id,
+                                            message_id=None, answer_type="error", warnings=["internal_error"])
+            if response.answer_type in ("refusal", "error"):
+                # in scope, but no verified evidence: the fixed "insufficient information" reply, no sources
+                response.answer, response.citations = self.settings.insufficient_info_text, []
+            elif response.answer_type == "out_of_scope":
+                response.answer, response.citations = self.settings.out_of_scope_text, []
+            # never send exactly the same reply twice in a row
+            previous = next((h for h in reversed(history) if h.get("role") == "assistant"), None)
+            if previous and str(previous.get("content", "")).strip() == response.answer.strip():
+                alternative = _replies().repeat_alternatives.get(response.answer_type)
+                if alternative and alternative.strip() != response.answer.strip():
+                    response.answer = alternative
+            response.latency_ms = round((time.perf_counter() - started) * 1000, 1)
+            response.timings = timings.as_dict() | {"end_to_end_ms": response.latency_ms}
+            if persist:
+                repository.add_message(session_id, "user", redact_sensitive(question)[: self.settings.max_query_chars])
+                response.message_id = repository.add_message(
+                    session_id, "assistant", response.answer, knowledge_bases=response.knowledge_bases,
+                    citations=[asdict(c) for c in response.citations], route_info=response.route,
+                    answer_type=response.answer_type, latency_ms=response.latency_ms,
+                    prompt_tokens=response.prompt_tokens, completion_tokens=response.completion_tokens,
+                    cost_usd=response.cost_usd)
+                if response.answer_type in ("blocked", "access_denied"):
+                    repository.write_audit(user.username, f"chat_{response.answer_type}", ",".join(response.route.get("denied_kbs", [])),
+                                           outcome="denied", details={"question": redact_sensitive(question)[:300]},
+                                           ip_address=ip_address)
+            if self.settings.review_queue_enabled and persist:
+                try:
+                    from backend.services.review import auto_review
+
+                    auto_review(response, redact_sensitive(question))
+                except Exception:
+                    logger.exception("Could not queue the answer for review")
+            if self.settings.response_cache_enabled:
+                try:
+                    response_cache.store(response)
+                except Exception:      # the cache must never break a user request
+                    logger.exception("Could not store the response in the cache")
+            if record_metrics if record_metrics is not None else persist:   # after persisting: logs the message id
+                self._record_metrics(response, user, session_id, channel, assistant, error)
+            return response
 
     # ================================================================== pipeline
     def _answer(self, question: str, user: AuthenticatedUser, session_id: str, history: list[dict],
@@ -246,7 +248,7 @@ class ChatService:
         timings = timings or Timings()
         check = check_query(question)
         if not check.allowed:
-            text = BLOCKED_MESSAGE if check.reason == "prompt_injection" else (
+            text = blocked_message() if check.reason == "prompt_injection" else (
                 "Please enter a question." if check.reason == "empty" else
                 f"Your question is too long. Please keep it under {s.max_query_chars} characters.")
             return ChatResponse(answer=text, session_id=session_id, message_id=None,
@@ -260,7 +262,7 @@ class ChatService:
                                 answer_type="sensitive", confidence=1.0,
                                 route={"intent": "sensitive", "kind": kind, "conversation_intent": "SENSITIVE_DATA"})
         # query normalization (backend/routing/normalize.py): typos, short forms and product-name variants are fixed
-        # ("wt is saphirus?" -> "what is Sapphirus?"); the normalized text is used from here on, the original only
+        # ("wt is <compny>?" -> "what is <Company>?"); the normalized text is used from here on, the original only
         # for logging. Greetings / small talk skip it (fixed replies, no LLM call).
         understanding: Understanding | None = None
         if s.query_normalization and not convo.is_small_talk(query):
@@ -295,13 +297,17 @@ class ChatService:
         # the question needs this user's own account data (payment, receipt, status), not the help documentation:
         # there are no account tools, so explain where to find it instead of searching the documents
         if tool_only or (understanding and understanding.needs_account_tool and s.conversation_layer):
-            account = convo.MessageIntent(convo.ACCOUNT, reply=convo.ACCOUNT_REPLY,
+            account = convo.MessageIntent(convo.ACCOUNT, reply=convo.account_reply(),
                                           reason="needs account data (LLM)", method="llm")
             direct = self._conversational_response(account, query, user, session_id)
             direct.route.update(understanding.to_dict() if understanding else {})
             return direct
         with stage("query_embedding_ms"):
             qvec = self.embedder.embed_query(expanded)
+        if s.response_cache_enabled:
+            cached = self._cached_response(expanded, user, allowed_kbs, qvec, session_id)
+            if cached is not None:
+                return cached
         with stage("routing_ms"):
             route = self.router.route(expanded, user.roles, qvec)
         # lenient scope check: a keyword-based "out of scope" is only final when the LLM/semantic check agrees
@@ -326,18 +332,15 @@ class ChatService:
                                 answer_type="closing" if is_closing(query) else "greeting", confidence=1.0,
                                 **base)
         if route.intent == "out_of_scope":
-            return ChatResponse(answer=OUT_OF_SCOPE_TEXT, answer_type="out_of_scope", **base)
+            return ChatResponse(answer=s.out_of_scope_text, answer_type="out_of_scope", **base)
         if route.intent == "clarify":
             return ChatResponse(answer=route.clarification, answer_type="clarification", **base)
         if route.intent == "access_denied":
             names = ", ".join(s.kb_config()["knowledge_bases"][k].get("display_name", k) for k in route.denied_kbs)
             if not user.authenticated:
-                text = (f"Information about {names} is internal and available to Sapphirus employees only. "
-                        "If you're interested in working with us, see current openings at https://sapphirus.in/careers/ "
-                        "or write to info@sapphirus.in.")
+                text = _replies().access_denied_guest.format(names=names)
             else:
-                text = (f"This question relates to {names}, which your account is not authorised to access. "
-                        "Please contact HR/IT if you need access.")
+                text = _replies().access_denied_user.format(names=names)
             return ChatResponse(answer=text, answer_type="access_denied", **base)
 
         # ---------------- golden fast path
@@ -355,7 +358,7 @@ class ChatService:
             golden_info = {"qid": golden_best.qid, "score": round(golden_best.score, 3), "kb": golden_best.kb,
                            "matched_question": golden_best.matched_question, "components": golden_best.components}
         # an approved answer wins - also for "difference between X and Y" questions when the approved question is a
-        # near-exact match (e.g. the official FAQ "What is the difference between LearningChain and DigiLocker?")
+        # near-exact match (e.g. an official FAQ "What is the difference between <Product> and <Competitor>?")
         if golden_best and GoldenMatcher.is_direct(golden_best) \
                 and (route.intent != "comparison" or golden_best.score >= GOLDEN_COMPARISON_MIN) \
                 and self._golden_covers(golden_query, golden_best):
@@ -451,6 +454,7 @@ class ChatService:
                 timings.set("llm_ttft_ms", llm_result.ttft_ms)
                 timings.set("llm_generation_ms", llm_result.generation_ms)
                 timings.set("llm_total_ms", llm_result.latency_ms)
+                base["route"]["provider"] = getattr(llm_result, "provider_name", "") or llm_result.provider
                 answer = remove_invalid_citations(normalize_citations(llm_result.text), {r.sid for r in refs})
                 answer = remove_unknown_urls(answer, {str(r.metadata.get("source_url") or "") for r in refs})
                 answer_type = "generated"
@@ -466,6 +470,13 @@ class ChatService:
                 logger.warning("LLM declined to answer (%s)", exc)
                 warnings.append("llm_refusal")
                 answer, answer_type = REFUSAL_TEXT, "refusal"
+            except AllProvidersDown as exc:     # failover chain exhausted: static reply + the best sources
+                logger.error("All LLM providers down (%s) - static fallback reply", exc)
+                warnings.append("llm_unavailable")
+                product = current_product()
+                answer = product.replies.service_unavailable.format(support=product.support_contact,
+                                                                    faqs=product.examples_markdown)
+                answer_type, report = "service_unavailable", None
             except Exception as exc:
                 logger.exception("LLM generation failed; using extractive answer")
                 warnings.append(f"LLM unavailable: {type(exc).__name__}")
@@ -513,9 +524,54 @@ class ChatService:
                 tokens_per_second=resp.tokens_per_second, input_tokens=resp.prompt_tokens,
                 output_tokens=resp.completion_tokens, llm_cost_usd=resp.cost_usd,
                 embedding_cost_usd=round(embedding_cost, 8), rerank_cost_usd=round(rerank_cost, 8),
-                total_cost_usd=round(resp.cost_usd + embedding_cost + rerank_cost, 8), timings=t)
+                total_cost_usd=round(resp.cost_usd + embedding_cost + rerank_cost, 8), timings=t,
+                **self._request_log_fields(resp))
         except Exception:   # metrics must never break a user request
             logger.exception("Could not record request metrics")
+        if s.metrics_enabled:
+            try:
+                from backend.observability.metrics import record_request
+
+                record_request(resp, channel, current_product().product_id, error)
+            except Exception:
+                logger.exception("Could not update Prometheus metrics")
+
+    def _cached_response(self, query: str, user: AuthenticatedUser, allowed_kbs: list[str] | None, qvec,
+                         session_id: str) -> "ChatResponse | None":
+        """Exact / semantic cache hit for the standalone question (RESPONSE_CACHE_ENABLED), else None."""
+        try:
+            with stage("cache_lookup_ms"):
+                kbs = list(allowed_kbs) if allowed_kbs is not None else get_index_manager().kb_names()
+                hit = response_cache.lookup(response_cache.begin(query, kbs, user.roles, qvec))
+        except Exception:
+            logger.exception("Response cache lookup failed - answering normally")
+            response_cache.clear_pending()
+            return None
+        if hit is None:
+            return None
+        return ChatResponse(answer=hit["answer"], session_id=session_id, message_id=None,
+                            answer_type=hit["answer_type"], knowledge_bases=hit["knowledge_bases"],
+                            citations=[Citation(**c) for c in hit["citations"]], confidence=hit["confidence"],
+                            golden_match=hit.get("golden_match"), grounding=hit.get("grounding"),
+                            model=hit.get("model", ""), contains_sample_data=hit.get("contains_sample_data", False),
+                            route=hit.get("route", {}) | {"cache_hit": True, "cache": hit["_cache"]})
+
+    def _request_log_fields(self, resp: "ChatResponse") -> dict:
+        """Full request logging: which index / prompt / provider produced the answer and what was retrieved."""
+        from backend.indexing.versions import index_version_label, prompt_version_label
+
+        route = resp.route or {}
+        return {
+            "index_version": index_version_label(list(resp.knowledge_bases)),
+            "prompt_version": prompt_version_label(),
+            "provider": str(route.get("provider") or (self.settings.effective_llm_provider if resp.prompt_tokens else ""))[:64],
+            "intent": str(route.get("intent", ""))[:32],
+            "cache_hit": bool(route.get("cache_hit")),
+            "golden_hit": resp.answer_type.startswith("golden"),
+            "refused": resp.answer_type in REFUSED_ANSWER_TYPES,
+            "retrieved": [{"id": r.get("id"), "kb": r.get("kb"), "score": r.get("score")} for r in resp.retrieved[:10]],
+            "message_id": resp.message_id,
+        }
 
     # ------------------------------------------------------------------ conversational layer + scope
     @staticmethod
@@ -546,10 +602,10 @@ class ChatService:
                                 answer_type="account" if message.intent == convo.ACCOUNT else "escalation",
                                 confidence=1.0, route=route | {"intent": message.intent.lower()})
         if message.intent == convo.OUT_OF_SCOPE:
-            return ChatResponse(answer=OUT_OF_SCOPE_TEXT, session_id=session_id, message_id=None,
+            return ChatResponse(answer=self.settings.out_of_scope_text, session_id=session_id, message_id=None,
                                 answer_type="out_of_scope", route=route | {"intent": "out_of_scope"})
         # typo / incomplete input, vague question, gibberish: ask the user - never guess, never refuse
-        return ChatResponse(answer=message.reply or convo.REPHRASE_TEXT, session_id=session_id, message_id=None,
+        return ChatResponse(answer=message.reply or convo.rephrase_text(), session_id=session_id, message_id=None,
                             answer_type="clarification", confidence=1.0, route=route | {"intent": "clarify"})
 
     def _lenient_scope(self, route: RouteDecision, understanding: Understanding | None, query: str, roles: set[str],
@@ -587,7 +643,7 @@ class ChatService:
             return "llm_in_scope" if verdict == "IN_SCOPE" else "retrieval_in_scope"
         if verdict == "UNCLEAR":
             route.intent, route.reason = "clarify", "scope check: unclear"
-            route.clarification = convo.INCOMPLETE_REPLY.format(hint=convo.INCOMPLETE_HINTS["what"])
+            route.clarification = convo.INCOMPLETE_REPLY
             return "unclear"
         return "out_of_scope"
 

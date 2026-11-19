@@ -1,4 +1,4 @@
-"""Sapphirus RAG Evaluation dashboard - independent of the chatbot UI.
+"""RAG Evaluation dashboard - independent of the chatbot UI.
 
     evaluation\\run_dashboard.bat                         (recommended: uses evaluation/.venv with RAGAS)
     evaluation\\.venv\\Scripts\\python -m streamlit run evaluation/dashboard.py

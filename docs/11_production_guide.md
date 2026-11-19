@@ -123,7 +123,7 @@ changes.
 
 | Command | Output |
 |---|---|
-| `python scripts/build_evaluation_dataset.py` | 117-question set (10 categories; 7 flagged for human review) |
+| `python scripts/products/learningchain/build_evaluation_dataset.py` | 117-question set (10 categories; 7 flagged for human review) |
 | `python -m backend.evaluation.run_evaluation --label "..."` | Relevance, faithfulness, correctness, confusion matrices → `reports/`, dashboard history |
 | `python scripts/evaluate_claims.py --judges lexical,nli[,claude]` | Judge validation (confusion matrix vs labelled claims) + hallucination rate |
 | `python scripts/benchmark_rag.py --suite chunking\|embedding\|reranker\|retrieval` | Configuration benchmarks → `reports/benchmarks/` |

@@ -11,6 +11,8 @@ class ChatRequest(BaseModel):
     session_id: str | None = Field(None, max_length=64, description="Conversation id returned by a previous call")
     assistant: Literal["all", "company", "products"] = Field(
         "all", description="Assistant experience: company information, product information, or both")
+    product: str | None = Field(None, max_length=64, pattern=r"^[a-z][a-z0-9_]*$",
+                                description="Product id (config/products/<id>.yaml); used when PRODUCT_CONFIG_ENABLED")
 
 
 class CitationOut(BaseModel):

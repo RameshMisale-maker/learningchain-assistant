@@ -29,7 +29,8 @@ from backend.db import repository
 from backend.db.models import WebSource
 from backend.db.session import db_session
 from config.settings import get_settings
-from ingestion import jobs, registry, sources, web
+from backend.products import get_product, product_for_kb
+from ingestion import freshness, jobs, registry, sources, web
 from ingestion.pipeline import IngestionPipeline
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,8 @@ def add_source(url: str, kb: str, source_type: str = "page", interval_minutes: i
             if interval_minutes:
                 existing.interval_minutes = interval_minutes
             return source_to_dict(existing)
-        src = WebSource(url=url, kb=kb, source_type=source_type, enabled=enabled, created_by=created_by,
+        src = WebSource(url=url, kb=kb, product_id=product_for_kb(kb).product_id, source_type=source_type,
+                        enabled=enabled, created_by=created_by,
                         interval_minutes=interval_minutes or get_settings().web_monitor_interval_minutes)
         s.add(src)
         s.flush()
@@ -294,6 +296,10 @@ def handle_crawl(job: dict, pipeline: IngestionPipeline) -> dict:
             try:
                 scraped = web.scrape_page(url, "" if force else etag, "" if force else last_mod)
             except ValueError as exc:
+                if re.search(r"HTTP (404|410)", str(exc)) and freshness.enabled():   # count misses, tombstone at N
+                    outcome = freshness.mark_missing(pipeline, kb, path, url, str(exc)) if path.exists() else "unknown"
+                    status, details = ("removed" if outcome == "unknown" else outcome), {"note": str(exc)}
+                    raise _Done() from None
                 if re.search(r"HTTP (404|410)", str(exc)):     # page removed -> remove its chunks
                     doc = registry.get_document(pipeline.doc_id_for(kb, path)) if path.exists() else None
                     if doc and doc["status"] == "active":
@@ -317,7 +323,7 @@ def handle_crawl(job: dict, pipeline: IngestionPipeline) -> dict:
         elif stype == "zendesk":
             export = sources.zendesk_export(url.split("/hc/")[0], (url.split("/hc/")[1].strip("/") or "en-gb")
                                             if "/hc/" in url else "en-gb")
-            files = sources.zendesk_to_markdown(export, url)
+            files = sources.zendesk_to_markdown(export, url, product_for_kb(kb))
             new_hash = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
             if new_hash == old_hash and not force:
                 raise _Done()
@@ -332,16 +338,17 @@ def handle_crawl(job: dict, pipeline: IngestionPipeline) -> dict:
                 raise ValueError("No FAQ entries found - the page layout may have changed")
             golden_cfg = pipeline.kb_cfg(kb).get("golden_files") or []
             golden_path = pipeline._abs(golden_cfg[0]) if golden_cfg else None
-            doc_path = _kb_dir(pipeline, kb) / "LearningChain_00_Website_FAQ.md"
+            owner = product_for_kb(kb)
+            doc_path = _kb_dir(pipeline, kb) / (owner.sources.faq_document or "website_faq.md")
             new_hash = hashlib.sha256(json.dumps(faqs).encode()).hexdigest()
             if new_hash == old_hash and not force:
                 raise _Done()
             changed = []
-            if _write_if_changed(doc_path, sources.faq_document(faqs, url)) or force:
+            if _write_if_changed(doc_path, sources.faq_document(faqs, url, owner)) or force:
                 changed.append(doc_path)
             if golden_path is not None:
                 existing = golden_path.read_text(encoding="utf-8") if golden_path.exists() else ""
-                if _write_if_changed(golden_path, sources.faq_golden_csv(faqs, url, existing)) or force:
+                if _write_if_changed(golden_path, sources.faq_golden_csv(faqs, url, existing, owner)) or force:
                     changed.append(golden_path)
             details = {"faqs": len(faqs), "ingest": _ingest_paths(pipeline, kb, changed, "website-monitor",
                                                                   {golden_path} if golden_path else set())}
@@ -349,6 +356,9 @@ def handle_crawl(job: dict, pipeline: IngestionPipeline) -> dict:
         elif stype == "sitemap":
             fetched = web.fetch(url)
             locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", fetched.text)
+            if freshness.enabled():                    # the owner product's crawl rules (include / exclude paths)
+                owner = product_for_kb(kb)
+                locs = [loc for loc in locs if loc.endswith(".xml") or freshness.url_allowed(loc, owner)]
             added = 0
             for loc in locs[:500]:
                 try:
@@ -364,6 +374,8 @@ def handle_crawl(job: dict, pipeline: IngestionPipeline) -> dict:
                     added += 1
             new_hash = hashlib.sha256("\n".join(sorted(locs)).encode()).hexdigest()
             status, details = ("changed" if added else "unchanged"), {"urls": len(locs), "new_pages": added}
+            if freshness.enabled() and locs:
+                details["dropped_pages"] = freshness.sitemap_missing(pipeline, kb, url, set(locs), _page_path)
     except _Done:
         pass
     except Exception as exc:
@@ -371,6 +383,9 @@ def handle_crawl(job: dict, pipeline: IngestionPipeline) -> dict:
         raise
     finally:
         get_index_manager().invalidate(kb)   # every outcome (changed / removed / partial) is visible immediately
+    if freshness.enabled() and stype == "page" and status in ("changed", "unchanged") and _page_path(kb, url).exists():
+        freshness.mark_seen(pipeline, kb, _page_path(kb, url), url, changed=status == "changed",
+                            crawl_id=str(job.get("id", "")))
     _update_source(source_id, status, new_hash, new_etag, new_lm, "")
     return {"source_id": source_id, "url": url, "status": status, **details}
 
@@ -408,7 +423,7 @@ def notify(job: dict, ok: bool, message: str) -> None:
     if hook and (not ok or job["job_type"] == "ingest_upload"):
         try:
             import httpx
-            httpx.post(hook, json={"text": f"[Sapphirus assistant] ingestion job {job['id']} ({job['job_type']}) "
+            httpx.post(hook, json={"text": f"[{get_product().bot_name}] ingestion job {job['id']} ({job['job_type']}) "
                                            f"{'succeeded' if ok else 'FAILED'}: {message[:300]}"}, timeout=10)
         except Exception:
             logger.warning("Admin notification webhook failed", exc_info=True)
@@ -492,6 +507,10 @@ def start_worker() -> IngestionWorker | None:
     global _worker
     if not get_settings().ingest_worker_enabled:
         return None
+    if get_settings().doc_tracking_enabled:     # product sitemaps from config/products/*.yaml, crawled daily
+        from ingestion.freshness import seed_sources_from_config
+
+        seed_sources_from_config()
     if _worker is None or not _worker.is_alive():
         _worker = IngestionWorker()
         _worker.start()

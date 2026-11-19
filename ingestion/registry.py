@@ -46,6 +46,12 @@ def list_documents(kb: str | None = None, include_deleted: bool = False) -> list
 
 def upsert_document(**fields: Any) -> dict[str, Any]:
     """Insert a new document or bump the version of an existing one."""
+    if not fields.get("product_id"):
+        try:
+            from backend.products import product_for_kb
+            fields["product_id"] = product_for_kb(fields["kb"]).product_id
+        except Exception:
+            fields["product_id"] = ""
     with db_session() as s:
         doc = s.get(Document, fields["doc_id"])
         if doc is None:
