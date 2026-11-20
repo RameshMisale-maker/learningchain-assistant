@@ -5,6 +5,7 @@
 #
 # metrics: refusal_rate | error_rate | p95_latency_ms | thumbs_down_rate | llm_unavailable | cache_hit_rate
 #          | eval_score_drop (nightly retrieval eval: drop vs the previous night, per knowledge base)
+#          | answer_score_drop / answer_score_min (nightly end-to-end answer check per product, evals/<id>.jsonl)
 rules:
   - name: high_refusal_rate
     metric: refusal_rate
@@ -41,6 +42,20 @@ rules:
     min_requests: 1
     severity: critical
     cooldown_minutes: 60
+  - name: answer_quality_drop       # nightly end-to-end answer check (evals/<product_id>.jsonl)
+    metric: answer_score_drop
+    threshold: 0.08
+    window_minutes: 1440
+    min_requests: 1
+    severity: warning
+    cooldown_minutes: 1440
+  - name: answer_quality_low
+    metric: answer_score_min
+    threshold: 0.75
+    window_minutes: 1440
+    min_requests: 1
+    severity: critical
+    cooldown_minutes: 1440
   - name: retrieval_quality_drop
     metric: eval_score_drop
     threshold: 0.05

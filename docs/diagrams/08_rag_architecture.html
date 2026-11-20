@@ -45,6 +45,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ffffff"/></marker>
     <marker id="ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7d9bbb"/></marker>
     <marker id="aha" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#48aaee"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#ff8a80"/></marker>
   </defs>
   <rect width="1800" height="2410" fill="#072b4b"/>
   <rect x="30" y="30" width="1740" height="170" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
@@ -123,9 +124,9 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <text x="1106.7" y="523" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P2</text>
   <rect x="1460" y="520" width="250" height="150" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="1478" y="553" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Eval gate</text>
-  <text x="1478" y="579" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">hit@5 + MRR, no LLM</text>
-  <text x="1478" y="600" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">pass: ≥ live − 0.02</text>
-  <text x="1478" y="621" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">fail: version dropped</text>
+  <text x="1478" y="579" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">≥ 0.85 floor · ≥ live − 0.02</text>
+  <text x="1478" y="600" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">≥ best ever − 0.05</text>
+  <text x="1478" y="621" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">no cases → rejected</text>
   <rect x="1633.4" y="509" width="66.6" height="20" rx="4" fill="#48aaee"/>
   <text x="1666.7" y="523" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P2</text>
   <path d="M1585.0 465 L1585.0 512" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
@@ -134,8 +135,8 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <path d="M900 595.0 L878 595.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
   <rect x="1180" y="540" width="250" height="110" rx="12" fill="#0a4a80"/>
   <text x="1198" y="573" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Eval cases</text>
-  <text x="1198" y="599" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">evals/&lt;id&gt;.jsonl</text>
-  <text x="1198" y="620" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">approved Q&amp;A · review (P6)</text>
+  <text x="1198" y="599" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">evals/&lt;id&gt;.jsonl (hand-written)</text>
+  <text x="1198" y="620" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">+ approved Q&amp;A + review</text>
   <path d="M1430 595.0 L1454 595.0" fill="none" stroke="#7d9bbb" stroke-width="2" marker-end="url(#ahm)"/>
   <rect x="30" y="750" width="1740" height="790" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
   <text x="60" y="794" fill="#ffffff" font-size="26" font-weight="600" text-anchor="start">Answering a question</text>
@@ -182,9 +183,9 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <text x="1666.7" y="1038" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P5</text>
   <rect x="1180" y="1035" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="1198" y="1068" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Response cache</text>
-  <text x="1198" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">exact key, then semantic</text>
-  <text x="1198" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">cos ≥ 0.95 · TTL 24 h</text>
-  <text x="1198" y="1136" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">miss → router</text>
+  <text x="1198" y="1094" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">key: product + KBs + roles</text>
+  <text x="1198" y="1115" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">+ index &amp; prompt version</text>
+  <text x="1198" y="1136" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">exact, then cos ≥ 0.95 · 24 h</text>
   <rect x="1353.4" y="1024" width="66.6" height="20" rx="4" fill="#48aaee"/>
   <text x="1386.7" y="1038" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P4</text>
   <rect x="900" y="1035" width="250" height="130" rx="12" fill="#0a4a80"/>
@@ -247,6 +248,22 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <text x="1478" y="1278" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Back to client</text>
   <text x="1478" y="1304" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">JSON or stream</text>
   <text x="1478" y="1325" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">message id for 👍 / 👎</text>
+  <rect x="632" y="975" width="226" height="26" rx="13" fill="#072b4b" stroke="#ff8a80" stroke-width="1.6"/>
+  <text x="745.0" y="993" fill="#ff8a80" font-size="12.5" font-weight="600" text-anchor="middle">blocked · redacted → fixed reply</text>
+  <path d="M660 955 L660 969" fill="none" stroke="#ff8a80" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahr)"/>
+  <rect x="912" y="975" width="226" height="26" rx="13" fill="#072b4b" stroke="#ff8a80" stroke-width="1.6"/>
+  <text x="1025.0" y="993" fill="#ff8a80" font-size="12.5" font-weight="600" text-anchor="middle">out of scope · no access → reply</text>
+  <path d="M940 1035 L940 1007" fill="none" stroke="#ff8a80" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahr)"/>
+  <rect x="72" y="975" width="226" height="26" rx="13" fill="#072b4b" stroke="#ff8a80" stroke-width="1.6"/>
+  <text x="185.0" y="993" fill="#ff8a80" font-size="12.5" font-weight="600" text-anchor="middle">no good source → &quot;no confirmed info&quot;</text>
+  <path d="M100 1035 L100 1007" fill="none" stroke="#ff8a80" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahr)"/>
+  <rect x="370" y="1417" width="470" height="26" rx="13" fill="#072b4b" stroke="#ff8a80" stroke-width="1.6"/>
+  <text x="605.0" y="1435" fill="#ff8a80" font-size="12.5" font-weight="600" text-anchor="middle">all providers down → static support reply + sources</text>
+  <path d="M400 1395 L400 1411" fill="none" stroke="#ff8a80" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahr)"/>
+  <rect x="912" y="1417" width="226" height="26" rx="13" fill="#072b4b" stroke="#ff8a80" stroke-width="1.6"/>
+  <text x="1025.0" y="1435" fill="#ff8a80" font-size="12.5" font-weight="600" text-anchor="middle">not grounded → quoted extract</text>
+  <path d="M940 1395 L940 1411" fill="none" stroke="#ff8a80" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahr)"/>
+  <text x="60" y="1525" fill="#ff8a80" font-size="13" font-weight="400" text-anchor="start">red dashed = refusal / fallback path: a fixed, safe reply goes straight back to the client (never an unverified answer)</text>
   <path d="M1444 920.0 L1735 920.0 L1735 1290.0 L1718 1290.0" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="9 7" marker-end="url(#ahm)"/>
   <path d="M1430 1360.0 L1454 1360.0" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
   <rect x="30" y="1580" width="1740" height="260" rx="16" fill="none" stroke="#7d9bbb" stroke-width="2" stroke-dasharray="12 9"/>
@@ -322,9 +339,9 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <text x="826.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
   <rect x="900" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="918" y="1983" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Nightly eval</text>
-  <text x="918" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">retrieval of live indexes</text>
-  <text x="918" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">02:00 UTC · saved per night</text>
-  <text x="918" y="2051" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">drop → alert</text>
+  <text x="918" y="2009" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">retrieval (hit@5, MRR)</text>
+  <text x="918" y="2030" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">+ answers: cited, facts,</text>
+  <text x="918" y="2051" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">refusals · drop → alert</text>
   <rect x="1073.4" y="1939" width="66.6" height="20" rx="4" fill="#48aaee"/>
   <text x="1106.7" y="1953" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P7</text>
   <rect x="1180" y="1950" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
@@ -347,7 +364,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <rect x="60" y="2220" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="78" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Database</text>
   <text x="78" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">SQLite · PostgreSQL 16</text>
-  <text x="78" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Alembic 0001 – 0007</text>
+  <text x="78" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Alembic 0001 – 0008</text>
   <text x="78" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">migrated at startup</text>
   <rect x="233.4" y="2209" width="66.6" height="20" rx="4" fill="#48aaee"/>
   <text x="266.7" y="2223" fill="#072b4b" font-size="11" font-weight="700" text-anchor="middle">NEW · P1</text>
@@ -357,20 +374,20 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <text x="358" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">versioned collections</text>
   <text x="358" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">single writer</text>
   <rect x="620" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
-  <text x="638" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">FastAPI service</text>
-  <text x="638" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">1 worker · ingestion thread</text>
-  <text x="638" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">ops scheduler thread</text>
-  <text x="638" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">/health/ready</text>
+  <text x="638" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">nginx (TLS)</text>
+  <text x="638" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">TLS 1.2/1.3 · ports 80/443</text>
+  <text x="638" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">chat 20 req/min · admin 60</text>
+  <text x="638" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">+ app limit 30/min per user</text>
   <rect x="900" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
-  <text x="918" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Admin console</text>
-  <text x="918" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">documents · websites · jobs</text>
-  <text x="918" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">review queue · versions</text>
-  <text x="918" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">dashboard</text>
+  <text x="918" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Backups</text>
+  <text x="918" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">deploy/backup.sh nightly</text>
+  <text x="918" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Postgres + data + KB files</text>
+  <text x="918" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">14-day retention</text>
   <rect x="1180" y="2220" width="250" height="130" rx="12" fill="#0a4a80"/>
-  <text x="1198" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Hosting</text>
-  <text x="1198" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Docker Compose + nginx</text>
-  <text x="1198" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Streamlit Community Cloud</text>
-  <text x="1198" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Azure DevOps + GitHub</text>
+  <text x="1198" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Hosting + release</text>
+  <text x="1198" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Docker Compose · Streamlit</text>
+  <text x="1198" y="2300" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">Azure DevOps + GitHub</text>
+  <text x="1198" y="2321" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">manual release · no CI yet</text>
   <rect x="1460" y="2220" width="250" height="130" rx="12" fill="#0a4a80" stroke="#48aaee" stroke-width="2.5"/>
   <text x="1478" y="2253" fill="#ffffff" font-size="19" font-weight="600" text-anchor="start">Feature flags</text>
   <text x="1478" y="2279" fill="#a9cdee" font-size="14" font-weight="400" text-anchor="start">8 flags, all off by default</text>
@@ -390,7 +407,10 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
     <span class="chip">Rerank: <b>ms-marco-MiniLM-L-6-v2</b>, top 5</span>
     <span class="chip">Database: <b>SQLite / PostgreSQL</b>, Alembic 0001-0007</span>
     <span class="chip">Cache: <b>database table</b>, 24 h, semantic ≥ 0.95</span>
-    <span class="chip">Eval gate: <b>hit@5 + MRR</b>, tolerance 0.02, keep 5</span>
+    <span class="chip">Eval gate: <b>floor 0.85 · live − 0.02 · best − 0.05</b>, fails closed</span>
+    <span class="chip">Edge: <b>nginx TLS 1.2/1.3</b>, 20 req/min chat</span>
+    <span class="chip">Backups: <b>backup.sh nightly</b>, 14 days</span>
+    <span class="chip">Release: <b>manual</b>, no CI pipeline yet</span>
     <span class="chip">Breaker: <b>5 failures / 60 s → 120 s</b>, LLM timeout 15 s</span>
     <span class="chip">Crawl: <b>daily</b>, tombstone after 2 misses</span>
   </div>
@@ -399,7 +419,7 @@ td code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
   <h2>What the upgrade added</h2>
   <div class="tbl"><table>
     <tr><th>Stage</th><th>Flag</th><th>What it does</th><th>Code</th></tr>
-    <tr class="phase"><td colspan="4">Configuration</td></tr><tr><td>Product config<span class="tag">P1</span></td><td><code>PRODUCT_CONFIG_ENABLED</code></td><td>Names, glossary, replies, prompt placeholders, KB namespaces, sources and UI texts per product; resolved per request (id, alias, host, API key, default).</td><td><code>backend/products/, config/products/</code></td></tr><tr class="phase"><td colspan="4">Indexing</td></tr><tr><td>Index versions + eval gate<span class="tag">P2</span></td><td><code>INDEX_VERSIONING_ENABLED</code></td><td>Rebuild into a new collection, score hit@5 + MRR (no LLM), promote if ≥ live − 0.02 by switching one alias row; instant rollback; 5 versions kept.</td><td><code>backend/indexing/versions.py, ingestion/cli.py</code></td></tr><tr><td>Freshness tracking<span class="tag">P3</span></td><td><code>DOC_TRACKING_ENABLED</code></td><td>Seen / changed / missed per crawled page; tombstone after 2 misses; product sitemaps crawled daily with include / exclude rules; changes drop cached answers and recheck approved answers.</td><td><code>ingestion/freshness.py, ingestion/automation.py</code></td></tr><tr class="phase"><td colspan="4">Answering</td></tr><tr><td>Response cache<span class="tag">P4</span></td><td><code>RESPONSE_CACHE_ENABLED</code></td><td>Database table, no Redis. Exact then semantic (cos ≥ 0.95) on the standalone question; keyed by product, KBs, roles, index and prompt version; only confident answers; 24 h; 👎 deletes.</td><td><code>backend/services/response_cache.py</code></td></tr><tr><td>LLM failover<span class="tag">P5</span></td><td><code>LLM_FAILOVER_ENABLED</code></td><td>Groq (120b → 20b) → optional 2nd OpenAI-compatible provider → static reply with support contact and sources. Breaker 5 failures / 60 s → open 120 s; 15 s timeout, 1 retry; embedding outage → BM25 only.</td><td><code>backend/generation/failover.py</code></td></tr><tr class="phase"><td colspan="4">After the answer</td></tr><tr><td>Full request log<span class="tag">P2</span></td><td><code>always on</code></td><td>index_version, prompt_version, provider, intent, cache_hit, golden_hit, refused, retrieved chunk ids + scores, message_id on every metrics row.</td><td><code>backend/services/chat_service.py</code></td></tr><tr><td>Review queue<span class="tag">P6</span></td><td><code>REVIEW_QUEUE_ENABLED</code></td><td>👎, refusals, low-confidence answers and stale pages, clustered; approving adds golden_qa + eval_cases and re-ingests, so the next user gets the approved answer.</td><td><code>backend/services/review.py, admin.html</code></td></tr><tr class="phase"><td colspan="4">Observability</td></tr><tr><td>Metrics, alerts, nightly eval<span class="tag">P7</span></td><td><code>METRICS_ENABLED · ALERTS_ENABLED · NIGHTLY_EVAL_ENABLED</code></td><td>/metrics for Prometheus + Grafana dashboard; alert rules in config/alerts.yaml → alert_events → Slack / e-mail; nightly retrieval eval saved per night, drop → alert.</td><td><code>backend/observability/, ops/</code></td></tr>
+    <tr class="phase"><td colspan="4">Configuration</td></tr><tr><td>Product config<span class="tag">P1</span></td><td><code>PRODUCT_CONFIG_ENABLED</code></td><td>Names, glossary, replies, prompt placeholders, KB namespaces, sources and UI texts per product; resolved per request (id, alias, host, API key, default).</td><td><code>backend/products/, config/products/</code></td></tr><tr class="phase"><td colspan="4">Indexing</td></tr><tr><td>Index versions + eval gate<span class="tag">P2</span></td><td><code>INDEX_VERSIONING_ENABLED</code></td><td>Rebuild into a new collection, score hit@5 + MRR (no LLM) on hand-written + approved cases. Promote only if ≥ 0.85 floor, ≥ live − 0.02 and ≥ best ever − 0.05; no eval cases → rejected (fails closed). Instant rollback; 5 versions kept.</td><td><code>backend/indexing/versions.py, ingestion/cli.py</code></td></tr><tr><td>Freshness tracking<span class="tag">P3</span></td><td><code>DOC_TRACKING_ENABLED</code></td><td>Seen / changed / missed per crawled page; tombstone after 2 misses; product sitemaps crawled daily with include / exclude rules; changes drop cached answers and recheck approved answers.</td><td><code>ingestion/freshness.py, ingestion/automation.py</code></td></tr><tr class="phase"><td colspan="4">Answering</td></tr><tr><td>Response cache<span class="tag">P4</span></td><td><code>RESPONSE_CACHE_ENABLED</code></td><td>Database table, no Redis. The key includes product, allowed KBs, user roles, index and prompt version, so a cached answer can never cross an access boundary. Exact then semantic (cos ≥ 0.95); only confident answers; 24 h; 👎 deletes.</td><td><code>backend/services/response_cache.py</code></td></tr><tr><td>LLM failover<span class="tag">P5</span></td><td><code>LLM_FAILOVER_ENABLED</code></td><td>Groq (120b → 20b) → optional 2nd OpenAI-compatible provider → static reply with support contact and sources. Breaker 5 failures / 60 s → open 120 s; 15 s timeout, 1 retry; embedding outage → BM25 only.</td><td><code>backend/generation/failover.py</code></td></tr><tr class="phase"><td colspan="4">After the answer</td></tr><tr><td>Full request log<span class="tag">P2</span></td><td><code>always on</code></td><td>index_version, prompt_version, provider, intent, cache_hit, golden_hit, refused, retrieved chunk ids + scores, message_id on every metrics row.</td><td><code>backend/services/chat_service.py</code></td></tr><tr><td>Review queue<span class="tag">P6</span></td><td><code>REVIEW_QUEUE_ENABLED</code></td><td>👎, refusals, low-confidence answers and stale pages, clustered; approving adds golden_qa + eval_cases and re-ingests, so the next user gets the approved answer.</td><td><code>backend/services/review.py, admin.html</code></td></tr><tr class="phase"><td colspan="4">Observability</td></tr><tr><td>Metrics, alerts, nightly eval<span class="tag">P7</span></td><td><code>METRICS_ENABLED · ALERTS_ENABLED · NIGHTLY_EVAL_ENABLED</code></td><td>/metrics for Prometheus + Grafana dashboard; alert rules in config/alerts.yaml → alert_events → Slack / e-mail; nightly eval of retrieval AND answers (answered, cited, expected source, key facts, off-topic refused), saved per night; drop or low score → alert.</td><td><code>backend/observability/, ops/</code></td></tr>
   </table></div>
 </section>
 </div>

@@ -131,8 +131,9 @@ def _prompts_hash() -> str:
 
 # ---------------------------------------------------------------- eval gate (retrieval only, no LLM - free)
 def _eval_cases(kb: str, store, max_cases: int) -> list[dict[str, Any]]:
-    """Cases from evals/<product_id>.jsonl ({"question", "kb", "expected": [substring of chunk id / source]}),
-    else the approved Q&A of the collection being scored (alternate phrasing -> its approved-answer chunk)."""
+    """All of: the hand-written cases in evals/<product_id>.jsonl ({"question", "kb", "expected": [substring of chunk
+    id / source file / document name]}), a sample (up to `max_cases`) of the approved Q&A of the collection being
+    scored (alternate phrasing -> its approved-answer chunk), and the regression cases from the review queue."""
     from backend.products import product_for_kb
 
     path = get_settings().evals_dir / f"{product_for_kb(kb).product_id}.jsonl"
@@ -145,16 +146,17 @@ def _eval_cases(kb: str, store, max_cases: int) -> list[dict[str, Any]]:
             if row.get("kb", kb) == kb and row.get("question") and row.get("expected"):
                 expected = row["expected"] if isinstance(row["expected"], list) else [row["expected"]]
                 cases.append({"question": row["question"], "expected": [str(e) for e in expected]})
-    if not cases:
-        golden = sorted((c for c in store.get_all(kb) if c.metadata.get("doc_type") == "golden_qa"), key=lambda c: c.id)
-        for c in golden:
-            alternates = [a for a in str(c.metadata.get("alternates", "")).split(" || ") if a.strip()]
-            question = alternates[0] if alternates else str(c.metadata.get("question", ""))
-            if question:
-                cases.append({"question": question, "expected": [c.id]})
-    if len(cases) > max_cases:     # deterministic, evenly spread sample
-        step = len(cases) / max_cases
-        cases = [cases[int(i * step)] for i in range(max_cases)]
+    golden_cases = []
+    golden = sorted((c for c in store.get_all(kb) if c.metadata.get("doc_type") == "golden_qa"), key=lambda c: c.id)
+    for c in golden:
+        alternates = [a for a in str(c.metadata.get("alternates", "")).split(" || ") if a.strip()]
+        question = alternates[0] if alternates else str(c.metadata.get("question", ""))
+        if question:
+            golden_cases.append({"question": question, "expected": [c.id]})
+    if len(golden_cases) > max_cases:     # deterministic, evenly spread sample
+        step = len(golden_cases) / max_cases
+        golden_cases = [golden_cases[int(i * step)] for i in range(max_cases)]
+    cases += golden_cases
     try:                           # regression cases added from the review queue are always included
         from backend.services.review import list_eval_cases
 
@@ -284,18 +286,59 @@ def build_version(kb: str, requested_by: str = "system", crawl_id: str = "", pro
     live = live_version_id(kb) if settings.index_versioning_enabled else _alias(kb)[1]
     live_score = _live_score(kb, live)
     score = evaluation["score"]
-    passed = chunk_count > 0 and (live_score is None or score is None or score >= live_score - settings.eval_tolerance)
-    details = evaluation | {"live_version_id": live, "live_score": live_score, "tolerance": settings.eval_tolerance,
+    best_score = _best_score(kb, exclude=version_id)
+    passed, reasons = gate_decision(score, evaluation.get("cases", 0), chunk_count, live_score, best_score, settings)
+    details = evaluation | {"live_version_id": live, "live_score": live_score, "best_score": best_score,
+                            "tolerance": settings.eval_tolerance, "min_score": settings.eval_min_score,
+                            "max_drift": settings.eval_max_drift, "gate_reasons": reasons,
                             "failed_files": failed[:20], "build_seconds": round(time.perf_counter() - started, 1)}
     _finish(version_id, status="ready" if passed else "rejected", eval_score=score, eval_details=details,
             doc_count=sum(1 for r in results if r.status != "failed"), chunk_count=chunk_count)
     if passed and promote_if_passed:
         promote(version_id, requested_by)
     elif not passed:
-        logger.warning("Index version %s of %s rejected by the eval gate: %.3f < live %.3f - %.2f", version_id, kb,
-                       score or 0, live_score or 0, settings.eval_tolerance)
+        logger.warning("Index version %s of %s rejected by the eval gate: %s", version_id, kb, "; ".join(reasons))
         _drop_collection(kb, collection)
     return get_version(version_id) | {"passed": passed, "ingest_results": results}
+
+
+def gate_decision(score: float | None, cases: int, chunk_count: int, live_score: float | None,
+                  best_score: float | None, settings) -> tuple[bool, list[str]]:
+    """The eval gate. Fails CLOSED: no score / too few cases is a rejection, never a pass. A new version must
+    1. have chunks and at least EVAL_MIN_CASES scored cases;
+    2. score at least EVAL_MIN_SCORE (absolute floor);
+    3. score at least the live version minus EVAL_TOLERANCE (no big step down);
+    4. score at least the best score ever reached minus EVAL_MAX_DRIFT (no slow slide of small steps).
+    Returns (passed, reasons for rejection)."""
+    reasons = []
+    if chunk_count <= 0:
+        reasons.append("the new index is empty")
+    if score is None or cases < settings.eval_min_cases:
+        reasons.append(f"not enough eval cases ({cases} < {settings.eval_min_cases}) - add evals/<product_id>.jsonl "
+                       "or approved Q&A")
+    else:
+        if score < settings.eval_min_score:
+            reasons.append(f"score {score:.3f} below the floor {settings.eval_min_score:.2f}")
+        if live_score is not None and score < live_score - settings.eval_tolerance:
+            reasons.append(f"score {score:.3f} < live {live_score:.3f} - {settings.eval_tolerance:.2f}")
+        if best_score is not None and score < best_score - settings.eval_max_drift:
+            reasons.append(f"score {score:.3f} < best ever {best_score:.3f} - {settings.eval_max_drift:.2f}")
+    return not reasons, reasons
+
+
+def _best_score(kb: str, exclude: int | None = None) -> float | None:
+    """Highest eval score any version of this KB that went live (or could have) ever reached."""
+    from sqlalchemy import func, select
+
+    from backend.db.models import IndexVersion
+    from backend.db.session import db_session
+
+    with db_session() as s:
+        stmt = select(func.max(IndexVersion.eval_score)).where(
+            IndexVersion.kb == kb, IndexVersion.status.in_(["live", "retired", "ready", "pruned"]))
+        if exclude is not None:
+            stmt = stmt.where(IndexVersion.version_id != exclude)
+        return s.scalar(stmt)
 
 
 def _live_score(kb: str, live_id: int | None) -> float | None:

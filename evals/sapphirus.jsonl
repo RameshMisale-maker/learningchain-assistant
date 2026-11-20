@@ -1,0 +1,18 @@
+{"question": "What services does Sapphirus provide?", "kb": "company", "expected": ["Sapphirus_Services", "Sapphirus_Company_Overview", "Company Golden Dataset"]}
+{"question": "How can I contact Sapphirus?", "kb": "company", "expected": ["Sapphirus_Contact_and_Offices", "sapphirus-in-contacts", "Company Golden Dataset"], "must_include": ["sapphirus.in"]}
+{"question": "Where are the Sapphirus offices?", "kb": "company", "expected": ["Sapphirus_Contact_and_Offices", "sapphirus-in-contacts", "Company Golden Dataset"]}
+{"question": "Tell me about Sapphirus as a company", "kb": "company", "expected": ["Sapphirus_Company_Overview", "sapphirus-in-about-us", "Company Golden Dataset"]}
+{"question": "Does Sapphirus offer cloud services?", "kb": "company", "expected": ["sapphirus-in-cloud-services", "Sapphirus_Services", "Company Golden Dataset"]}
+{"question": "What is Doc Secure?", "kb": "company", "expected": ["sapphirus-in-doc-secure", "Company Golden Dataset"]}
+{"question": "What is Exam Secure?", "kb": "company", "expected": ["sapphirus-in-exam-secure", "Company Golden Dataset"]}
+{"question": "What is ID Secure?", "kb": "company", "expected": ["sapphirus-in-id-secure", "Company Golden Dataset"]}
+{"question": "What is Label Secure?", "kb": "company", "expected": ["sapphirus-in-label-secure", "Company Golden Dataset"]}
+{"question": "What is ARIA?", "kb": "company", "expected": ["sapphirus-in-aria", "Company Golden Dataset"]}
+{"question": "Does Sapphirus provide blockchain services?", "kb": "company", "expected": ["sapphirus-in-blockchain-services", "Sapphirus_Services", "Company Golden Dataset"]}
+{"question": "Does Sapphirus have a learning management system?", "kb": "company", "expected": ["sapphirus-in-learning-management-system", "Company Golden Dataset"]}
+{"question": "Are there any job openings at Sapphirus?", "kb": "company", "expected": ["sapphirus-in-careers", "sapphirus-in-job", "Company Golden Dataset"]}
+{"question": "Is Sapphirus hiring an Azure DevOps engineer?", "kb": "company", "expected": ["sapphirus-in-job-azure-devops", "sapphirus-in-job-sr-azure-devops", "Company Golden Dataset"]}
+{"question": "What business intelligence services does Sapphirus offer?", "kb": "company", "expected": ["sapphirus-in-business-intelligence-analytics", "Company Golden Dataset"]}
+{"question": "What is the capital of France?", "kb": "company", "expect_refusal": true}
+{"question": "Write me a poem about the sea", "kb": "company", "expect_refusal": true}
+{"question": "What is the weather today?", "kb": "company", "expect_refusal": true}

@@ -132,3 +132,46 @@ def test_migration_0003_round_trip(tmp_path):
         command.downgrade(cfg, "0002")
         assert "index_versions" not in set(inspect(conn).get_table_names())
         assert "index_version" not in {c["name"] for c in inspect(conn).get_columns("request_metrics")}
+
+
+# ------------------------------------------------------------------------------------------------ gate rules (review)
+def test_gate_rules_floor_drift_and_fail_closed():
+    from types import SimpleNamespace
+
+    from backend.indexing.versions import gate_decision
+
+    s = SimpleNamespace(eval_tolerance=0.02, eval_min_score=0.85, eval_max_drift=0.05, eval_min_cases=5)
+    assert gate_decision(0.95, 30, 100, 0.95, 0.96, s) == (True, [])
+    assert not gate_decision(None, 0, 100, 0.95, 0.96, s)[0]                    # no eval run -> rejected
+    assert not gate_decision(0.99, 3, 100, None, None, s)[0]                    # too few cases -> rejected
+    assert not gate_decision(0.95, 30, 0, None, None, s)[0]                     # empty index -> rejected
+    passed, reasons = gate_decision(0.84, 30, 100, None, None, s)               # first build below the floor
+    assert not passed and "floor" in reasons[0]
+    assert not gate_decision(0.92, 30, 100, 0.95, 0.95, s)[0]                   # big step down vs live
+    # slow slide: every step is within the tolerance of live, but far below the best ever
+    assert gate_decision(0.935, 30, 100, 0.95, 0.96, s)[0]
+    passed, reasons = gate_decision(0.905, 30, 100, 0.92, 0.96, s)
+    assert not passed and "best ever" in reasons[0]
+
+
+def test_gate_rejects_when_there_are_no_cases(versioning, monkeypatch):
+    from backend.indexing import versions
+
+    live_before = versions.live_version_id("products")
+    monkeypatch.setattr(versions, "evaluate_collection",
+                        lambda kb, collection=None: {"score": None, "cases": 0, "hit_at_5": None, "mrr": None})
+    out = versions.build_version("products", "test")
+    assert not out["passed"] and out["status"] == "rejected"
+    assert "not enough eval cases" in out["eval_details"]["gate_reasons"][0]
+    assert versions.live_version_id("products") == live_before
+
+
+def test_hand_written_eval_cases_are_used(workspace):
+    from backend.indexing.versions import _eval_cases
+    from ingestion.vector_store import get_vector_store
+
+    cases = _eval_cases("products", get_vector_store(), 40)
+    questions = {c["question"] for c in cases}
+    assert "What is internal printing?" in questions                            # from evals/learningchain.jsonl
+    assert len(cases) > 16                                                       # plus the approved Q&A sample
+    assert all(c["expected"] for c in cases)                                     # refusal probes are not gate cases

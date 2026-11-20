@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-20 - Architecture review fixes
+
+- **Eval gate fails closed:** no score or fewer than `EVAL_MIN_CASES` (5) cases -> rejected (before: passed).
+- **Eval gate floor + drift:** promote only if `>= EVAL_MIN_SCORE` (0.85), `>= live - 0.02` and
+  `>= best ever - EVAL_MAX_DRIFT` (0.05), so quality cannot slide down a little at a time with the gate green.
+- **Eval cases:** `evals/learningchain.jsonl` (16 questions + 3 off-topic probes) and `evals/sapphirus.jsonl`
+  (15 + 3), always scored together with the approved Q&A sample. Current scores: LearningChain 0.957 (37 cases),
+  Sapphirus 0.924 (34 cases).
+- **Nightly answer check:** end-to-end answers per product - answered, cited, expected source, key facts; off-topic
+  probes refused. Alerts `answer_quality_drop` (> 0.08 vs the previous night) and `answer_quality_low` (< 0.75).
+- **Diagram:** refusal / fallback paths drawn (red); cache key shown (product + KBs + roles + index & prompt
+  version); TLS, 20 req/min rate limit, `backup.sh` and "no CI pipeline yet" restored; stricter gate and answer check.
+- **Env vars:** `EVAL_MIN_SCORE`, `EVAL_MAX_DRIFT`, `EVAL_MIN_CASES`, `NIGHTLY_ANSWER_EVAL`, `NIGHTLY_ANSWER_CASES`.
+
 ## 2026-11-19 - Conversation ending and rating
 
 - **Closing intent:** "no thanks", "that's all", "bye" -> intent `CLOSING` (rules + LLM intent prompt): a goodbye with

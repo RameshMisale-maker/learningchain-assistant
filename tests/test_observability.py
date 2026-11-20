@@ -154,3 +154,58 @@ def test_admin_alert_endpoints(workspace):
         assert c.get("/api/v1/admin/alerts", headers=PUBLIC).status_code == 403
         assert "events" in c.get("/api/v1/admin/alerts", headers=ADMIN).json()
         assert "fired" in c.post("/api/v1/admin/alerts/check", headers=ADMIN).json()
+
+
+def test_answer_eval_scores_questions_and_refusal_probes(workspace, monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    from backend.observability import alerts
+    from backend.services import chat_service
+    from config.settings import get_settings
+
+    (tmp_path / "learningchain.jsonl").write_text(
+        '{"question": "good", "kb": "products", "expected": ["Guide"], "must_include": ["blue dial"]}\n'
+        '{"question": "wrong source", "kb": "products", "expected": ["Other"]}\n'
+        '{"question": "off topic", "kb": "products", "expect_refusal": true}\n', encoding="utf-8")
+    monkeypatch.setattr(get_settings(), "evals_dir", tmp_path)
+    cite = SimpleNamespace(id="c1", source_file="kb/Guide.md", doc_name="Guide")
+    replies = {"good": ("generated", "Turn the blue dial.", [cite]),
+               "wrong source": ("generated", "Some answer.", [cite]),
+               "off topic": ("out_of_scope", "I can only help with ...", [])}
+
+    class FakeService:
+        def answer(self, question, user, **kw):
+            t, a, c = replies[question]
+            return SimpleNamespace(answer_type=t, answer=a, citations=c)
+    monkeypatch.setattr(chat_service, "get_chat_service", lambda: FakeService())
+    out = alerts.answer_eval("learningchain")
+    assert out["cases"] == 3 and out["refusal_probe_rate"] == 1.0 and out["answered_rate"] == 1.0
+    assert out["answer_score"] == round((1 + 0.75 + 1) / 3, 4)
+    assert [f["question"] for f in out["failures"]] == ["wrong source"]
+
+
+def test_nightly_answer_quality_alerts(workspace, monkeypatch):
+    import json as _json
+
+    from backend.indexing import versions
+    from backend.observability import alerts
+
+    _clear_alerts()
+    folder = alerts.nightly_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    before = {f.name for f in folder.glob("nightly_*.json")}
+    (folder / "nightly_00000000_000001.json").write_text(_json.dumps(
+        {"knowledge_bases": {}, "answers": {"learningchain": {"answer_score": 0.95}}}), encoding="utf-8")
+    monkeypatch.setattr(versions, "evaluate_collection", lambda kb, collection=None: {"score": 0.9, "cases": 10})
+    monkeypatch.setattr(alerts, "answer_eval", lambda pid, max_cases=None: {"answer_score": 0.7 if pid == "learningchain"
+                                                                            else 0.95, "cases": 10})
+    rules = [{"name": "drop", "metric": "answer_score_drop", "threshold": 0.08, "cooldown_minutes": 60,
+              "severity": "warning"},
+             {"name": "low", "metric": "answer_score_min", "threshold": 0.75, "cooldown_minutes": 60,
+              "severity": "critical"}]
+    out = alerts.nightly_eval(rules)
+    assert out["answers"]["learningchain"]["answer_score"] == 0.7
+    assert sorted(a.get("drop", a.get("score")) for a in out["alerts"]) == [0.25, 0.7]
+    for name in {f.name for f in folder.glob("nightly_*.json")} - before:
+        (folder / name).unlink()
+    _clear_alerts()

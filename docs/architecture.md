@@ -93,8 +93,11 @@ being built; otherwise the live version from `index_aliases`; otherwise the clas
 A rebuild (`reindex`, `build-version`, or an admin full sync) fills a new collection `<prefix><kb>_v<id>` while users
 keep the live one. The **eval gate** then scores it with retrieval only (no LLM, free): hit@5 and MRR@10 over up to
 40 cases from `evals/<product_id>.jsonl`, or the KB's approved Q&A (alternate phrasing -> its approved answer), plus
-the eval cases created in the review queue. Score = 0.5 x hit@5 + 0.5 x MRR. The version is promoted when
-`score >= live score - EVAL_TOLERANCE` (0.02); promotion is one alias-row switch, then the KB revision is bumped so
+the eval cases created in the review queue. Score = 0.5 x hit@5 + 0.5 x MRR. The gate **fails closed** - no score or fewer than
+`EVAL_MIN_CASES` (5) cases is a rejection. The version is promoted only when all hold: `score >= EVAL_MIN_SCORE`
+(0.85, absolute floor), `score >= live score - EVAL_TOLERANCE` (0.02) and `score >= best score ever - EVAL_MAX_DRIFT`
+(0.05, so many small drops cannot add up). Hand-written cases live in `evals/<product_id>.jsonl` and are always
+scored together with the approved Q&A sample; promotion is one alias-row switch, then the KB revision is bumped so
 every worker reloads BM25. The previous version stays for an instant rollback; `KEEP_INDEX_VERSIONS` (5) are kept.
 The pre-versioning collection is registered as the first version and is never deleted.
 
@@ -135,7 +138,8 @@ product's `include_paths` / `exclude_paths` / `allowed_domains`. Code: `ingestio
 
 A database table (`response_cache`), no Redis. The key is product + allowed KBs + user roles + index version +
 prompt version + normalised standalone question, so a new index or prompt version never serves an old answer.
-Only `generated` and `golden_*` answers with confidence >= `CACHE_MIN_CONFIDENCE` and no warnings are stored -
+Because the key includes the user's roles and the allowed knowledge bases, a cached answer can never be served
+across an access boundary, even though the lookup runs before the router. Only `generated` and `golden_*` answers with confidence >= `CACHE_MIN_CONFIDENCE` and no warnings are stored -
 never refusals, out-of-scope, account / escalation / clarification replies or service-unavailable replies.
 Entries expire after `CACHE_TTL_HOURS` (24); a thumbs-down deletes the entry that produced or served the answer.
 
@@ -171,7 +175,7 @@ answers can also be imported from CSV (`POST /api/v1/admin/golden-qa/import`).
 |---|---|---|
 | `/metrics` | `METRICS_ENABLED` (+ optional `METRICS_TOKEN`) | Prometheus text format, no extra dependency: requests by product / channel / answer type, refusals, cache and golden hits, errors, tokens, cost, feedback, latency histogram; gauges for breakers, live index versions, open review items, cache size |
 | Alerts | `ALERTS_ENABLED` | rules in `config/alerts.yaml` (refusal rate, error rate, p95 latency, thumbs-down rate, LLM unavailable, eval score drop) checked every `ALERT_CHECK_MINUTES`; stored in `alert_events`; sent to `ALERT_SLACK_WEBHOOK_URL` and / or e-mail (`ALERT_EMAIL_TO`, `SMTP_*`); cool-down per rule |
-| Nightly eval | `NIGHTLY_EVAL_ENABLED` | retrieval eval of every live index at `NIGHTLY_EVAL_HOUR` (UTC); saved as `<DATA_DIR>/evals/nightly_<timestamp>.json` (never overwritten); a drop above the threshold fires an alert |
+| Nightly eval | `NIGHTLY_EVAL_ENABLED` | retrieval eval of every live index **and an end-to-end answer check** per product (`NIGHTLY_ANSWER_EVAL`: each case in `evals/<id>.jsonl` must be answered, cited, from the expected source and contain its key facts; off-topic probes must be refused) at `NIGHTLY_EVAL_HOUR` (UTC); saved as `<DATA_DIR>/evals/nightly_<timestamp>.json` (never overwritten); a drop above the threshold fires an alert |
 | Dashboards | - | `ops/grafana/assistant-dashboard.json`, `ops/prometheus/prometheus.yml`, `ops/prometheus/alerts.yml` (self-hosted, free) |
 
 Langfuse tracing is deliberately not enabled (extra paid service); the request log and `/metrics` cover tracing.

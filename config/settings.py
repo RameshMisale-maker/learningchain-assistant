@@ -168,6 +168,9 @@ class Settings:
     # retrieval eval gate and only then becomes live; the previous version stays for an instant rollback.
     index_versioning_enabled: bool = field(default_factory=lambda: _env_bool("INDEX_VERSIONING_ENABLED", False))
     eval_tolerance: float = field(default_factory=lambda: _env_float("EVAL_TOLERANCE", 0.02))
+    eval_min_score: float = field(default_factory=lambda: _env_float("EVAL_MIN_SCORE", 0.85))     # absolute floor
+    eval_max_drift: float = field(default_factory=lambda: _env_float("EVAL_MAX_DRIFT", 0.05))     # vs best ever
+    eval_min_cases: int = field(default_factory=lambda: _env_int("EVAL_MIN_CASES", 5))           # fail closed below
     keep_index_versions: int = field(default_factory=lambda: _env_int("KEEP_INDEX_VERSIONS", 5))
     eval_gate_max_cases: int = field(default_factory=lambda: _env_int("EVAL_GATE_MAX_CASES", 40))
     evals_dir: Path = field(default_factory=lambda: _resolve(_env("EVALS_DIR", "evals")))
@@ -209,6 +212,9 @@ class Settings:
     alert_check_minutes: float = field(default_factory=lambda: _env_float("ALERT_CHECK_MINUTES", 5))
     nightly_eval_enabled: bool = field(default_factory=lambda: _env_bool("NIGHTLY_EVAL_ENABLED", False))
     nightly_eval_hour: int = field(default_factory=lambda: _env_int("NIGHTLY_EVAL_HOUR", 2))     # UTC
+    # end-to-end answer check in the nightly run (uses the LLM: about NIGHTLY_ANSWER_CASES answers per product)
+    nightly_answer_eval: bool = field(default_factory=lambda: _env_bool("NIGHTLY_ANSWER_EVAL", True))
+    nightly_answer_cases: int = field(default_factory=lambda: _env_int("NIGHTLY_ANSWER_CASES", 25))
     alert_slack_webhook_url: str = field(default_factory=lambda: _env("ALERT_SLACK_WEBHOOK_URL", ""))
     alert_email_to: str = field(default_factory=lambda: _env("ALERT_EMAIL_TO", ""))
     smtp_host: str = field(default_factory=lambda: _env("SMTP_HOST", ""))

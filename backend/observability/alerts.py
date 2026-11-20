@@ -22,7 +22,8 @@ from config.settings import BASE_DIR, get_settings
 logger = logging.getLogger(__name__)
 
 METRICS = {"refusal_rate", "error_rate", "p95_latency_ms", "thumbs_down_rate", "llm_unavailable", "cache_hit_rate",
-           "eval_score_drop"}
+           "eval_score_drop", "answer_score_drop", "answer_score_min"}
+NIGHTLY_METRICS = ("eval_score_drop", "answer_score_drop", "answer_score_min")
 
 
 def _now() -> datetime:
@@ -139,7 +140,7 @@ def evaluate_alerts(rules: list[dict[str, Any]] | None = None) -> list[dict[str,
     """Check every request-metric rule for every product; returns the alerts that fired now."""
     from backend.products import load_products
 
-    rules = [r for r in (rules if rules is not None else load_rules()) if r["metric"] != "eval_score_drop"]
+    rules = [r for r in (rules if rules is not None else load_rules()) if r["metric"] not in NIGHTLY_METRICS]
     fired = []
     for product_id in sorted(load_products()):
         cache: dict[int, dict[str, Any]] = {}
@@ -183,6 +184,16 @@ def nightly_eval(rules: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         except Exception as exc:
             logger.exception("Nightly eval of %s failed", kb)
             results["knowledge_bases"][kb] = {"error": f"{type(exc).__name__}: {exc}"}
+    if get_settings().nightly_answer_eval:      # end-to-end answer quality, not only retrieval
+        from backend.products import load_products
+
+        results["answers"] = {}
+        for product_id in sorted(load_products()):
+            try:
+                results["answers"][product_id] = answer_eval(product_id)
+            except Exception as exc:
+                logger.exception("Nightly answer eval of %s failed", product_id)
+                results["answers"][product_id] = {"error": f"{type(exc).__name__}: {exc}"}
     stamp = _now().strftime("%Y%m%d_%H%M%S")
     path = folder / f"nightly_{stamp}.json"
     n = 1
@@ -203,7 +214,79 @@ def nightly_eval(rules: list[dict[str, Any]] | None = None) -> dict[str, Any]:
                              f"retrieval eval score of '{kb}' fell from {before['score']:.3f} to {cur['score']:.3f}")
                 if event:
                     results["alerts"].append({"kb": kb, "drop": round(drop, 4), "event_id": event})
+    all_rules = rules if rules is not None else load_rules()
+    drop_rule = next((r for r in all_rules if r["metric"] == "answer_score_drop"), None)
+    min_rule = next((r for r in all_rules if r["metric"] == "answer_score_min"), None)
+    for product_id, cur in (results.get("answers") or {}).items():
+        score = cur.get("answer_score")
+        if score is None:
+            continue
+        before = ((previous.get("answers") or {}).get(product_id) or {}).get("answer_score")
+        if drop_rule and before is not None and before - score > drop_rule["threshold"]:
+            event = fire(drop_rule | {"name": f"{drop_rule['name']}:{product_id}"}, product_id, before - score,
+                         f"answer quality of '{product_id}' fell from {before:.3f} to {score:.3f}")
+            if event:
+                results["alerts"].append({"product": product_id, "drop": round(before - score, 4), "event_id": event})
+        if min_rule and score < min_rule["threshold"]:
+            event = fire(min_rule | {"name": f"{min_rule['name']}:{product_id}"}, product_id, score,
+                         f"answer quality of '{product_id}' is {score:.3f}, below {min_rule['threshold']}")
+            if event:
+                results["alerts"].append({"product": product_id, "score": score, "event_id": event})
     return results
+
+
+REFUSED_TYPES = ("refusal", "out_of_scope", "blocked", "restricted", "access_denied")
+
+
+def answer_eval(product_id: str, max_cases: int | None = None) -> dict[str, Any]:
+    """End-to-end answer quality for one product, from the hand-written cases in evals/<product_id>.jsonl.
+
+    Each case runs through the real chat pipeline (no history, nothing stored) and is scored 0-1:
+    * a question ("expected" sources): answered (not refused) 0.25, cites a source 0.25, cites an expected source
+      0.25, contains every "must_include" phrase 0.25 (counted as met when the case lists none);
+    * a refusal probe ("expect_refusal": true): 1 when the assistant declines, else 0.
+    No LLM judge - the checks are objective and free; only the answers themselves use the LLM."""
+    from backend.products import get_product
+    from backend.security.auth import AuthenticatedUser
+    from backend.services.chat_service import get_chat_service
+
+    settings = get_settings()
+    path = settings.evals_dir / f"{product_id}.jsonl"
+    if not path.exists():
+        return {"answer_score": None, "cases": 0, "note": f"no {path.name}"}
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = rows[: max_cases or settings.nightly_answer_cases]
+    product = get_product(product_id)
+    service, user = get_chat_service(), AuthenticatedUser("nightly-eval", {"public"})
+    results = []
+    for row in rows:
+        try:
+            resp = service.answer(row["question"], user, persist=False, record_metrics=False, channel="eval",
+                                  allowed_kbs=product.allowed_kbs(None), product=product)
+        except Exception as exc:
+            results.append({"question": row["question"], "score": 0.0, "error": type(exc).__name__})
+            continue
+        refused = resp.answer_type in REFUSED_TYPES
+        if row.get("expect_refusal"):
+            results.append({"question": row["question"], "kind": "refusal_probe", "score": float(refused),
+                            "answer_type": resp.answer_type})
+            continue
+        sources = " ".join(f"{c.id} {c.source_file} {c.doc_name}" for c in resp.citations)
+        expected = [str(e) for e in row.get("expected", [])]
+        must = [str(m) for m in row.get("must_include", [])]
+        checks = {"answered": not refused and bool(resp.answer.strip()),
+                  "cited": bool(resp.citations),
+                  "expected_source": bool(expected) and any(e in sources for e in expected),
+                  "key_facts": all(m.lower() in resp.answer.lower() for m in must)}
+        results.append({"question": row["question"], "kind": "question", "score": sum(checks.values()) / 4,
+                        "checks": checks, "answer_type": resp.answer_type})
+    scores = [r["score"] for r in results]
+    questions = [r for r in results if r.get("kind") == "question"]
+    probes = [r for r in results if r.get("kind") == "refusal_probe"]
+    return {"answer_score": round(sum(scores) / len(scores), 4) if scores else None, "cases": len(results),
+            "answered_rate": round(sum(r["checks"]["answered"] for r in questions) / len(questions), 4) if questions else None,
+            "refusal_probe_rate": round(sum(r["score"] for r in probes) / len(probes), 4) if probes else None,
+            "failures": [r for r in results if r["score"] < 1][:20]}
 
 
 def list_events(limit: int = 100) -> list[dict[str, Any]]:
