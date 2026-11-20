@@ -53,22 +53,23 @@ def _replies():
 is_closing = convo.is_closing          # closing phrases live with the intent classifier (backend/routing/intent.py)
 
 
-def small_talk_reply(text: str, roles: set[str], first: bool = True) -> str:
+def small_talk_reply(text: str, roles: set[str], first: bool = True, intent: str | None = None) -> str:
     """Short reply for greetings / small talk (one sentence). The assistant introduces itself only on the first
-    message of a conversation."""
+    message of a conversation. The WHOLE message decides the reply: "okay hello chatbot, Ramesh here" is a greeting
+    (not an "ok"), so greetings are recognised before the acknowledgement / thanks replies."""
     r = _replies()
     t = text.strip().lower()
     if is_closing(t):
         return r.closing
+    if intent == convo.GREETING or convo.is_greeting_with_intro(t) or convo.greeting_only_re().match(t):
+        return _greeting(t, r, first)
     if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)\b", t):
         return r.yes
-    if re.match(r"^(thanks|thank|thx|ty)", t):
+    if re.search(r"\b(thanks|thank\s*(you|u)|thx|ty)\b", t):     # "thanks", "great, thanks", "ok thank you"
         return r.thanks
-    if re.match(r"^(great|cool|nice|awesome|perfect|ok|okay|got it)", t):
-        return r.acknowledged
-    if re.match(r"^(bye|goodbye|good\s*bye|see you|see ya|take care)", t):
+    if re.match(r"^(bye|goodbye|good\s*bye|see you|see ya|take care)\b", t):
         return r.bye
-    if convo.is_acknowledgement(t):    # "ok", "done", a thumbs-up
+    if convo.is_acknowledgement(t):    # the whole message is "ok" / "great, thanks" / a thumbs-up
         return r.acknowledged
     if re.match(r"^how are you", t):
         return r.how_are_you
@@ -76,11 +77,20 @@ def small_talk_reply(text: str, roles: set[str], first: bool = True) -> str:
         return r.who_are_you
     if re.match(r"^(what can you do|how can you help|help)", t):
         return r.what_can_you_do
-    m = re.match(r"^(good|gud|gd)\s*(morning|afternoon|evening|day)", t)
-    hello = f"Good {m.group(2)}!" if m else "Hello!"
+    return _greeting(t, r, first)
+
+
+def _greeting(t: str, r, first: bool) -> str:
+    """Hello (time-of-day aware, with the user's name when they introduced themselves); the assistant introduces
+    itself only on the first message."""
+    m = re.search(r"\b(good|gud|gd)\s*(morning|afternoon|evening|day)\b", t)
+    name = convo.introduced_name(t)
+    hello = (f"Good {m.group(2)}" if m else "Hello") + (f" {name}!" if name else "!")
     if first:
         return r.greeting_first.format(hello=hello)
-    return r.greeting_again_timed.format(hello=hello) if m else r.greeting_again
+    if m or name:
+        return r.greeting_again_timed.format(hello=hello if m else f"Hi {name}!")
+    return r.greeting_again
 AMBIGUOUS_MIN_SCORE = 0.35
 LLM_CONFIDENT_RERANK = 0.5        # with an LLM, skip the lexical pre-refusal when the top passage scores this high
 GOLDEN_MAX_MISSING_INTENT = 0.35   # max IDF share of query terms absent from the approved question side
@@ -669,7 +679,8 @@ class ChatService:
         route = {"intent": "greeting", "knowledge_bases": [], **message.to_dict()}
         if message.intent in (convo.GREETING, convo.SMALL_TALK, convo.CLOSING):
             first = not any(h.get("role") == "assistant" for h in (history or []))
-            return ChatResponse(answer=small_talk_reply(query, user.roles, first=first), session_id=session_id,
+            return ChatResponse(answer=small_talk_reply(query, user.roles, first=first, intent=message.intent),
+                                session_id=session_id,
                                 message_id=None, answer_type="closing" if is_closing(query) else "greeting",
                                 confidence=1.0, route=route)
         if message.intent == convo.FRUSTRATION:

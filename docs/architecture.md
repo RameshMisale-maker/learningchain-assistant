@@ -129,7 +129,7 @@ wording kept as alternate phrasings). Answers taken from the Help Centre link to
 | 1 | Resolve product | id / alias / host / API key / default | `backend/products/context.py` |
 | 2 | Safety guard | prompt-injection screening, sensitive data (card numbers via Luhn, OTP / PIN / password) redacted, restricted topics refused only for harmful intent (financial advice, crime instructions, self-harm ...) - product questions such as "Can I pay by credit card?" are answered | `backend/security/prompt_guard.py` |
 | 3 | Normalize | typo and short-form fixes from the product glossary; Hindi / Hinglish / other languages translated to English for search. **Replies are always in English.** | `backend/routing/normalize.py` |
-| 4 | Conversation layer | greetings (incl. self-introductions), closing ("no thanks", "bye"), small talk, frustration, the user's own account data (only when they say my / our / I), escalation, incomplete input, vague "it" with no topic (asks which feature) - answered without retrieval | `backend/routing/intent.py` |
+| 4 | Conversation layer | the whole message decides the reply ("okay hello chatbot, Ramesh here" is a greeting, answered "Hi Ramesh!", never an "ok" acknowledgement); greetings (incl. self-introductions), closing ("no thanks", "bye"), small talk, frustration, the user's own account data (only when they say my / our / I), escalation, incomplete input, vague "it" with no topic (asks which feature) - answered without retrieval | `backend/routing/intent.py` |
 | 5 | Follow-up rewrite | standalone question from the conversation; multi-part questions split | `backend/routing/router.py`, `decompose.py` |
 | 6 | Query embedding | dense vector; with `LLM_FAILOVER_ENABLED` an embedding outage switches this request to BM25-only search | `backend/generation/failover.py` (`ResilientEmbedder`) |
 | 7 | **Response cache** (Phase 4) | exact key, then semantic match (cosine >= product `semantic_cache_threshold`, 0.95) | `backend/services/response_cache.py` |
@@ -232,6 +232,9 @@ Langfuse tracing is deliberately not enabled (extra paid service); the request l
   there is no CI pipeline yet.
 
 ## 8. Feature flags
+
+The order for switching them on (one at a time, evaluation re-run after each) is in
+[`rollout-plan.md`](rollout-plan.md).
 
 | Flag | Phase | Default | Off means |
 |---|---|---|---|

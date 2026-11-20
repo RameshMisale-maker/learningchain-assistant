@@ -75,6 +75,23 @@ VAGUE_PRONOUN_REPLY = ("Sure - which feature or item do you mean? Please mention
                        "through it.")
 
 
+_INTRO_NAME_RE = re.compile(
+    r"\b(?:i\s*am|i'm|im|this\s+is|my\s+name\s+is|myself|it'?s)\s+([a-z][a-z'-]{1,30})\b|"
+    r"\b([a-z][a-z'-]{1,30})\s+(?:here|this\s+side)\b", re.IGNORECASE)
+_NOT_NAMES = {"back", "here", "new", "fine", "good", "ok", "okay", "looking", "trying", "a", "an", "the", "from",
+              "with", "student", "admin", "user", "verifier", "chatbot", "bot", "assistant", "there", "again", "just",
+              "also", "still", "so", "well", "hello", "hi", "hey", "not", "very", "really", "interested", "confused"}
+
+
+def introduced_name(text: str) -> str:
+    """The name a user gives in a greeting ("Ramesh here", "this is Priya", "I am Ravi") - "" when there is none."""
+    for m in _INTRO_NAME_RE.finditer(text or ""):
+        name = (m.group(1) or m.group(2) or "").strip("'-")
+        if name and name.lower() not in _NOT_NAMES and name.lower() not in STOPWORDS:
+            return name[:1].upper() + name[1:].lower()
+    return ""
+
+
 def mentions_own_data(text: str) -> bool:
     """The user refers to their own account / records ("my payment", "our verification status", "I paid")."""
     return bool(_OWN_DATA_RE.search(text or ""))

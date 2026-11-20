@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-20 - Greeting replies, rollout plan
+
+- **Greeting replies read the whole message:** "okay hello chatbot, Ramesh here" is answered "Hi Ramesh! How can I
+  help?" (was "Glad that helps" because the reply was picked from the first word "okay"). Greetings are recognised
+  before the ok / thanks replies; the acknowledgement reply is used only when the whole message is an
+  acknowledgement; "great, thanks" -> "You're welcome!"; users who introduce themselves are greeted by name.
+- **Rollout plan:** `docs/rollout-plan.md` - order for switching the 8 feature flags on one at a time, with the
+  evaluation re-run and a go / no-go check after each step, rollback, and a results table.
+- Architecture diagram and `docs/architecture.md` updated (conversation layer). Tests: 406 passed.
+
 ## 2026-11-20 - Senior review fixes
 
 - **English-only replies:** the assistant always answers in English. Questions in Hindi, Hinglish or other languages

@@ -234,3 +234,31 @@ def test_account_reply_only_for_the_users_own_data():
     assert not convo.mentions_own_data("The verification result shows 'Invalid'.")
     for text in ("Has my payment gone through?", "our verification status is pending", "I paid twice"):
         assert convo.mentions_own_data(text), text
+
+
+# ------------------------------------------------------------------------------------------------ greeting replies
+def test_greeting_reply_reads_the_whole_message(chat, public_user):
+    """'okay hello chatbot, Ramesh here' is a greeting - never the 'Glad that helps' acknowledgement."""
+    history = [{"role": "user", "content": "How do I verify a certificate?"},
+               {"role": "assistant", "content": "Click the verification URL ...", "answer_type": "golden_direct"}]
+    resp = chat.answer("okay hello chatbot, Ramesh here", public_user, persist=False, history=history)
+    assert resp.answer_type == "greeting" and "Ramesh" in resp.answer and "Glad that helps" not in resp.answer
+    first = chat.answer("hello chatbot, Ramesh here", public_user, persist=False, history=[])
+    assert first.answer.startswith("Hello Ramesh!")
+
+
+def test_small_talk_replies_match_the_message(workspace):
+    from backend.services.chat_service import small_talk_reply
+
+    roles = {"public"}
+    assert "Glad" in small_talk_reply("ok", roles, first=False)
+    assert "welcome" in small_talk_reply("great, thanks", roles, first=False).lower()
+    assert small_talk_reply("good morning, I am Ravi", roles, first=False).startswith("Good morning Ravi!")
+    assert "Ravi" not in small_talk_reply("hi I'm back", roles, first=False)
+
+
+def test_introduced_name():
+    from backend.routing.intent import introduced_name
+
+    assert [introduced_name(t) for t in ("Ramesh here", "this is Priya", "I am Ravi", "hi I'm back", "it's me",
+                                         "okay hello chatbot")] == ["Ramesh", "Priya", "Ravi", "", "", ""]
