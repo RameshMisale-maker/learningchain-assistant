@@ -15,14 +15,18 @@ def test_official_faq_answer_returned_verbatim(chat, public_user):
 def test_paraphrased_faq_uses_approved_answer(chat, public_user):
     resp = chat.answer("Is integration with our existing software possible?", public_user, persist=False)
     assert resp.answer_type in ("golden_direct", "golden_semantic", "extractive")
-    assert "APIs" in resp.answer
+    assert "API" in resp.answer
 
 
 def test_how_to_answer_has_steps_citation_and_link(chat, public_user):
+    # revoking is answered by the approved FAQ (LC-090: the platform calls it "Recall")
     resp = chat.answer("What are the steps to revoke an issued certificate?", public_user, persist=False)
     assert resp.answer_type not in ("refusal", "out_of_scope")
-    assert "Reports Module" in resp.answer and "Generated Certificates" in resp.answer
-    assert any("Revoke" in c.section for c in resp.citations)
+    assert "Generated Certificates" in resp.answer and "Recall" in resp.answer
+    assert any(c.qid == "LC-090" for c in resp.citations)
+    # a how-to the FAQ does not cover still comes from the help centre, with steps and the article link
+    resp = chat.answer("What are the steps if I forget my password?", public_user, persist=False)
+    assert resp.answer_type not in ("refusal", "out_of_scope") and resp.citations
     assert any(c.url.startswith("https://learningchainai.zendesk.com/") for c in resp.citations)
 
 

@@ -117,7 +117,7 @@ def test_all_providers_down_gives_static_reply_with_sources(workspace, public_us
 
     down = FailoverLLM(fast_settings, [("a", FakeLLM(fast_settings, "a", fail=True))])
     service = ChatService(llm=down)
-    resp = service.answer("How do I revoke a certificate?", public_user, persist=False)
+    resp = service.answer("How do I change my password?", public_user, persist=False)
     product = get_product(None)
     assert resp.answer_type == "service_unavailable", resp.answer
     assert product.escalation.email in resp.answer and "llm_unavailable" in resp.warnings
@@ -125,7 +125,7 @@ def test_all_providers_down_gives_static_reply_with_sources(workspace, public_us
 
     working = FailoverLLM(fast_settings, [("a", FakeLLM(fast_settings, "a", fail=True)),
                                           ("secondary", FakeLLM(fast_settings, "secondary"))])
-    resp = ChatService(llm=working).answer("How do I revoke a certificate?", public_user, persist=False)
+    resp = ChatService(llm=working).answer("How do I change my password?", public_user, persist=False)
     assert resp.route.get("provider") == "secondary"
 
 
@@ -142,7 +142,7 @@ def test_embedding_outage_falls_back_to_bm25(workspace, public_user, monkeypatch
     def broken(text):
         raise ConnectionError("embedding API down")
     monkeypatch.setattr(service.embedder._inner, "embed_query", broken)
-    resp = service.answer("How do I revoke a certificate?", public_user, persist=False)
+    resp = service.answer("How do I change my password?", public_user, persist=False)
     assert dense_search_down()
     assert resp.answer_type not in ("error",) and resp.citations
     assert all(r.get("kb") for r in resp.retrieved)

@@ -289,3 +289,27 @@ def test_dummy_product_works_end_to_end_with_config_only(tmp_path):
     assert out["who won ipl 2024"]["answer"] == "I can only help with Zorblat widgets."
     other = out["How do I verify a student certificate?"]                               # another product's KB
     assert other["type"] in ("refusal", "out_of_scope") and not other["docs"]
+
+
+# ------------------------------------------------------------------------------------------------ approved Q&A hygiene
+def test_approved_answers_have_no_repeated_questions_and_no_placeholders():
+    """Every served question has exactly one approved answer; unfinished FAQ rows are never served."""
+    import re
+
+    import pandas as pd
+
+    def norm(t):
+        return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", str(t).lower())).strip()
+
+    served = []
+    for f in ("datasets/products_golden_dataset.csv", "datasets/learningchain_faq_master.csv"):
+        d = pd.read_csv(ROOT / f)
+        d = d[~d["Status"].astype(str).str.lower().isin({"retired", "inactive", "draft", "rejected", "archived"})]
+        for _, r in d.iterrows():
+            served.append((norm(r["Question"]), r["Question ID"], str(r["Approved Answer"])))
+    questions = [q for q, _, _ in served]
+    assert len(questions) == len(set(questions)), "a question has two approved answers"
+    for _, qid, answer in served:
+        assert "please add" not in answer.lower() and "please confirm" not in answer.lower(), qid
+    faq = pd.read_csv(ROOT / "datasets/learningchain_faq_master.csv").set_index("Question ID")
+    assert faq.loc["LC-011", "Status"] == "active" and faq.loc["LC-019", "Status"] == "draft"

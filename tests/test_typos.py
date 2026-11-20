@@ -103,7 +103,7 @@ def test_lone_word_still_asks_for_the_question(chat, public_user):
 
 
 def test_existing_queries_still_work(chat, public_user):
-    for q, text in [("What is LearningChain?", "LearningChain"), ("How do I revoke a certificate?", "Revoke"),
+    for q, text in [("What is LearningChain?", "LearningChain"), ("How do I revoke a certificate?", "Recall"),
                     ("Who is the CEO of Sapphirus?", "Kiran Athota")]:
         resp = chat.answer(q, public_user, persist=False, allowed_kbs=ALL_KBS)
         assert resp.answer_type not in ("refusal", "out_of_scope", "clarification"), q

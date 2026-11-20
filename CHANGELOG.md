@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-20 - LearningChain FAQ (FAQ_Master) loaded, repeated questions removed
+
+- **Data:** `LearningChain_Chatbot_FAQ.xlsx` (copy in `datasets/source/`; same content as `New_Leaningchain_FAQs.csv`
+  and `Data_LC.csv`). FAQ_Master -> `datasets/learningchain_faq_master.csv`, an approved-answer file of the `products`
+  knowledge base (`config/knowledge_bases.yaml`): 97 served answers; 11 "Needs input" rows stored as `draft` (their
+  answers still contain placeholders, never served); LC-111 (generic fallback) skipped. Template Modes ->
+  `knowledge_bases/products/LearningChain_08_Certificate_Generation_Modes.md` (already indexed).
+- **No repeated questions:** older answers F01, F02, F03, F13, F15 (`products_golden_dataset.csv`) are `retired`
+  (the FAQ answers them now); FAQ LC-096 merged into F16 (fuller answer); LC-045 merged into LC-034 (admin setup + user
+  steps). The removed questions' wording is kept as alternate phrasings of the kept answer. An alternate phrasing can
+  no longer equal another entry's question. Test: `test_approved_answers_have_no_repeated_questions_and_no_placeholders`.
+- **Links:** FAQ answers taken from the Help Centre cite https://learningchainai.zendesk.com/hc/en-gb (51 of 108).
+- **Re-import after editing the workbook:**
+  `python scripts/products/learningchain/import_faq_master.py <LearningChain_Chatbot_FAQ.xlsx>` then
+  `python -m ingestion.cli sync --kb products` (safe to re-run).
+- **Tests:** expectations that relied on the older answers updated (e.g. "revoke" is now FAQ LC-090 "Recall").
+
 ## 2026-11-20 - Architecture review fixes
 
 - **Eval gate fails closed:** no score or fewer than `EVAL_MIN_CASES` (5) cases -> rejected (before: passed).

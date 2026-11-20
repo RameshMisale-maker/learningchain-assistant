@@ -19,7 +19,12 @@ def test_resync_is_idempotent(pipeline):
 
 def test_golden_rows_are_individual_chunks(pipeline):
     chunks = [c for c in pipeline.store.get_all("products") if c.metadata.get("doc_type") == "golden_qa"]
-    assert len(chunks) == 21                                         # P001-P003 + official FAQs F01-F18
+    import pandas as pd
+    from config.settings import BASE_DIR
+    served = sum(int((~pd.read_csv(BASE_DIR / f)["Status"].astype(str).str.lower().isin(
+        {"retired", "inactive", "draft", "rejected", "archived"})).sum())
+        for f in ("datasets/products_golden_dataset.csv", "datasets/learningchain_faq_master.csv"))
+    assert len(chunks) == served                 # one chunk per served approved answer (older Q&A + FAQ_Master)
     f05 = next(c for c in chunks if c.metadata["qid"] == "F05")
     assert "Azure" in f05.metadata["answer"] and f05.metadata["source_url"] == "https://learningchain.in/faqs/"
     assert ",public," in f05.metadata["access_roles"]

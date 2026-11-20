@@ -18,7 +18,7 @@ def test_golden_matcher_exact_and_paraphrase(chat, public_user):
     route = chat.router.route("What is LearningChain?", public_user.roles)
     exact = chat._best_golden("What is LearningChain?", route, public_user.roles,
                               chat.embedder.embed_query("What is LearningChain?"))
-    assert exact and exact.qid == "F01" and exact.score >= 0.9
+    assert exact and exact.qid == "LC-001" and exact.score >= 0.9      # FAQ_Master replaced the older F01
     q = "Which file formats are supported?"
     para = chat._best_golden(q, chat.router.route(q, public_user.roles), public_user.roles, chat.embedder.embed_query(q))
     assert para and para.qid == "F11"

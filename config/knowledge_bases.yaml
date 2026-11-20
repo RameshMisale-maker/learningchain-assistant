@@ -69,7 +69,7 @@ knowledge_bases:
     default_category: "Product"
     source_dirs: [knowledge_bases/products]
     extra_files: []          # e.g. [datasets/product_catalogue.csv] once the real catalogue is available
-    golden_files: [datasets/products_golden_dataset.csv]
+    golden_files: [datasets/products_golden_dataset.csv, datasets/learningchain_faq_master.csv]
     golden_columns:
       id: "Question ID"
       category: "Category"

@@ -53,7 +53,7 @@ def test_goodbye_rating_ack_then_new_question(service, public_user):
     from backend.db import repository
 
     chat, llm = service
-    first = chat.answer("How do I verify a student certificate?", public_user)
+    first = chat.answer("How do I change my password?", public_user)       # needs the LLM (no approved answer)
     sid = first.session_id
 
     bye = chat.answer("no thanks", public_user, session_id=sid)
@@ -71,7 +71,7 @@ def test_goodbye_rating_ack_then_new_question(service, public_user):
         assert chat.answer(text, public_user, session_id=sid).answer_type == "closed"
     assert llm.calls == calls and _messages(sid) == stored
 
-    again = chat.answer("how do I verify a certificate?", public_user, session_id=sid)
+    again = chat.answer("how do I change my password?", public_user, session_id=sid)
     assert again.conversation_state == "active" and again.answer_type not in ("closed", "closing")
     assert again.ui_action == "none" and again.answer and llm.calls > calls
     assert repository.get_conversation_state(sid) == "active"
