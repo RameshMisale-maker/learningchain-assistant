@@ -134,3 +134,15 @@ def test_prompt_no_longer_asks_for_hindi_replies():
 
     text = (Path(__file__).resolve().parent.parent / "prompts" / "system_prompt.txt").read_text(encoding="utf-8")
     assert "Always reply in English" in text and "Devanagari -> Hindi" not in text
+
+
+@pytest.mark.parametrize("question", ["Can someone steal my certificate?", "Is my certificate safe from theft?"])
+def test_theft_questions_get_the_forgery_protection_answer(chat, public_user, question):
+    resp = chat.answer(question, public_user, persist=False)
+    assert resp.answer_type.startswith("golden") and resp.golden_match["qid"] == "LC-006"
+    assert "fails the verification" in resp.answer
+
+
+def test_payment_method_question_is_answered_honestly_not_blocked(chat, public_user):
+    resp = chat.answer("Can I pay by credit card?", public_user, persist=False)
+    assert resp.answer_type not in ("restricted", "blocked")       # not refused as a forbidden topic

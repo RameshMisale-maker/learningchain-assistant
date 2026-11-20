@@ -41,6 +41,12 @@ REPLACES = {"F01": "LC-001", "F02": "LC-004", "F03": "LC-003", "F13": "LC-069", 
 # FAQ entries that repeat an older or another FAQ entry: removed id -> kept id (kept entry absorbs the wording).
 MERGES = {"LC-096": "F16",          # students' access to records: the older answer is fuller (email QR + wallet + sharing)
           "LC-045": "LC-034"}       # "secure a digital certificate without a template": admin setup + user steps
+# Extra phrasings users type, added as alternate questions of an existing answer (the FAQ wording is not changed).
+# Found in testing: these were declined because the answer's own wording never says "steal" / "theft".
+EXTRA_ALTERNATES = {
+    "LC-006": ["Can someone steal my certificate?", "Can my certificate be stolen or misused?",
+               "Is my certificate safe from theft?", "Can someone copy my certificate and use it?"],
+}
 COMBINED_ANSWERS = {
     "LC-034": ("Admin setup: in the certificate type's Template Configuration card, enable 'Blockchain QR code "
                "generation without templates' (this is also the default when no template option is enabled). "
@@ -112,6 +118,10 @@ def main(source: str) -> int:
         elif kept in old_rows:
             keep_old_alts.setdefault(kept, []).extend([g["Question"]] + g["alts"])
         removed.append(f"{gone} (FAQ) -> kept {kept}: {g['Question']}")
+
+    for qid, extra in EXTRA_ALTERNATES.items():
+        if qid in faq_by_id:
+            faq_by_id[qid]["alts"] += extra
 
     # 2. exact repeats: the same normalised QUESTION twice (older answers first, then FAQ order) - first one wins
     seen: dict[str, str] = {norm(r["Question"]): qid for qid, r in old_rows.items()}

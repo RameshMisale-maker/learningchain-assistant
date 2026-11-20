@@ -1,6 +1,7 @@
 # Architecture
 
-How the assistant indexes content and answers a question, after the seven-phase upgrade (19 Nov 2026).
+How the assistant indexes content and answers a question, after the seven-phase upgrade (19 Nov 2026), updated
+20 Nov 2026 (conversation ending + rating, combined FAQ, English-only replies, review and evaluation fixes).
 The diagram is in [`docs/diagrams/08_rag_architecture.html`](diagrams/08_rag_architecture.html)
 (also `.svg` and `.png`).
 
@@ -114,14 +115,21 @@ its product's cached answers and queues every approved answer that cites it for 
 registered from config at worker start and crawled every `CRAWL_INTERVAL_MINUTES` (daily), filtered by the
 product's `include_paths` / `exclude_paths` / `allowed_domains`. Code: `ingestion/freshness.py`.
 
+### LearningChain FAQ (approved answers)
+
+One file, `datasets/source/LearningChain_FAQ_Combined.csv` (FAQ_Master + the 10 certificate / QR generation modes),
+is loaded by `scripts/products/learningchain/import_faq_master.py` into `datasets/learningchain_faq_master.csv`:
+107 served approved answers, unfinished ("Needs input") rows kept as drafts, repeated questions removed (their
+wording kept as alternate phrasings). Answers taken from the Help Centre link to it.
+
 ## 4. Answering a question
 
 | # | Stage | What it does | Code |
 |---|---|---|---|
 | 1 | Resolve product | id / alias / host / API key / default | `backend/products/context.py` |
-| 2 | Safety guard | prompt-injection screening, sensitive data (card numbers via Luhn, OTP / PIN / password) redacted, restricted topics | `backend/security/prompt_guard.py` |
-| 3 | Normalize | typo and short-form fixes from the product glossary; reply language (English / Hindi / Hinglish) | `backend/routing/normalize.py` |
-| 4 | Conversation layer | greetings, small talk, frustration, account, escalation, incomplete input - answered without retrieval | `backend/routing/intent.py` |
+| 2 | Safety guard | prompt-injection screening, sensitive data (card numbers via Luhn, OTP / PIN / password) redacted, restricted topics refused only for harmful intent (financial advice, crime instructions, self-harm ...) - product questions such as "Can I pay by credit card?" are answered | `backend/security/prompt_guard.py` |
+| 3 | Normalize | typo and short-form fixes from the product glossary; Hindi / Hinglish / other languages translated to English for search. **Replies are always in English.** | `backend/routing/normalize.py` |
+| 4 | Conversation layer | greetings (incl. self-introductions), closing ("no thanks", "bye"), small talk, frustration, the user's own account data (only when they say my / our / I), escalation, incomplete input, vague "it" with no topic (asks which feature) - answered without retrieval | `backend/routing/intent.py` |
 | 5 | Follow-up rewrite | standalone question from the conversation; multi-part questions split | `backend/routing/router.py`, `decompose.py` |
 | 6 | Query embedding | dense vector; with `LLM_FAILOVER_ENABLED` an embedding outage switches this request to BM25-only search | `backend/generation/failover.py` (`ResilientEmbedder`) |
 | 7 | **Response cache** (Phase 4) | exact key, then semantic match (cosine >= product `semantic_cache_threshold`, 0.95) | `backend/services/response_cache.py` |
@@ -131,8 +139,9 @@ product's `include_paths` / `exclude_paths` / `allowed_domains`. Code: `ingestio
 | 11 | Rerank | cross-encoder `ms-marco-MiniLM-L-6-v2`, top 5 | `backend/retrieval/reranker.py` |
 | 12 | Context | parent sections of the best children, deduplicated, within `MAX_CONTEXT_CHARS` | `backend/generation/prompt_builder.py` |
 | 13 | **LLM failover** (Phase 5) | provider chain with circuit breakers; static `service_unavailable` reply when all are down | `backend/generation/failover.py` |
-| 14 | Grounding + citations | lexical grounding check (extractive fallback when it fails), citation and URL validation | `backend/generation/grounding.py` |
-| 15 | Persist + log | history, full request log, cache store, review queue | `chat_service.answer` |
+| 14 | Grounding + citations | lexical grounding check (extractive fallback when it fails); a question about something no indexed document mentions (e.g. "iOS app") is declined instead of guessed; citation and URL validation | `backend/generation/grounding.py` |
+| 15 | Persist + log | history, per-session conversation state, full request log, cache store, review queue | `chat_service.answer` |
+| 16 | Reply | the LLM returns JSON `{reply, ui_action, conversation_state}` (validated; invalid output -> text + `ui_action=none`); the app shows the 1-5 star rating after a goodbye, a support contact for escalations, sign-in for guests | `backend/generation/structured.py`, `backend/static/chat.html` |
 
 ### Response cache (Phase 4, `RESPONSE_CACHE_ENABLED`)
 
@@ -153,6 +162,15 @@ When every provider is down the reply is the product's `service_unavailable` tex
 questions) with the best sources linked. Breaker states are shown in `/health/ready` and `/metrics`.
 
 ## 5. After the answer
+
+### Conversation ending and rating
+
+Each session has a `conversation_state` (`active | closing | closed`, migration 0008). A goodbye ("no thanks",
+"that's all", "bye") gets the product's closing text and `ui_action = show_rating`; the chat page shows 1-5 stars
+and an optional comment until they are submitted or a new question is asked (`POST /api/feedback` with session,
+rating, comment, product and versions). After the goodbye, a short acknowledgement (ok, thanks, bye, a thumbs-up)
+makes no LLM call and stores no message; a real question re-opens the conversation. Ratings of 1-2 stars create a
+`low_rating` review item.
 
 ### Full request logging (Phase 2)
 
@@ -183,7 +201,7 @@ Langfuse tracing is deliberately not enabled (extra paid service); the request l
 ## 7. Data and deployment
 
 - **Database:** SQLite by default, PostgreSQL 16 in Docker Compose, through SQLAlchemy. The schema is managed by
-  **Alembic** (`migrations/versions/0001`-`0007`); the API applies pending migrations at startup (a pre-Alembic
+  **Alembic** (`migrations/versions/0001`-`0008`); the API applies pending migrations at startup (a pre-Alembic
   database is stamped at `0001` first, data untouched).
 
   | Migration | Adds |
@@ -195,12 +213,23 @@ Langfuse tracing is deliberately not enabled (extra paid service); the request l
   | 0005 | `review_items`, `golden_qa`, `eval_cases` |
   | 0006 | document freshness columns (`source_url`, `last_seen_at`, `last_changed_at`, `missed_crawls`, `tombstoned_at`, `last_crawl_id`) |
   | 0007 | `alert_events` |
+  | 0008 | `chat_sessions.conversation_state`; session rating fields on `feedback` (stars, session, product, versions) |
 
 - **Vector store:** embedded Chroma (one writer process); versioned collections `<prefix><kb>_v<id>`.
 - **Runtime:** FastAPI + uvicorn (one worker), background ingestion worker and ops scheduler threads.
 - **Front ends:** chat page + embeddable widget (`/chat`, `/widget.js`; texts from `/api/v1/ui`), admin console
   (`/admin`), OpenAI-compatible API (`/v1/chat/completions`, Open WebUI), Streamlit Community Cloud demo.
 - **Hosting:** Docker Compose (api + PostgreSQL + nginx); demo on Streamlit Community Cloud from GitHub.
+
+### Edge and API protection
+
+- nginx: TLS 1.2 / 1.3, chat 20 requests/min per IP (admin 60); the app adds 30 requests/min per user, and idle
+  limiter entries are pruned every minute (bounded memory).
+- Webhooks (`/api/v1/webhooks/content-updated`): HMAC signature; a signed timestamp must be within 10 minutes and a
+  signature can be used only once (replay -> 409). `WEBHOOK_REQUIRE_TIMESTAMP=true` makes the timestamp mandatory
+  for generic callers (Zendesk always sends one).
+- Backups: `deploy/backup.sh` nightly (PostgreSQL + data volume + knowledge files, 14 days). Releases are manual -
+  there is no CI pipeline yet.
 
 ## 8. Feature flags
 
