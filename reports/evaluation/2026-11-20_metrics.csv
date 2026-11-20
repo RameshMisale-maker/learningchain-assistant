@@ -1,0 +1,43 @@
+﻿layer,metric,value,unit,target,target_met,sample_size,before_fixes_20_nov,first_run_19_nov,method,notes
+1. Retrieval,Precision@5,0.6111,fraction,,,18.0,0.7048,0.4566,relevance labels vs re-ranked child chunks,
+1. Retrieval,Recall@5,0.9537,fraction,>= 0.85,yes,18.0,0.9603,0.8616,relevance labels vs re-ranked child chunks,
+1. Retrieval,Hit rate@5,1.0,fraction,,,18.0,1.0,0.9434,any relevant chunk in top k,
+1. Retrieval,MRR,0.8519,fraction,,,18.0,0.873,0.8066,reciprocal rank of first relevant chunk,
+1. Retrieval,NDCG@5,0.6819,fraction,,,18.0,0.7638,0.7366,rank-discounted relevance,
+1. Retrieval,Context precision (rank-based),0.7932,fraction,,,18.0,0.8383,0.7819,"relevance labels, rank-weighted",
+1. Retrieval,Context recall (lexical),0.8583,fraction,,,,0.8083,0.8618,reference statements found in context,
+1. Retrieval,Context precision (RAGAS),0.8708,fraction,>= 0.9,no,14.0,0.8708,,RAGAS LLM judge (qwen/qwen3.8-27b),AI-judge score from the before-fixes run (14 answers): the judge model hit its free-tier rate limit in the final run
+1. Retrieval,Context recall (RAGAS),0.881,fraction,>= 0.9,no,14.0,0.881,,RAGAS LLM judge (qwen/qwen3.8-27b),AI-judge score from the before-fixes run (14 answers): the judge model hit its free-tier rate limit in the final run
+2. Generation,Faithfulness (RAGAS),1.0,fraction,>= 0.95,yes,14.0,1.0,,RAGAS LLM judge (qwen/qwen3.8-27b),AI-judge score from the before-fixes run (14 answers): the judge model hit its free-tier rate limit in the final run
+2. Generation,Answer relevancy (RAGAS),0.8196,fraction,>= 0.9,no,14.0,0.8196,,RAGAS: judge-generated questions vs. embeddings,AI-judge score from the before-fixes run (14 answers): the judge model hit its free-tier rate limit in the final run
+2. Generation,Answer correctness (RAGAS),0.8253,fraction,>= 0.9,no,14.0,0.8253,,RAGAS LLM judge vs. expected answer (qwen/qwen3.8-27b),AI-judge score from the before-fixes run (14 answers): the judge model hit its free-tier rate limit in the final run
+2. Generation,Hallucination rate (claim level),0.0,fraction,<= 0.02,yes,58.0,0.0,,"unsupported claims / all claims, judged per claim by llm:qwen/qwen3.8-27b",0 unsupported claims; iOS guess found by review is now blocked (undocumented-term guard)
+2. Generation,Contradicted claims,0.0,count,,,,0.0,0.0,judged per claim by llm:qwen/qwen3.8-27b,
+2. Generation,Behaviour accuracy (answer / abstain / reject),0.96,fraction,,,,0.94,0.9091,expected vs. actual behaviour,"answer / say 'no confirmed information' / reject, as expected"
+2. Generation,Abstention accuracy,0.9,fraction,>= 0.95,no,,0.9,0.8636,declines unanswerable questions,
+2. Generation,False abstention rate,0.025,fraction,,,,0.05,0.0779,answerable questions declined,
+3. End-to-end production,Question pass rate,0.9,fraction,,,50.0,0.82,0.798,all per-question checks passed,45 of 50 in the final run; MS1 (iOS app) fixed afterwards and verified -> 46 of 50
+3. End-to-end production,Safety test pass rate,1.0,fraction,,,24.0,1.0,,safety_tests.csv via live pipeline,
+3. End-to-end production,Restricted request rejection,0.9545,fraction,>= 1.0,no,,0.9545,1.0,restricted / out-of-scope prompts rejected,share-price question is declined as 'restricted' (counted as reject vs abstain)
+3. End-to-end production,Average latency,6250.6662,ms,,,74.0,5814.5608,395.9323,"end-to-end, sequential",19 Nov run had no LLM (quoted answers only) - not comparable
+3. End-to-end production,P50 latency,1033.5,ms,,,74.0,3548.75,512.9,"end-to-end, sequential",19 Nov run had no LLM (quoted answers only) - not comparable
+3. End-to-end production,P95 latency,22073.15,ms,,,74.0,19333.95,750.59,"end-to-end, sequential",slow tail = LLM-generated answers on the Groq free tier; approved FAQ answers return in < 1 s | 19 Nov run had no LLM (quoted answers only) - not comparable
+3. End-to-end production,P99 latency,35760.437,ms,,,74.0,23638.897,1412.156,"end-to-end, sequential",19 Nov run had no LLM (quoted answers only) - not comparable
+3. End-to-end production,Retrieval latency (avg),87.7272,ms,,,,45.2848,36.487,vector + BM25 + fusion,
+3. End-to-end production,Re-ranking latency (avg),1483.6162,ms,,,,789.1155,498.266,cross-encoder,
+3. End-to-end production,LLM latency (avg),10243.1189,ms,,,,9747.6681,,LLM call incl. fallback retries,
+3. End-to-end production,TTFT (LLM),,ms,,,,,,TTFT not measured: the production LLM client does not stream (provider: openai),not measured: answers are verified before they are streamed
+3. End-to-end production,Input tokens (total),65692.0,tokens,,,,74071.0,0.0,reported by the LLM API,19 Nov run had no LLM (quoted answers only) - not comparable
+3. End-to-end production,Output tokens (total),3231.0,tokens,,,,3832.0,0.0,reported by the LLM API,19 Nov run had no LLM (quoted answers only) - not comparable
+3. End-to-end production,Cost per query,,USD,,,,,0.0,price not configured for this provider (.env),Groq free tier - no cost
+3. End-to-end production,Error rate,0.0,fraction,,,74.0,0.0,0.0,pipeline errors / requests,
+3. End-to-end production,Answers by fallback model,0.8571,fraction,,,28.0,0.0,,primary model rate-limited -> OPENAI_FALLBACK_MODELS,
+3. End-to-end production,Sequential throughput,0.1599,requests/s,,,,0.1719,2.5196,one request at a time,19 Nov run had no LLM (quoted answers only) - not comparable
+4. Pass rate by category,Ambiguous,1.0,fraction,,,1.0,,,1 of 1 passed,
+4. Pass rate by category,Company-related,0.9167,fraction,,,12.0,,,11 of 12 passed,
+4. Pass rate by category,Complex,0.75,fraction,,,4.0,,,3 of 4 passed,
+4. Pass rate by category,Direct factual,1.0,fraction,,,5.0,,,5 of 5 passed,
+4. Pass rate by category,Missing-information,1.0,fraction,,,5.0,,,5 of 5 passed,
+4. Pass rate by category,Multi-document,0.5,fraction,,,2.0,,,1 of 2 passed,
+4. Pass rate by category,Out-of-scope,1.0,fraction,,,4.0,,,4 of 4 passed,
+4. Pass rate by category,Product-related,0.9412,fraction,,,17.0,,,16 of 17 passed,

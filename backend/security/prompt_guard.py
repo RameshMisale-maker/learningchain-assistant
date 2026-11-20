@@ -100,7 +100,9 @@ _RESTRICTED: list[tuple[str, re.Pattern]] = [
         r"sugar)|diabetes|cancer|pregnan\w+|vaccin\w+|antibiotic\w*|therapy for|doctor (says|recommend)|treat (my|a) "
         r"(cold|cough|pain|infection|illness))\b", re.I)),
     ("banking_financial", re.compile(
-        r"\b(home loan|personal loan|car loan|loan (interest|emi|eligibility)|mortgage|credit (card|score)|"
+        r"\b(home loan|personal loan|car loan|loan (interest|emi|eligibility)|mortgage|credit score|"
+        r"(best|which|good|top) credit cards?|credit card (limit|offers?|interest|bill|debt|emi|for me)|"
+        r"(apply|applying) for (a )?credit card|"
         r"interest rates?|fixed deposit|mutual funds?|stock market|share price|stocks? to buy|invest (my|in)|"
         r"investment (advice|strateg\w*|tips|plans?)|banking (advice|investments?)|(buy|sell|invest in|price of) (bitcoin|ethereum|crypto\w*)|trading tips|"
         r"tax (advice|saving)|which bank)\b", re.I)),
@@ -108,7 +110,8 @@ _RESTRICTED: list[tuple[str, re.Pattern]] = [
         r"\b(how to (kill|murder|hurt|attack|stab|shoot|poison) |make a (bomb|weapon|gun)|build a (bomb|weapon)|"
         r"(buy|get) a (gun|weapon) illegally)", re.I)),
     ("illegal", re.compile(
-        r"\b(how (do|can|to) (i |we )?(hack|break) into|steal\w*|launder\w*|buy drugs|sell drugs|counterfeit money|"
+        r"\b(how (do|can|to) (i |we )?(hack|break) into|(how (do|can|to)|help me|teach me( how)? to|i want to|"
+        r"ways to) (i |we )?steal|launder\w*|buy drugs|sell drugs|counterfeit money|"
         r"(make|create|forge|print) (a )?(fake|forged|counterfeit) (certificate|degree|marksheet|document)s?|"
         r"bypass (the )?(verification|blockchain|security|login)|pick a lock|piracy|pirated)\b", re.I)),
 ]

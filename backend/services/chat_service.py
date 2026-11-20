@@ -309,7 +309,10 @@ class ChatService:
             expanded = self.router.expand(standalone)
         # the question needs this user's own account data (payment, receipt, status), not the help documentation:
         # there are no account tools, so explain where to find it instead of searching the documents
-        if tool_only or (understanding and understanding.needs_account_tool and s.conversation_layer):
+        # (only when the user talks about their OWN data - "my payment", "our verification status"; a general
+        # troubleshooting question such as "the verification result shows Invalid" is answered from the documents)
+        if (tool_only or (understanding and understanding.needs_account_tool and s.conversation_layer)) \
+                and convo.mentions_own_data(query):
             account = convo.MessageIntent(convo.ACCOUNT, reply=convo.account_reply(),
                                           reason="needs account data (LLM)", method="llm")
             direct = self._conversational_response(account, query, user, session_id)
@@ -477,6 +480,12 @@ class ChatService:
                 answer = remove_invalid_citations(normalize_citations(llm_result.text), {r.sid for r in refs})
                 answer = remove_unknown_urls(answer, {str(r.metadata.get("source_url") or "") for r in refs})
                 answer_type = "generated"
+                undocumented = self._undocumented_terms(f"{query} {standalone}", answer)
+                if undocumented:
+                    # the question asks about something no indexed document mentions (e.g. "iOS", "Aadhaar") and the
+                    # answer repeats it: that claim cannot come from the sources -> "no confirmed information"
+                    warnings.append("answer asserts undocumented term(s): " + ", ".join(undocumented))
+                    answer, answer_type = REFUSAL_TEXT, "refusal"
                 with stage("grounding_ms"):
                     report = lexical_grounding(answer, refs, standalone, s.grounding_min_support)
                     if s.grounding_mode == "llm" and not report.is_refusal and report.supported:
@@ -500,6 +509,13 @@ class ChatService:
                 logger.exception("LLM generation failed; using extractive answer")
                 warnings.append(f"LLM unavailable: {type(exc).__name__}")
                 answer = ""
+        undocumented_ask = re.match(r"^\s*(does|do|is|are|can|could|will|would|has|have)\b", query or "", re.IGNORECASE) \
+            and self._undocumented_terms(query, query)
+        if not answer and undocumented_ask:
+            # yes / no question about something no document mentions ("Does it have an iOS app?"): quoting a loosely
+            # related passage would read like a "yes" - say there is no confirmed information instead
+            warnings.append("question asks about undocumented term(s): " + ", ".join(undocumented_ask))
+            answer, answer_type = REFUSAL_TEXT, "refusal"
         if not answer:
             answer = extractive_answer(expanded, refs, comparison, route.entities)
             answer_type = "extractive"
@@ -629,6 +645,13 @@ class ChatService:
         }
 
     # ------------------------------------------------------------------ conversational layer + scope
+    def _undocumented_terms(self, question: str, answer: str) -> list[str]:
+        """Words of the question that occur in NO indexed document but do appear in the generated answer."""
+        low = (answer or "").lower()
+        terms = dict.fromkeys(w for w in re.findall(r"[a-z][a-z0-9]{2,}", (question or "").lower())
+                              if not self._known_word(w))
+        return [w for w in terms if re.search(rf"\b{re.escape(w)}\b", low)]
+
     @staticmethod
     def _known_word(word: str) -> bool:
         """A common English function word or a term that occurs in an indexed knowledge base."""

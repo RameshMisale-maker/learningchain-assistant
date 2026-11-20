@@ -212,3 +212,25 @@ def test_migration_0008_round_trip(tmp_path):
         assert {"stars", "session_id", "details"} <= {c["name"] for c in inspect(conn).get_columns("feedback")}
         command.downgrade(cfg, "0007")
         assert "conversation_state" not in {c["name"] for c in inspect(conn).get_columns("chat_sessions")}
+
+
+# ------------------------------------------------------------------------------------------------ evaluation findings
+def test_pronoun_without_topic_asks_which_feature():
+    from backend.routing import intent as convo
+
+    for text in ("How do I configure it?", "What is this?", "Is it free?"):
+        msg = convo.classify_message(text, [])
+        assert msg.intent == convo.CLARIFICATION and "which feature" in msg.reply.lower(), text
+    history = [{"role": "user", "content": "How do I add a certificate type?"},
+               {"role": "assistant", "content": "Open Certificates > Add Certificate Type ..."}]
+    assert convo.classify_message("How do I configure it?", history).intent == convo.FOLLOW_UP
+    for text in ("How is it different from DigiLocker?", "How do I verify a certificate?"):
+        assert convo.classify_message(text, []).intent != convo.CLARIFICATION, text
+
+
+def test_account_reply_only_for_the_users_own_data():
+    from backend.routing import intent as convo
+
+    assert not convo.mentions_own_data("The verification result shows 'Invalid'.")
+    for text in ("Has my payment gone through?", "our verification status is pending", "I paid twice"):
+        assert convo.mentions_own_data(text), text

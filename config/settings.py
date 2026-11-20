@@ -158,6 +158,8 @@ class Settings:
     crawler_user_agent: str = field(default_factory=lambda: _env(
         "CRAWLER_USER_AGENT", "SapphirusAssistantCrawler/1.0 (+knowledge-base indexer)"))
     webhook_signature_header: str = field(default_factory=lambda: _env("WEBHOOK_SIGNATURE_HEADER", "x-sapphirus-signature"))
+    # generic webhooks must send a signed <header>-timestamp (replay protection); Zendesk always signs one
+    webhook_require_timestamp: bool = field(default_factory=lambda: _env_bool("WEBHOOK_REQUIRE_TIMESTAMP", False))
     log_file_name: str = field(default_factory=lambda: _env("LOG_FILE_NAME", "sapphirus_assistant.log"))
 
     # ---- Structured LLM answers (backend/generation/structured.py): {"reply", "ui_action", "conversation_state"} ----

@@ -1,9 +1,48 @@
 # Changelog
 
+## 2026-11-20 - Senior review fixes
+
+- **English-only replies:** the assistant always answers in English. Questions in Hindi, Hinglish or other languages
+  are still understood (the clean-up step translates them for search); `reply_language()` always returns English and
+  the system prompt says "Always reply in English". (This also removes the case where a Hindi answer skipped the
+  lexical grounding check: answers are now always English, which the check measures.)
+- **Webhook replay protection:** `MAX_SKEW_SECONDS` (10 min) is now enforced - a signed timestamp outside the window
+  is rejected (401), and a signature already accepted within the window is rejected as a replay (409). Generic
+  callers can sign a timestamp (`<WEBHOOK_SIGNATURE_HEADER>-timestamp`, signature over `"<timestamp>.<body>"`);
+  `WEBHOOK_REQUIRE_TIMESTAMP=true` makes it mandatory. Zendesk webhooks are always timestamp-checked.
+- **Rate limiter memory bound:** keys with no request in the last 60 s are swept about once a minute, so `_hits` holds
+  only active clients (was: one entry per IP forever).
+- **Topic filter false positives:** "Can I pay by credit card?", "Can someone steal my certificate?" and "Is my
+  certificate safe from theft?" are answered (were refused as banking / illegal, or given the account reply).
+  Financial-advice and crime-instruction requests ("best credit card for me", "how do I steal ...") are still refused.
+- **Evaluation:** runs of 20 Nov (50 questions incl. the new certificate-mode, company and FAQ cases) are in
+  `evaluation/results/`; final run 90% pass (46/50 after the iOS fix), recall@5 0.95, 0 hallucinated claims.
+- **Tests:** `tests/test_review_fixes.py`; full suite green (382 + new tests).
+
+## 2026-11-20 - One combined LearningChain FAQ file; evaluation fixes
+
+- **One file:** `datasets/source/LearningChain_FAQ_Combined.csv` (the only LearningChain FAQ source in the repo) =
+  FAQ_Master + the 10 certificate / QR modes as
+  rows TM-01..TM-10 (same columns). LC-033 now lists all 10 modes (its answer used to point to the Template Modes
+  sheet) and answers "How many ways can LearningChain issue certificates?". The separate modes document
+  `LearningChain_08_Certificate_Generation_Modes.md` is removed (its content is in the combined file).
+  Rebuild: `python scripts/products/learningchain/combine_faq_sources.py <LearningChain_Chatbot_FAQ.xlsx>` (or the two
+  CSVs), then `import_faq_master.py datasets/source/LearningChain_FAQ_Combined.csv` and `ingestion.cli sync --kb products`.
+- **Fix:** the LLM's "needs account data" flag only applies when the user talks about their own data (my / our / I);
+  "The verification result shows 'Invalid'" now gets FAQ LC-104 instead of the account reply.
+- **Fix:** "How do I configure it?" (nothing for "it" to refer to) asks which feature is meant instead of guessing;
+  with a previous answer it is still a follow-up.
+- **Fix (hallucination):** a question about something no indexed document mentions (e.g. "Does LearningChain have
+  an iOS app?") no longer gets a guessed "yes": a generated answer that repeats the undocumented term, or a quoted
+  answer to such a yes / no question, is replaced by "I don't have confirmed information". The long-standing failing
+  test `test_undocumented_fact_is_not_guessed` now passes.
+- **Evaluation module:** `relevant_document` entries may list alternatives as `A OR B` (either source counts);
+  `|` still means all are required.
+
 ## 2026-11-20 - LearningChain FAQ (FAQ_Master) loaded, repeated questions removed
 
-- **Data:** `LearningChain_Chatbot_FAQ.xlsx` (copy in `datasets/source/`; same content as `New_Leaningchain_FAQs.csv`
-  and `Data_LC.csv`). FAQ_Master -> `datasets/learningchain_faq_master.csv`, an approved-answer file of the `products`
+- **Data:** `LearningChain_Chatbot_FAQ.xlsx` (same content as `New_Leaningchain_FAQs.csv` and `Data_LC.csv`; now
+  kept in the repo only as the combined CSV, see the entry above). FAQ_Master -> `datasets/learningchain_faq_master.csv`, an approved-answer file of the `products`
   knowledge base (`config/knowledge_bases.yaml`): 97 served answers; 11 "Needs input" rows stored as `draft` (their
   answers still contain placeholders, never served); LC-111 (generic fallback) skipped. Template Modes ->
   `knowledge_bases/products/LearningChain_08_Certificate_Generation_Modes.md` (already indexed).

@@ -1,6 +1,7 @@
 """Import the LearningChain FAQ workbook (FAQ_Master sheet, or its CSV export) as approved Q&A, without duplicates.
 
-    python scripts/products/learningchain/import_faq_master.py <LearningChain_Chatbot_FAQ.xlsx | New_Leaningchain_FAQs.csv>
+    python scripts/products/learningchain/import_faq_master.py datasets/source/LearningChain_FAQ_Combined.csv
+    (also accepts the original workbook <LearningChain_Chatbot_FAQ.xlsx> or a FAQ_Master CSV)
     python -m ingestion.cli sync --kb products                     # index the result
 
 What it does
@@ -14,7 +15,7 @@ What it does
   - an alternate phrasing that equals another entry's question is dropped from the alternates (the question wins).
 * Writes datasets/learningchain_faq_master.csv (golden format). In datasets/products_golden_dataset.csv the rows the
   FAQ replaces get Status "retired" (never served, kept for history), so the import can be re-run safely. Previous
-  versions are copied to datasets/history/.
+  versions are copied to data/faq_history/ (local only, not in git).
 """
 from __future__ import annotations
 
@@ -29,7 +30,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 FAQ_OUT = ROOT / "datasets" / "learningchain_faq_master.csv"
 OLD_GOLDEN = ROOT / "datasets" / "products_golden_dataset.csv"
-HISTORY = ROOT / "datasets" / "history"
+HISTORY = ROOT / "data" / "faq_history"          # local backups (data/ is not committed)
 STATUS = {"source-verified": "active", "derived - confirm": "active", "needs input": "draft"}
 SKIP = {"LC-111"}
 # Answers taken from the LearningChain Help Centre link to it; answers only from the presentation have no public page.

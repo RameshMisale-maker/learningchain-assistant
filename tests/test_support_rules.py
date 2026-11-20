@@ -98,7 +98,7 @@ def test_answer_prompt_carries_rules_and_original_wording():
     system, user = build_answer_prompt("How do I verify a certificate?", [], [],
                                        original="certificate kaise verify kare?")
     for rule in ("most recent updated date", "ONE short clarifying question", "under 120 words",
-                 "Never ask for or accept card numbers", "reply in that language",
+                 "Never ask for or accept card numbers", "Always reply in English",
                  "Do not mention \"documents\"", get_settings().insufficient_info_text):
         assert rule in system, rule
     assert "certificate kaise verify kare?" in user and "How do I verify a certificate?" in user

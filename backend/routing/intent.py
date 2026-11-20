@@ -68,6 +68,31 @@ _GREETING_INTRO = (
 _GREETING_WORD = re.compile(r"\b(hi+|hello+|hey+|helo|hai|namaste|good\s+(morning|afternoon|evening))\b", re.IGNORECASE)
 
 
+_OWN_DATA_RE = re.compile(r"\b(my|mine|our|ours|i|i'm|i've|me|we|us)\b", re.IGNORECASE)
+_PRONOUN_RE = re.compile(r"\b(it|this|that|them|those|these|one)\b", re.IGNORECASE)
+_PRONOUNS = {"it", "this", "that", "them", "those", "these", "one"}
+VAGUE_PRONOUN_REPLY = ("Sure - which feature or item do you mean? Please mention it in your question, and I'll walk you "
+                       "through it.")
+
+
+def mentions_own_data(text: str) -> bool:
+    """The user refers to their own account / records ("my payment", "our verification status", "I paid")."""
+    return bool(_OWN_DATA_RE.search(text or ""))
+
+
+def is_vague_pronoun_question(text: str, history: list[dict] | None) -> bool:
+    """A short question whose only subject is a pronoun with nothing to refer to ("How do I configure it?",
+    "What is this?") - the topic is unknown, so ask instead of guessing."""
+    if last_assistant_answer(history or []):
+        return False                      # "it" can refer to the previous answer: a normal follow-up
+    words = _words(text)
+    if not words or len(words) > 7 or not _PRONOUN_RE.search(text or ""):
+        return False
+    content = [w for w in words if w not in STOPWORDS and w not in QUESTION_WORDS and w not in _PRONOUNS
+               and w not in {"i", "do", "does", "can", "how", "please", "pls"}]
+    return len(content) <= 1             # at most the verb: "configure", "set", "use", "change"
+
+
 def is_closing(text: str) -> bool:
     """The user is ending the conversation (e.g. "no" after "anything else?", "that's all", "bye")."""
     return bool(CLOSING_RE.match(text or ""))
@@ -179,7 +204,7 @@ OUT_OF_SCOPE_RE = re.compile(
     r"president\s+of|prime\s+minister)\b", re.IGNORECASE)
 ACCOUNT_RE = re.compile(
     r"\b(has|have|did|is|was|were|are)\s+(my|our)\s+(payment|transaction|refund|order|subscription|verification|"
-    r"certificate|application|receipt|invoice)s?\b|"
+    r"certificate|application|receipt|invoice)s?\b(?!\s+(safe|secure|protected|tamper|fake|forged|stolen|hack))|"
     r"\b(status|update)\s+of\s+(my|our)\s+(payment|transaction|refund|order|verification|application)\b|"
     r"\b(my|our)\s+(payment|transaction|refund|order|verification|application)\s+(status|is pending|is not|isn't|"
     r"failed|went through|gone through|deducted|stuck)\b|"
@@ -380,6 +405,10 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     if CLARIFY_ONLY_RE.match(t):
         reply, used = _clarify_reply(history, t)
         return MessageIntent(CLARIFICATION, reply=reply, uses_history=used, reason="bare interrogative")
+
+    # 4b. "How do I configure it?" as the first message: nothing for "it" to refer to -> ask which feature
+    if is_vague_pronoun_question(t, history):
+        return MessageIntent(CLARIFICATION, reply=VAGUE_PRONOUN_REPLY, reason="pronoun without a topic")
 
     # 5. a lone (misspelt) question word: "Ho", "Wht", "Hw", "Wh" - the intent is genuinely unclear, so ask for the
     #    question. The user's spelling is never mentioned or corrected in replies: multi-word messages with typos

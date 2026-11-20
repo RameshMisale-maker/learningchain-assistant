@@ -215,16 +215,8 @@ def llm_understand(text: str, llm, history: str = "(none)") -> tuple[str, str] |
 
 
 def reply_language(original: str, label: str | None) -> str:
-    """Instruction for the answer language, decided from the script of the user's own message (reliable) plus the
-    normalizer's language label: Devanagari -> Hindi; Hindi written in English letters -> Hinglish in Roman script."""
-    if re.search(r"[\u0900-\u097f]", original or ""):
-        return "Hindi, in Devanagari script"
-    if (label or "en") in ("hi", "hinglish"):
-        return ("Hinglish - Hindi sentences written in English (Roman) letters, like the user, e.g. \"Pehle "
-                "login karein, phir Dashboard par Verification URL par click karein.\" Do NOT reply in English "
-                "and do NOT use Devanagari")
-    if label == "other":
-        return "the same language and script as the user's original wording"
+    """The assistant always answers in English. Questions in Hindi, Hinglish or other languages are still understood
+    (the clean-up step translates them to English for search); only the reply language is fixed."""
     return "English"
 
 

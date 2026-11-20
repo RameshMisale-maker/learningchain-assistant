@@ -313,3 +313,14 @@ def test_approved_answers_have_no_repeated_questions_and_no_placeholders():
         assert "please add" not in answer.lower() and "please confirm" not in answer.lower(), qid
     faq = pd.read_csv(ROOT / "datasets/learningchain_faq_master.csv").set_index("Question ID")
     assert faq.loc["LC-011", "Status"] == "active" and faq.loc["LC-019", "Status"] == "draft"
+
+
+def test_combined_faq_file_has_every_mode_and_the_overview():
+    import pandas as pd
+
+    d = pd.read_csv(ROOT / "datasets/learningchain_faq_master.csv").set_index("Question ID")
+    modes = [q for q in d.index if str(q).startswith("TM-")]
+    assert len(modes) == 10 and (d.loc[modes, "Status"] == "active").all()
+    assert "10 ways" in d.loc["LC-033", "Approved Answer"] and "Template Modes" not in d.loc["LC-033", "Approved Answer"]
+    assert "How many ways can LearningChain issue certificates?" in d.loc["LC-033", "Alternate Questions"]
+    assert not (ROOT / "knowledge_bases/products/LearningChain_08_Certificate_Generation_Modes.md").exists()

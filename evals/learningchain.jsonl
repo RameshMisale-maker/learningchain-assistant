@@ -5,15 +5,15 @@
 {"question": "How is a blockchain QR code safer than a normal QR code?", "kb": "products", "expected": ["LearningChain_02_Blockchain_Technology", "Products Golden Dataset", "LearningChain_00_Website_FAQ", "Learningchain Faq Master"]}
 {"question": "How do I get started with LearningChain as an institution?", "kb": "products", "expected": ["LearningChain_03_Getting_Started", "LearningChain_01_Introduction", "Products Golden Dataset", "Learningchain Faq Master"]}
 {"question": "How can I get a LearningChain demo?", "kb": "products", "expected": ["Products Golden Dataset", "LearningChain_00_Website_FAQ", "Learningchain Faq Master"]}
-{"question": "How do I generate certificates without a template?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"], "must_include": ["without templates"]}
-{"question": "How do I embed a QR code on my existing certificate PDFs?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"], "must_include": ["Embed QR Code"]}
-{"question": "How do I print certificates on pre-printed stationery?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"]}
-{"question": "Can we use our own certificate design?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"]}
-{"question": "How do I add a student photo to certificates?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes", "LearningChain_05_Admin_Guide"], "must_include": ["photo"]}
-{"question": "What is internal printing?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"], "must_include": ["Internal Printing"]}
-{"question": "How does external printing through an API work?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"]}
-{"question": "Can LearningChain secure old certificates of passed-out students?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes", "Products Golden Dataset", "Learningchain Faq Master"]}
-{"question": "Can we issue participation certificates digitally?", "kb": "products", "expected": ["LearningChain_08_Certificate_Generation_Modes"], "must_include": ["digital"]}
+{"question": "How do I generate certificates without a template?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"], "must_include": ["without templates"]}
+{"question": "How do I embed a QR code on my existing certificate PDFs?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"], "must_include": ["Embed QR Code"]}
+{"question": "How do I print certificates on pre-printed stationery?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"]}
+{"question": "Can we use our own certificate design?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"]}
+{"question": "How do I add a student photo to certificates?", "kb": "products", "expected": ["LearningChain_05_Admin_Guide", "TM-", "LC-0", "Learningchain Faq Master"], "must_include": ["photo"]}
+{"question": "What is internal printing?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"], "must_include": ["Internal Printing"]}
+{"question": "How does external printing through an API work?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"]}
+{"question": "Can LearningChain secure old certificates of passed-out students?", "kb": "products", "expected": ["Products Golden Dataset", "Learningchain Faq Master", "TM-", "LC-0"]}
+{"question": "Can we issue participation certificates digitally?", "kb": "products", "expected": ["TM-", "LC-0", "Learningchain Faq Master"], "must_include": ["digital"]}
 {"question": "Which institutions use LearningChain?", "kb": "products", "expected": ["LC-0", "learningchain_faq_master", "Faq Master"], "must_include": ["COEP"]}
 {"question": "Is LearningChain white-label?", "kb": "products", "expected": ["LC-0", "learningchain_faq_master", "Faq Master"], "must_include": ["logo"]}
 {"question": "What is the capital of France?", "kb": "products", "expect_refusal": true}

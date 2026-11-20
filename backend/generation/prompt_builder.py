@@ -128,7 +128,7 @@ def build_answer_prompt(question: str, refs: list[SourceRef], history: list[dict
                         entities: list[str] | None = None, original: str | None = None,
                         language: str = "English") -> tuple[str, str]:
     """`question` is the normalized question used for retrieval; `original` is the user's own wording, passed only so
-    the model replies in the user's language (e.g. Hindi / Hinglish)."""
+    the model can match the user's tone (replies are always in English)."""
     task = ""
     if comparison and entities:
         task = (f"The user wants a comparison of: {', '.join(entities)}. Present a Markdown table of the attributes "

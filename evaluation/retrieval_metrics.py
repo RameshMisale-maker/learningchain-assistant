@@ -24,11 +24,17 @@ def split_list(value: Any) -> list[str]:
     return [p.strip() for p in re.split(r"[|;\n]", str(value)) if p.strip()]
 
 
+def alternatives(matcher: str) -> list[str]:
+    """One relevant_document entry: "A OR B" = the source is A or B (either counts); plain "A" = just A.
+    Entries separated by | are all required (recall = share of entries found)."""
+    return [a.strip() for a in re.split(r"\s+OR\s+", matcher) if a.strip()]
+
+
 def label_chunks(retrieved: list[dict], row: dict, human: dict[str, bool] | None = None) -> tuple[list[bool | None], str]:
     """Relevance flag per retrieved chunk + the label source used."""
     human = human or {}
     gt_ids = set(split_list(row.get("relevant_chunk_ids")))
-    matchers = split_list(row.get("relevant_document"))
+    matchers = [a for m in split_list(row.get("relevant_document")) for a in alternatives(m)]
     flags: list[bool | None] = []
     sources = set()
     for ch in retrieved:
@@ -85,7 +91,7 @@ def compute(retrieved: list[dict], row: dict, k: int, contexts: list[str],
         total_rel = len(gt_ids)
     else:
         found = {m for m in matchers if any(is_relevant({x: c.get(x, "") for x in ("doc_name", "source_file",
-                                                                                  "section", "doc_id")}, [m])
+                                                                                  "section", "doc_id")}, alternatives(m))
                                             for c in top_items)}
         recall = len(found) / len(matchers)
         total_rel = len(matchers)
