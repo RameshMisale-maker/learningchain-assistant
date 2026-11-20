@@ -84,11 +84,18 @@ _NOT_NAMES = {"back", "here", "new", "fine", "good", "ok", "okay", "looking", "t
 
 
 def introduced_name(text: str) -> str:
-    """The name a user gives in a greeting ("Ramesh here", "this is Priya", "I am Ravi") - "" when there is none."""
-    for m in _INTRO_NAME_RE.finditer(text or ""):
-        name = (m.group(1) or m.group(2) or "").strip("'-")
-        if name and name.lower() not in _NOT_NAMES and name.lower() not in STOPWORDS:
-            return name[:1].upper() + name[1:].lower()
+    """The name a user gives in a greeting ("Ramesh here", "this is Priya", "I am Ravi") - "" when there is none.
+    Only counted when the message also greets ("hi", "hello", "good morning") or the name is written with a capital
+    letter, so "this is useless" or "I am stuck" are never taken as names."""
+    text = text or ""
+    greets = bool(_GREETING_WORD.search(text))
+    for m in _INTRO_NAME_RE.finditer(text):
+        raw = (m.group(1) or m.group(2) or "").strip("'-")
+        name = raw.lower()
+        if not raw or name in _NOT_NAMES or name in STOPWORDS or FRUSTRATION_RE.search(raw):
+            continue
+        if greets or raw[:1].isupper():
+            return raw[:1].upper() + raw[1:].lower()
     return ""
 
 
@@ -148,6 +155,87 @@ def is_greeting_with_intro(text: str) -> bool:
 
     t = (text or "").strip()
     return bool(t) and "?" not in t and bool(_GREETING_WORD.search(t)) and         bool(_compile_intro(names_alternation()).match(t))
+
+# ---------------------------------------------------------------- social messages (greeting + name + "how are you")
+# A message is "social" when nothing is left after removing these parts. Then every part gets answered (greeting,
+# name, how-are-you); if a real question is left over it is answered as a question instead.
+_SOCIAL_PARTS = [
+    r"(?:good\s+(?:morning|afternoon|evening|day)|gud\s+(?:morning|mrng)|namaste|namaskar|greetings|"
+    r"hi+|hello+|hey+|helo+|hai|hii+|yo|hiya)",                                       # greetings
+    r"(?:how\s+(?:are|r)\s+(?:you|u|ya)(?:\s+(?:doing\s+today|doing|today|keeping))?(?:\s+today)?|"
+    r"how\s+do\s+you\s+do|how(?:'s|\s+is)\s+(?:it\s+going|your\s+day|everything)|what'?s\s+up|wass?up|sup|"
+    r"hope\s+(?:you(?:'re|\s+are)\s+)?(?:doing\s+)?(?:well|good|fine|great)(?:\s+today)?)",   # well-being
+    r"(?:nice\s+to\s+(?:meet|talk\s+to)\s+you|pleased\s+to\s+meet\s+you|glad\s+to\s+meet\s+you|"
+    r"(?:are\s+you|r\s+u)\s+(?:there|available|online))",                            # courtesy
+    r"(?:(?:i\s*am|i'm|im|this\s+is|my\s+name\s+is|myself|it'?s)\s+[a-z][a-z'-]{1,30}"
+    r"|[a-z][a-z'-]{1,30}\s+(?:here|this\s+side))",                                 # introductions
+    r"(?:there|team|all|everyone|chatbot|chat\s*bot|bot|assistant|sir|madam|dear|friend)",   # addressing the bot
+    r"(?:ok(?:ay)?|so|well|and|just|wanted\s+to\s+say|quick\s+one)",                   # fillers
+]
+_SOCIAL_RE = re.compile(r"\b(?:" + "|".join(_SOCIAL_PARTS) + r")\b", re.IGNORECASE)
+_WELLBEING_RE = re.compile(_SOCIAL_PARTS[1], re.IGNORECASE)
+_COURTESY_RE = re.compile(_SOCIAL_PARTS[2], re.IGNORECASE)
+_HELLO_RE = re.compile(r"\b" + _SOCIAL_PARTS[0] + r"\b", re.IGNORECASE)
+
+
+@dataclass
+class SocialMessage:
+    greeting: bool          # said hello
+    wellbeing: bool         # asked how the assistant is ("how are you doing?")
+    name: str               # name the user gave ("Ramesh here")
+    courtesy: bool = False  # "nice to meet you", "are you there?"
+
+
+def social_message(text: str) -> SocialMessage | None:
+    """The message is purely social (greeting, name, how-are-you, courtesy) -> its parts; otherwise None.
+    "Hi Ramesh here, how are you doing?" -> greeting + name + well-being. "Hi, how do I verify?" -> None."""
+    from backend.routing.router import names_alternation
+
+    t = (text or "").strip()
+    if not t or not re.search(r"[a-z]", t, re.IGNORECASE) or FRUSTRATION_RE.search(t):
+        return None                                   # anger / insults are handled by the frustration reply
+    rest = _SOCIAL_RE.sub(" ", t)
+    rest = re.sub(rf"\b({names_alternation()})\b", " ", rest, flags=re.IGNORECASE)     # "hello <product> bot"
+    rest = re.sub(r"[\s,.!?;:'\"\-()]+", " ", rest).strip()
+    if rest and not all(w.lower() in {"i", "and", "to", "you", "u", "the", "a", "dear", "today", "too"}
+                        for w in rest.split()):
+        return None
+    greeting, wellbeing = bool(_HELLO_RE.search(t)), bool(_WELLBEING_RE.search(t))
+    courtesy, name = bool(_COURTESY_RE.search(t)), introduced_name(t)
+    if not (greeting or wellbeing or courtesy or name):
+        return None                                   # only fillers ("ok so") - not a greeting
+    return SocialMessage(greeting=greeting, wellbeing=wellbeing, name=name, courtesy=courtesy)
+
+
+def greeting_line(prefix: str) -> str:
+    """First line answering the greeting part of "Hi Ramesh here, how are you? How do I verify ...?" - "" if none."""
+    social = social_message(prefix)
+    if social is None:
+        return ""
+    name = social.name
+    timed = re.search(r"\b(?:good|gud|gd)\s*(morning|afternoon|evening)\b", prefix or "", re.IGNORECASE)
+    hello = f"Good {timed.group(1).lower()}" if timed else "Hi"
+    line = f"{hello} {name}!" if name else f"{hello}!"
+    if social.wellbeing:
+        line += " I'm doing well, thanks for asking."
+    return line
+
+
+def strip_social(text: str) -> str:
+    """Remove a leading greeting / name / how-are-you so the real question is searched on its own:
+    "Hi Ramesh here, how do I revoke a certificate?" -> "how do I revoke a certificate?". Unchanged when nothing
+    social leads the message or when too little would be left."""
+    from backend.routing.router import names_alternation
+
+    t = (text or "").strip()
+    lead = re.compile(r"^\s*(?:(?:" + "|".join(_SOCIAL_PARTS) + rf"|{names_alternation()})\b[\s,.!?:;-]*)",
+                      re.IGNORECASE)
+    rest, changed = t, True
+    while changed and rest:
+        new = lead.sub("", rest, count=1)
+        changed, rest = new != rest, new
+    return rest if rest != t and len(_words(rest)) >= 2 else t
+
 
 INCOMPLETE_REPLY = "Sure - what would you like to know? Please share your full question."
 
@@ -390,6 +478,9 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     # 1. greetings / small talk (incl. typos such as "helo", "gud morning") - no retrieval, no LLM
     if greeting_only_re().match(t) or is_greeting_with_intro(t):
         return MessageIntent(GREETING, reason="greeting")
+    social = social_message(t)            # "Hi Ramesh here, how are you doing?" - every part is social
+    if social is not None:
+        return MessageIntent(GREETING if (social.greeting or social.name) else SMALL_TALK, reason="social message")
     if greeting_re().match(t) or AFFIRM_RE.match(t) or is_acknowledgement(t):
         return MessageIntent(SMALL_TALK, reason="small talk")
 

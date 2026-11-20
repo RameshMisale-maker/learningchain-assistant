@@ -145,7 +145,11 @@ def store(resp) -> bool:
     if resp.answer_type not in CACHEABLE_TYPES or resp.warnings or resp.confidence < settings.cache_min_confidence \
             or not resp.answer.strip():
         return False
-    payload = {"answer": resp.answer, "answer_type": resp.answer_type, "knowledge_bases": list(resp.knowledge_bases),
+    answer = resp.answer
+    prefix = (resp.route or {}).get("greeting_prefix")
+    if prefix and answer.startswith(prefix):          # never cache one user's "Hi Ramesh!" for everybody
+        answer = answer[len(prefix):].lstrip()
+    payload = {"answer": answer, "answer_type": resp.answer_type, "knowledge_bases": list(resp.knowledge_bases),
                "citations": [c.__dict__ for c in resp.citations], "confidence": resp.confidence,
                "golden_match": resp.golden_match, "grounding": resp.grounding, "model": resp.model,
                "contains_sample_data": resp.contains_sample_data,

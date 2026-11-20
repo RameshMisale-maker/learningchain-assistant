@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-20 - Greetings in any combination; greet first, then answer
+
+- **Social messages:** greeting, name, "how are you", "nice to meet you", "are you there?" in any combination are
+  recognised as a whole and every part is answered ("Hi Ramesh here, how are you doing?" -> "Hi Ramesh! I'm doing
+  well, thanks for asking. How can I help?"; was "I don't have confirmed information").
+- **Greeting + question:** "Hi, Ramesh here, how do I verify my certificate?" -> "Hi Ramesh!" then the answer. The
+  greeting is removed before search (it used to spoil retrieval) and is never stored in the response cache.
+- Names are only taken from a greeting or a capitalised name: "this is useless" stays a frustration message.
+- Tests: greeting matrix (16 social messages x first / later turn, 7 greeting + question cases).
+
 ## 2026-11-20 - Greeting replies, rollout plan
 
 - **Greeting replies read the whole message:** "okay hello chatbot, Ramesh here" is answered "Hi Ramesh! How can I

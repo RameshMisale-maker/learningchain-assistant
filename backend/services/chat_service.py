@@ -61,6 +61,15 @@ def small_talk_reply(text: str, roles: set[str], first: bool = True, intent: str
     t = text.strip().lower()
     if is_closing(t):
         return r.closing
+    social = convo.social_message(t)       # greeting / name / how-are-you in any combination: answer every part
+    if social is not None:
+        if not (social.greeting or social.name):
+            if social.courtesy and not social.wellbeing:
+                if re.search(r"\b(there|available|online)\b", t):          # "are you there?"
+                    return "Yes, I'm here! How can I help you today?"
+                return "Nice to meet you too! How can I help you today?"
+            return r.how_are_you           # just "how are you doing?"
+        return _greeting(t, r, first, wellbeing=social.wellbeing, courtesy=social.courtesy)
     if intent == convo.GREETING or convo.is_greeting_with_intro(t) or convo.greeting_only_re().match(t):
         return _greeting(t, r, first)
     if re.match(r"^(yes|yeah|yep|yup|sure|ya|of course|go ahead)\b", t):
@@ -80,16 +89,20 @@ def small_talk_reply(text: str, roles: set[str], first: bool = True, intent: str
     return _greeting(t, r, first)
 
 
-def _greeting(t: str, r, first: bool) -> str:
-    """Hello (time-of-day aware, with the user's name when they introduced themselves); the assistant introduces
-    itself only on the first message."""
+def _greeting(t: str, r, first: bool, wellbeing: bool = False, courtesy: bool = False) -> str:
+    """Hello (time-of-day aware, with the user's name when they introduced themselves, answering "how are you" when
+    asked); the assistant introduces itself only on the first message."""
     m = re.search(r"\b(good|gud|gd)\s*(morning|afternoon|evening|day)\b", t)
     name = convo.introduced_name(t)
-    hello = (f"Good {m.group(2)}" if m else "Hello") + (f" {name}!" if name else "!")
+    hello = (f"Good {m.group(2)}" if m else ("Hello" if first else "Hi")) + (f" {name}!" if name else "!")
+    if wellbeing:
+        hello += " I'm doing well, thanks for asking."
+    elif courtesy:
+        hello += " Nice to meet you too."
     if first:
         return r.greeting_first.format(hello=hello)
-    if m or name:
-        return r.greeting_again_timed.format(hello=hello if m else f"Hi {name}!")
+    if m or name or wellbeing or courtesy:
+        return r.greeting_again_timed.format(hello=hello)
     return r.greeting_again
 AMBIGUOUS_MIN_SCORE = 0.35
 LLM_CONFIDENT_RERANK = 0.5        # with an LLM, skip the lexical pre-refusal when the top passage scores this high
@@ -230,6 +243,13 @@ class ChatService:
                 alternative = _replies().repeat_alternatives.get(response.answer_type)
                 if alternative and alternative.strip() != response.answer.strip():
                     response.answer = alternative
+            # "Hi, Ramesh here, how do I verify my certificate?" -> greet first, then answer
+            stripped = convo.strip_social(question.strip())
+            if stripped != question.strip() and response.answer_type not in ("greeting", "closing", "closed"):
+                hello = convo.greeting_line(question.strip()[: len(question.strip()) - len(stripped)])
+                if hello:
+                    response.answer = f"{hello}" + chr(10) + chr(10) + response.answer
+                    response.route["greeting_prefix"] = hello
             response.latency_ms = round((time.perf_counter() - started) * 1000, 1)
             response.timings = timings.as_dict() | {"end_to_end_ms": response.latency_ms}
             self._apply_ui_action(response)
@@ -278,6 +298,9 @@ class ChatService:
                                 answer_type="blocked" if check.reason == "prompt_injection" else "invalid",
                                 route={"intent": "blocked", "flags": check.flags}, warnings=check.flags)
         query = original = check.cleaned
+        # "Hi Ramesh here, how do I revoke a certificate?" -> the greeting is dropped so the question is searched on
+        # its own (a purely social message is left unchanged and answered by the conversation layer)
+        query = convo.strip_social(query)
         # card numbers, CVV, OTP, UPI PIN or passwords: warn, never process them further (no LLM, no retrieval)
         kind = sensitive_data(query)
         if kind:

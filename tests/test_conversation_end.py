@@ -262,3 +262,77 @@ def test_introduced_name():
 
     assert [introduced_name(t) for t in ("Ramesh here", "this is Priya", "I am Ravi", "hi I'm back", "it's me",
                                          "okay hello chatbot")] == ["Ramesh", "Priya", "Ravi", "", "", ""]
+
+
+# ------------------------------------------------------------------------------------------------ greeting matrix
+SOCIAL_MESSAGES = [  # (message, words the reply must contain)
+    ("Hi Ramesh here, how are you doing?", ["Ramesh", "doing well"]),
+    ("hi ramesh here how are you", ["Ramesh", "doing well"]),
+    ("Hello, I am Priya. How are you?", ["Priya", "doing well"]),
+    ("hey there, this is Ravi, hope you are doing well", ["Ravi", "doing well"]),
+    ("Good morning! Ramesh this side", ["Good morning Ramesh"]),
+    ("good evening, how are you today?", ["Good evening", "doing well"]),
+    ("how are you doing today?", ["doing well"]),
+    ("how are you?", ["doing well"]),
+    ("Hi, nice to meet you", ["Nice to meet you too"]),
+    ("nice to meet you", ["Nice to meet you too"]),
+    ("are you there?", ["I'm here"]),
+    ("hello chatbot how r u", ["doing well"]),
+    ("Hey bot, what's up?", ["doing well"]),
+    ("namaste, myself Anil", ["Anil"]),
+    ("okay hello chatbot, Ramesh here", ["Ramesh"]),
+    ("hii", []),
+]
+
+
+@pytest.mark.parametrize("message,must", SOCIAL_MESSAGES)
+@pytest.mark.parametrize("later", [False, True])
+def test_social_messages_get_a_fitting_greeting(chat, public_user, message, must, later):
+    history = [{"role": "user", "content": "What is LearningChain?"},
+               {"role": "assistant", "content": "LearningChain is ...", "answer_type": "golden_direct"}] if later else []
+    resp = chat.answer(message, public_user, persist=False, history=history)
+    assert resp.answer_type == "greeting", (message, resp.answer_type, resp.answer[:80])
+    for word in must:
+        assert word.lower() in resp.answer.lower(), (message, resp.answer)
+    assert "confirmed information" not in resp.answer and "Glad that helps" not in resp.answer
+
+
+@pytest.mark.parametrize("message", ["Hi Ramesh here, how do I revoke a certificate?",
+                                     "Hi, how do I verify a certificate?", "hello, what is LearningChain?",
+                                     "Hello I am Priya, which institutions use LearningChain?",
+                                     "good morning, how do I log in?", "How are certificates verified?",
+                                     "How are you able to verify certificates?"])
+def test_greeting_plus_question_answers_the_question(chat, public_user, message):
+    resp = chat.answer(message, public_user, persist=False)
+    assert resp.answer_type not in ("greeting", "refusal", "out_of_scope", "clarification"), (message, resp.answer[:80])
+
+
+@pytest.mark.parametrize("message,first_line", [
+    ("Hi, Ramesh here, how do I verify my certificate?", "Hi Ramesh!"),
+    ("Hello, I am Priya. How are you? Which institutions use LearningChain?", "Hi Priya! I'm doing well"),
+    ("good morning, how do I log in?", "Good morning!"),
+])
+def test_greeting_plus_question_greets_first_then_answers(chat, public_user, message, first_line):
+    resp = chat.answer(message, public_user, persist=False)
+    head, _, body = resp.answer.partition(chr(10) + chr(10))
+    assert head.startswith(first_line) and len(body) > 40, resp.answer[:120]
+
+
+def test_plain_question_gets_no_greeting(chat, public_user):
+    assert not chat.answer("How do I verify a certificate?", public_user, persist=False).answer.startswith("Hi")
+
+
+def test_frustration_and_ordinary_words_are_not_names():
+    from backend.routing.intent import introduced_name, social_message
+
+    assert introduced_name("this is useless") == "" and introduced_name("I am stuck") == ""
+    assert social_message("this is useless") is None
+    assert introduced_name("hi this is priya") == "Priya" and introduced_name("This is Priya") == "Priya"
+
+
+def test_strip_social():
+    from backend.routing.intent import strip_social
+
+    assert strip_social("Hi Ramesh here, how do I revoke a certificate?") == "how do I revoke a certificate?"
+    assert strip_social("Hi Ramesh here, how are you doing?") == "Hi Ramesh here, how are you doing?"   # all social
+    assert strip_social("How are certificates verified?") == "How are certificates verified?"
