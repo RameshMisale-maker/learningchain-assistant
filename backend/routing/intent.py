@@ -117,6 +117,22 @@ def is_vague_pronoun_question(text: str, history: list[dict] | None) -> bool:
     return len(content) <= 1             # at most the verb: "configure", "set", "use", "change"
 
 
+_BROAD_TOPIC_RE = re.compile(
+    r"^\s*(?:(?:can you |could you |please )?tell me (?:more )?about|what about|how about|and|"
+    r"info(?:rmation)? (?:on|about))\s+(?:the |a |an |your |my )?(?P<topic>[a-z][\w-]*(?:\s+[a-z][\w-]*)?)"
+    r"\s*[?.!]*\s*$", re.IGNORECASE)
+
+
+def broad_topic(text: str, history: list[dict] | None) -> str:
+    """The topic of a bare topic request with no question in it ("Tell me about the review.", "What about the
+    fees?") when there is no earlier answer it could follow up on; "" otherwise. Such a request can mean several
+    documented things, so the caller may ask which one is meant instead of picking one."""
+    if last_assistant_answer(history or []):
+        return ""                         # "what about the fees?" after an answer is a normal follow-up
+    m = _BROAD_TOPIC_RE.match(text or "")
+    return m.group("topic").strip() if m else ""
+
+
 def is_closing(text: str) -> bool:
     """The user is ending the conversation (e.g. "no" after "anything else?", "that's all", "bye")."""
     return bool(CLOSING_RE.match(text or ""))

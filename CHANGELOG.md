@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-23 - Fixes from the full 129-question evaluation
+
+- **Everyday words no longer declined:** the undocumented-term guard declined correct answers because a question
+  word such as "ordinary" or "forgot" appears in no document. It now declines only names / acronyms (iOS, SLA) and
+  words that are not everyday English (uptime, Aadhaar). Fixes "Why is a blockchain QR code more secure than an
+  ordinary one?" and "two ways to change my password ... when I forgot it".
+- **Revoke is not recall:** the FAQ listed "Revoke certificate" and "Cancel an issued certificate" as other wordings
+  of the recall answer (LC-090), but the Help Centre documents them as separate actions (a revoked certificate can no
+  longer be verified). The import drops those two alternates (`DROP_ALTERNATES`); the source FAQ file is unchanged.
+- **Comparisons retrieve both sides:** "difference between A and B" / "compare A with B" also searches A and B
+  separately, so both articles reach the answer (revoke vs recall was declined because the Revoke article ranked 7th).
+- **Bare topic requests ask which one:** "Tell me about the review." / "What about the fees?" (first message, no
+  confident match) -> "Could you tell me which part of review you mean?" with up to 3 documented topics.
+- **Prompt:** start with a direct one-line answer in the user's words, no repeated question as a heading, support
+  contact only when the answer is incomplete, never compute a number (the bot had counted a client list as
+  "12 universities"; the list has 10 and states no total).
+- **Evaluation labels:** 36 FAQ questions listed the same FAQ twice ("F01|FAQ: What is LearningChain?") so a correct
+  answer scored recall 0.5; now "A OR B" alternatives, including the FAQ_Master entry that replaced the old one.
+- Architecture diagram and `docs/architecture.md` updated.
+
 ## 2026-11-20 - Greetings in any combination; greet first, then answer
 
 - **Social messages:** greeting, name, "how are you", "nice to meet you", "are you there?" in any combination are

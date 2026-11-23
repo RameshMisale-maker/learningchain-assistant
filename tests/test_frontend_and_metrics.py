@@ -31,7 +31,7 @@ def test_stream_endpoint_emits_meta_deltas_sources_done(workspace):
     kinds = [e for e, _ in evs]
     assert kinds[0] == "meta" and kinds[-2:] == ["sources", "done"] and kinds.count("delta") > 3
     text = "".join(d["text"] for e, d in evs if e == "delta")
-    assert "Recall" in text and "Generated Certificates" in text     # approved FAQ LC-090
+    assert "Revoke" in text and "Generated Certificates" in text     # Help Centre article (revoke is not recall)
     sources = dict(evs)["sources"]["citations"]
     assert sources and sources[0]["url"].startswith("https://")
     assert dict(evs)["done"]["message_id"]

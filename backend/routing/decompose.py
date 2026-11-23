@@ -51,8 +51,34 @@ def heuristic_split(question: str) -> list[str]:
     return [s[0].upper() + s[1:] + "?" for s in subs][:MAX_SUB_QUESTIONS]
 
 
+_COMPARISON = [
+    re.compile(r"\b(?:difference|differences)\s+between\s+(?P<a>.+?)\s+and\s+(?P<b>.+?)\s*[?.!]*$", re.IGNORECASE),
+    re.compile(r"\bhow\s+(?:does|do|is|are)\s+(?P<a>.+?)\s+differ\s+from\s+(?P<b>.+?)\s*[?.!]*$", re.IGNORECASE),
+    re.compile(r"\bcompare\s+(?P<a>.+?)\s+(?:and|with|to)\s+(?P<b>.+?)\s*[?.!]*$", re.IGNORECASE),
+]
+
+
+def comparison_split(question: str) -> list[str]:
+    """The two sides of a comparison ("difference between revoking and recalling a certificate" -> "revoking a
+    certificate", "recalling a certificate"), so each side is retrieved on its own; [] when not a comparison.
+    A one-word first side borrows the second side's object ("revoking" + "a certificate ...")."""
+    for pattern in _COMPARISON:
+        m = pattern.search(question or "")
+        if not m:
+            continue
+        a, b = m.group("a").strip(" ,"), m.group("b").strip(" ,")
+        if len(a.split()) == 1 and len(b.split()) > 1:
+            a = f"{a} {' '.join(b.split()[1:])}"
+        if a and b and a.lower() != b.lower():
+            return [a[0].upper() + a[1:], b[0].upper() + b[1:]]
+    return []
+
+
 def decompose(question: str, llm=None) -> list[str]:
-    """Sub-questions for a multi-part question, or [] for a single question."""
+    """Sub-questions for a multi-part question or a comparison, or [] for a single question."""
+    sides = comparison_split(question)
+    if sides:
+        return sides
     if not is_multi_part(question):
         return []
     if llm is not None:

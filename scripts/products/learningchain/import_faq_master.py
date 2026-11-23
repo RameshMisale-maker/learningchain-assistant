@@ -47,6 +47,12 @@ EXTRA_ALTERNATES = {
     "LC-006": ["Can someone steal my certificate?", "Can my certificate be stolen or misused?",
                "Is my certificate safe from theft?", "Can someone copy my certificate and use it?"],
 }
+# Alternate phrasings / keywords in the FAQ that contradict the Help Centre and are dropped on import (the source file
+# is not changed). Revoke and Recall are two separate actions (Admin Guide: "How do I Revoke the Certificates" vs
+# "How do I Recall the Certificates"; a revoked certificate can no longer be verified), so a revoke question must not
+# be answered with the recall steps. "Cancel an issued certificate" describes revoking (verification stops), not recall.
+DROP_ALTERNATES = {"LC-090": ["Revoke certificate", "Cancel an issued certificate"]}
+DROP_KEYWORDS = {"LC-090": ["revoke"]}
 COMBINED_ANSWERS = {
     "LC-034": ("Admin setup: in the certificate type's Template Configuration card, enable 'Blockchain QR code "
                "generation without templates' (this is also the default when no template option is enabled). "
@@ -122,6 +128,14 @@ def main(source: str) -> int:
     for qid, extra in EXTRA_ALTERNATES.items():
         if qid in faq_by_id:
             faq_by_id[qid]["alts"] += extra
+    for qid, drop in DROP_ALTERNATES.items():
+        if qid in faq_by_id:
+            gone = {norm(d) for d in drop}
+            faq_by_id[qid]["alts"] = [a for a in faq_by_id[qid]["alts"] if norm(a) not in gone]
+    for qid, drop in DROP_KEYWORDS.items():
+        if qid in faq_by_id:
+            words = [k.strip() for k in faq_by_id[qid]["Keywords"].split(",") if k.strip()]
+            faq_by_id[qid]["Keywords"] = ", ".join(k for k in words if k.lower() not in {d.lower() for d in drop})
 
     # 2. exact repeats: the same normalised QUESTION twice (older answers first, then FAQ order) - first one wins
     seen: dict[str, str] = {norm(r["Question"]): qid for qid, r in old_rows.items()}

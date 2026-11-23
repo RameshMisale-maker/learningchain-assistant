@@ -30,6 +30,7 @@ from backend.retrieval.golden_matcher import GoldenMatch, GoldenMatcher
 from backend.retrieval.hybrid import Candidate, HybridRetriever
 from backend.retrieval.kb_index import get_index_manager
 from backend.retrieval.reranker import Reranker, get_reranker, weighted_coverage
+from backend.common.english_vocab import is_common_word
 from backend.common.text_utils import STOPWORDS, stem
 from backend.routing import intent as convo
 from backend.routing.decompose import decompose
@@ -106,6 +107,10 @@ def _greeting(t: str, r, first: bool, wellbeing: bool = False, courtesy: bool = 
     return r.greeting_again
 AMBIGUOUS_MIN_SCORE = 0.35
 LLM_CONFIDENT_RERANK = 0.5        # with an LLM, skip the lexical pre-refusal when the top passage scores this high
+BROAD_TOPIC_CONFIDENT = 0.8       # "tell me about <topic>": answer directly only when the best passage scores this high
+# platform / service names users often type in lower case; always treated as specific terms by the undocumented guard
+PLATFORM_TERMS = frozenset({"ios", "android", "iphone", "ipad", "macos", "windows", "linux", "whatsapp", "telegram",
+                            "aadhaar", "upi", "paytm", "gpay", "sla", "uptime"})
 GOLDEN_MAX_MISSING_INTENT = 0.35   # max IDF share of query terms absent from the approved question side
 REFUSED_ANSWER_TYPES = ("refusal", "out_of_scope", "blocked", "access_denied", "error", "restricted")
 GOLDEN_COMPARISON_MIN = 0.92   # golden match score needed to answer a comparison question with an approved answer
@@ -477,6 +482,12 @@ class ChatService:
                           "entity_name": c.meta.get("entity_name", "")}
                          for c in reranked[:10]]
         kbs_used = sorted({c.kb for c in top}) or route.knowledge_bases
+        clarify = self._broad_topic_clarification(convo.strip_social(original), history, top, reranked) \
+            or self._broad_topic_clarification(query, history, top, reranked)
+        if clarify:
+            base["route"]["broad_topic"] = True
+            return ChatResponse(answer=clarify, answer_type="clarification", knowledge_bases=kbs_used,
+                                retrieved=retrieved_dbg, **base)
         if route.ambiguous and (not top or top[0].rerank_score < AMBIGUOUS_MIN_SCORE or self._insufficient(expanded, top)):
             return ChatResponse(answer=route.clarification, answer_type="clarification", knowledge_bases=kbs_used,
                                 retrieved=retrieved_dbg, **base)
@@ -679,11 +690,54 @@ class ChatService:
 
     # ------------------------------------------------------------------ conversational layer + scope
     def _undocumented_terms(self, question: str, answer: str) -> list[str]:
-        """Words of the question that occur in NO indexed document but do appear in the generated answer."""
+        """Specific terms of the question (a product, platform, acronym) that occur in NO indexed document but do
+        appear in the generated answer.
+
+        A word counts as specific when the user wrote it like a name or acronym ("iOS", "SLA", "Android" mid-sentence)
+        or it is not an everyday English word ("uptime", "aadhaar"). Everyday words missing from the documents
+        ("ordinary", "forgot") are paraphrases, not new facts - the grounding check handles those."""
         low = (answer or "").lower()
-        terms = dict.fromkeys(w for w in re.findall(r"[a-z][a-z0-9]{2,}", (question or "").lower())
-                              if not self._known_word(w))
+        terms: dict[str, None] = {}
+        for m in re.finditer(r"[A-Za-z][A-Za-z0-9]{2,}", question or ""):
+            raw, w = m.group(0), m.group(0).lower()
+            if w in terms or self._known_word(w):
+                continue
+            sentence_start = not (question or "")[: m.start()].strip() or \
+                (question or "")[: m.start()].rstrip()[-1:] in ".?!:"
+            name_like = any(c.isupper() for c in raw[1:]) or (raw[0].isupper() and not sentence_start) \
+                or w in PLATFORM_TERMS
+            if name_like or not is_common_word(w):
+                terms[w] = None
         return [w for w in terms if re.search(rf"\b{re.escape(w)}\b", low)]
+
+    @staticmethod
+    def _broad_topic_clarification(query: str, history: list[dict], top: list[Candidate],
+                                   ranked: list[Candidate] | None = None) -> str:
+        """For a bare topic request ("Tell me about the review.") with no confident match, ask which of the
+        matching documented topics the user means instead of answering one of them. "" = answer normally.
+        Options: the best passage, then other re-ranked passages whose title mentions the topic."""
+        topic = convo.broad_topic(query, history)
+        if not topic or not top or top[0].rerank_score >= BROAD_TOPIC_CONFIDENT:
+            return ""
+        stems = {stem(w) for w in re.findall(r"[a-z]{3,}", topic.lower())}
+        options: list[str] = []
+        pool = list(top) + [c for c in (ranked or [])[:15] if c.id not in {t.id for t in top}]
+        for i, c in enumerate(pool):
+            title = str(c.meta.get("question") or c.meta.get("section") or "")
+            title = re.sub(r"^(?:admin|user|verifier|faq)\s*:\s*", "", title.replace("*", ""), flags=re.I).strip()
+            title = title.rstrip("?").strip()
+            if title.isupper():
+                title = title.capitalize()
+            mentions = bool(stems & {stem(w) for w in re.findall(r"[a-z]{3,}", title.lower())})
+            if title and len(title) <= 90 and (i == 0 or mentions) \
+                    and title.lower() not in {o.lower() for o in options}:
+                options.append(title)
+            if len(options) == 3:
+                break
+        if len(options) < 2:
+            return ""
+        bullets = "\n".join(f"- {o[0].upper()}{o[1:]}" for o in options)
+        return f"Could you tell me which part of **{topic}** you mean? For example:\n{bullets}"
 
     @staticmethod
     def _known_word(word: str) -> bool:
