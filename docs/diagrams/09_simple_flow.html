@@ -1,0 +1,219 @@
+<!doctype html><html><head><meta charset='utf-8'><title>Chatbot Flow</title><style>@page{size:1800px 1500px;margin:0}html,body{margin:0;background:#082a4d}svg{display:block}</style></head><body><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1500" width="1800" height="1500" font-family="Segoe UI, Calibri, Arial, sans-serif">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker><marker id="ahg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d3e3f5"/></marker></defs>
+<rect width="1800" height="1500" fill="#082a4d"/>
+<rect x="30" y="30" width="1740" height="340" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="60" y="80" font-size="32" fill="#ffffff" font-weight="600" text-anchor="start" >1 · Data ingestion</text>
+<text x="1740" y="78" font-size="17" fill="#d3e3f5" font-weight="400" text-anchor="end" >collect the knowledge and prepare it  ·  runs once, and again when a document changes</text>
+<rect x="60" y="120" width="300" height="215" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="80" y="156" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Sources</text>
+<text x="80" y="186" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Help Centre article links</text>
+<text x="80" y="209" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >learningchainai.zendesk.com</text>
+<text x="80" y="232" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Website links</text>
+<text x="80" y="255" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >learningchain.in · sapphirus.in</text>
+<text x="80" y="278" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >PDF documents</text>
+<text x="80" y="301" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Excel documents</text>
+<rect x="410" y="120" width="300" height="215" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="430" y="156" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Load &amp; extract</text>
+<text x="430" y="186" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >check file type and size</text>
+<text x="430" y="209" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >read the text, headings</text>
+<text x="430" y="232" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >and tables of each file</text>
+<text x="430" y="255" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >OCR off (no scanned PII)</text>
+<rect x="760" y="120" width="300" height="215" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="780" y="156" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Clean the text</text>
+<text x="780" y="186" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >remove page numbers</text>
+<text x="780" y="209" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >join broken lines and</text>
+<text x="780" y="232" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >split words</text>
+<text x="780" y="255" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >strip odd symbols, extra spaces</text>
+<rect x="1110" y="120" width="300" height="215" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="1130" y="156" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Remove duplicates</text>
+<text x="1130" y="186" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >SHA-256 fingerprint per file</text>
+<text x="1130" y="209" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >skip files already loaded</text>
+<text x="1130" y="232" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >merge repeated FAQ questions</text>
+<text x="1130" y="255" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >keep one approved answer</text>
+<rect x="1460" y="120" width="300" height="215" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="1480" y="156" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Safety scan &amp; labels</text>
+<text x="1480" y="186" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >flag hidden &quot;ignore your</text>
+<text x="1480" y="209" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >rules&quot; text (injection scan)</text>
+<text x="1480" y="232" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >add title + source link</text>
+<text x="1480" y="255" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >add who may see it (roles)</text>
+<line x1="364" y1="227.5" x2="404" y2="227.5" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="714" y1="227.5" x2="754" y2="227.5" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1064" y1="227.5" x2="1104" y2="227.5" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1414" y1="227.5" x2="1454" y2="227.5" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="30" y="410" width="1740" height="340" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="60" y="460" font-size="32" fill="#ffffff" font-weight="600" text-anchor="start" >2 · RAG indexing</text>
+<text x="1740" y="458" font-size="17" fill="#d3e3f5" font-weight="400" text-anchor="end" >organise the knowledge so it can be searched  ·  like the index at the back of a book</text>
+<rect x="60" y="500" width="470" height="220" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="80" y="536" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Chunking</text>
+<text x="80" y="566" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >split by headings, in whole sentences</text>
+<text x="80" y="589" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >parent section ≤ 1,800 characters</text>
+<text x="80" y="612" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >child piece ≤ 400 · overlap 80</text>
+<text x="80" y="635" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >each piece keeps its document title</text>
+<text x="80" y="658" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >1,381 pieces in total</text>
+<rect x="380" y="522" width="128" height="24" rx="3" fill="#2e8fe6" stroke="#ffffff" stroke-width="1.5"/>
+<text x="444" y="539" font-size="13" fill="#ffffff" font-weight="600" text-anchor="middle" >parent</text>
+<rect x="384" y="558" width="34" height="42" fill="#2e8fe6"/>
+<rect x="427" y="558" width="34" height="42" fill="#2e8fe6"/>
+<rect x="470" y="558" width="34" height="42" fill="#2e8fe6"/>
+<text x="444" y="620" font-size="12.5" fill="#d3e3f5" font-weight="400" text-anchor="middle" >children</text>
+<line x1="1610.0" y1="337" x2="1610.0" y2="365" stroke="#ffffff" stroke-width="3"/>
+<polyline points="1610.0,365 1610.0,400 440,400 440,494" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="900" y="386" width="230" height="26" fill="#082a4d"/>
+<text x="1015" y="406" font-size="16" fill="#5cb3ff" font-weight="400" text-anchor="middle" >clean, labelled documents</text>
+<rect x="610" y="500" width="430" height="220" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="630" y="536" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Embedding model</text>
+<text x="630" y="566" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >BAAI / bge-small-en-v1.5</text>
+<text x="630" y="589" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >runs on our own server · free</text>
+<text x="630" y="612" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >turns each piece&#x27;s meaning</text>
+<text x="630" y="635" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >into 384 numbers</text>
+<line x1="890" y1="530" x2="932" y2="551.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="530" x2="932" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="530" x2="932" y2="635.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="572" x2="932" y2="551.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="572" x2="932" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="572" x2="932" y2="635.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="614" x2="932" y2="551.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="614" x2="932" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="614" x2="932" y2="635.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="656" x2="932" y2="551.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="656" x2="932" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="890" y1="656" x2="932" y2="635.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="551.0" x2="974" y2="530" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="551.0" x2="974" y2="572" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="551.0" x2="974" y2="614" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="551.0" x2="974" y2="656" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="593.0" x2="974" y2="530" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="593.0" x2="974" y2="572" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="593.0" x2="974" y2="614" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="593.0" x2="974" y2="656" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="635.0" x2="974" y2="530" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="635.0" x2="974" y2="572" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="635.0" x2="974" y2="614" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="932" y1="635.0" x2="974" y2="656" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="974" y1="530" x2="1016" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="974" y1="572" x2="1016" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="974" y1="614" x2="1016" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<line x1="974" y1="656" x2="1016" y2="593.0" stroke="#7fb8ee" stroke-width="1"/>
+<circle cx="890" cy="530" r="7.5" fill="#ffffff"/>
+<circle cx="890" cy="572" r="7.5" fill="#ffffff"/>
+<circle cx="890" cy="614" r="7.5" fill="#ffffff"/>
+<circle cx="890" cy="656" r="7.5" fill="#ffffff"/>
+<circle cx="932" cy="551.0" r="7.5" fill="#ffffff"/>
+<circle cx="932" cy="593.0" r="7.5" fill="#ffffff"/>
+<circle cx="932" cy="635.0" r="7.5" fill="#ffffff"/>
+<circle cx="974" cy="530" r="7.5" fill="#ffffff"/>
+<circle cx="974" cy="572" r="7.5" fill="#ffffff"/>
+<circle cx="974" cy="614" r="7.5" fill="#ffffff"/>
+<circle cx="974" cy="656" r="7.5" fill="#ffffff"/>
+<circle cx="1016" cy="593.0" r="7.5" fill="#ffffff"/>
+<line x1="536" y1="610.0" x2="604" y2="610.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="1120" y="545" width="210" height="130" rx="9" fill="#0f4479"/>
+<rect x="1135" y="562" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1171" y="562" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1207" y="562" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1243" y="562" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1279" y="562" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1135" y="594" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1171" y="594" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1207" y="594" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1243" y="594" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1279" y="594" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1135" y="626" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1171" y="626" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1207" y="626" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1243" y="626" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<rect x="1279" y="626" width="34" height="27" fill="#2e8fe6" stroke="#ffffff" stroke-width="1"/>
+<text x="1225.0" y="705" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >vectors · 384 numbers each</text>
+<line x1="1046" y1="610.0" x2="1114" y2="610.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1080.0" y="598.0" font-size="16" fill="#5cb3ff" font-weight="400" text-anchor="middle" >vectorise</text>
+<path d="M1410,527 v166 a175.0,22 0 0 0 350,0 v-166" fill="#0f4479" stroke="#ffffff" stroke-width="2"/>
+<ellipse cx="1585.0" cy="527" rx="175.0" ry="22" fill="#0f4479" stroke="#ffffff" stroke-width="2"/>
+<text x="1585.0" y="577" font-size="23" fill="#ffffff" font-weight="600" text-anchor="middle" >Vector database</text>
+<text x="1585.0" y="605" font-size="15.5" fill="#ffffff" font-weight="600" text-anchor="middle" >Chroma · meaning vectors</text>
+<text x="1585.0" y="628" font-size="15.5" fill="#ffffff" font-weight="600" text-anchor="middle" >BM25 · keyword index</text>
+<text x="1585.0" y="651" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="middle" >LearningChain + Sapphirus</text>
+<text x="1585.0" y="674" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="middle" >pieces + source + access info</text>
+<line x1="1336" y1="610.0" x2="1404" y2="610.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1370.0" y="598.0" font-size="16" fill="#5cb3ff" font-weight="400" text-anchor="middle" >store</text>
+<rect x="30" y="790" width="1740" height="640" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="60" y="840" font-size="32" fill="#ffffff" font-weight="600" text-anchor="start" >3 · Generation</text>
+<text x="318.4" y="838" font-size="17" fill="#d3e3f5" font-weight="400" text-anchor="start" >answer each question only from the knowledge  ·  every question, about 5 seconds</text>
+<rect x="60" y="885" width="300" height="170" rx="9" fill="#0f4479" stroke="#5cb3ff" stroke-width="2.5"/>
+<text x="80" y="921" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >User question</text>
+<text x="80" y="951" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >website chat · Streamlit demo</text>
+<text x="80" y="974" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >e.g. &quot;How do I revoke</text>
+<text x="80" y="997" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >a certificate?&quot;</text>
+<rect x="410" y="885" width="300" height="170" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="430" y="921" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Safety guard</text>
+<text x="430" y="951" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >blocks hacking attempts</text>
+<text x="430" y="974" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >(prompt injection)</text>
+<text x="430" y="997" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >≤ 1,000 characters</text>
+<rect x="760" y="885" width="300" height="170" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="780" y="921" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Understand question</text>
+<text x="780" y="951" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >fix typos · follow-ups use</text>
+<text x="780" y="974" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >the last 8 messages</text>
+<text x="780" y="997" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >pick the right knowledge base</text>
+<rect x="1110" y="885" width="300" height="170" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="1130" y="921" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Approved FAQ match</text>
+<text x="1130" y="951" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >compare with approved</text>
+<text x="1130" y="974" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Q&amp;A answers</text>
+<text x="1130" y="997" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >≥ 0.78 → use that answer</text>
+<rect x="1460" y="885" width="300" height="170" rx="9" fill="#0f4479" stroke="#5cb3ff" stroke-width="2.5"/>
+<text x="1480" y="921" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Hybrid search</text>
+<text x="1480" y="951" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >search by meaning (40)</text>
+<text x="1480" y="974" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ by keywords (40)</text>
+<text x="1480" y="997" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >combine the scores</text>
+<line x1="364" y1="970.0" x2="404" y2="970.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="714" y1="970.0" x2="754" y2="970.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1064" y1="970.0" x2="1104" y2="970.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1414" y1="970.0" x2="1454" y2="970.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1585.0" y1="741" x2="1585.0" y2="879" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1597.0" y="830" font-size="16" fill="#5cb3ff" font-weight="400" text-anchor="start" >Retrieve</text>
+<rect x="425.0" y="1083" width="270" height="62" rx="31.0" fill="none" stroke="#d3e3f5" stroke-width="1.5"/>
+<text x="560.0" y="1109" font-size="14.5" fill="#ffffff" font-weight="400" text-anchor="middle" >unsafe / off-topic</text>
+<text x="560.0" y="1130" font-size="14.5" fill="#ffffff" font-weight="400" text-anchor="middle" >→ polite refusal</text>
+<line x1="560.0" y1="1057" x2="560.0" y2="1079" stroke="#d3e3f5" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#ahg)"/>
+<rect x="1125.0" y="1083" width="270" height="62" rx="31.0" fill="none" stroke="#d3e3f5" stroke-width="1.5"/>
+<text x="1260.0" y="1109" font-size="14.5" fill="#ffffff" font-weight="400" text-anchor="middle" >strong match → approved</text>
+<text x="1260.0" y="1130" font-size="14.5" fill="#ffffff" font-weight="400" text-anchor="middle" >answer, AI step skipped</text>
+<line x1="1260.0" y1="1057" x2="1260.0" y2="1079" stroke="#d3e3f5" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#ahg)"/>
+<rect x="1460" y="1185" width="300" height="170" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="1480" y="1221" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Rerank</text>
+<text x="1480" y="1251" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >a second model scores</text>
+<text x="1480" y="1274" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >each piece vs the question</text>
+<text x="1480" y="1297" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >keep the best 5 (≥ 0.15)</text>
+<rect x="1110" y="1185" width="300" height="170" rx="9" fill="#0f4479" stroke="#5cb3ff" stroke-width="2.5"/>
+<text x="1130" y="1221" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Augment prompt</text>
+<text x="1130" y="1251" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >question + top 5 pieces</text>
+<text x="1130" y="1274" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ rules: &quot;answer only</text>
+<text x="1130" y="1297" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >from these, cite [S1]&quot;</text>
+<rect x="760" y="1185" width="300" height="170" rx="9" fill="#0f4479" stroke="#5cb3ff" stroke-width="2.5"/>
+<text x="780" y="1221" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >LLM writes answer</text>
+<text x="780" y="1251" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >GPT-OSS-120B on Groq</text>
+<text x="780" y="1274" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >backup GPT-OSS-20B</text>
+<text x="780" y="1297" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >temperature 0 (no creativity)</text>
+<rect x="410" y="1185" width="300" height="170" rx="9" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="430" y="1221" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Fact check</text>
+<text x="430" y="1251" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >every sentence and number</text>
+<text x="430" y="1274" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >must be in the sources</text>
+<text x="430" y="1297" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >≥ 60% support</text>
+<rect x="60" y="1185" width="300" height="170" rx="9" fill="#0f4479" stroke="#5cb3ff" stroke-width="2.5"/>
+<text x="80" y="1221" font-size="23" fill="#ffffff" font-weight="600" text-anchor="start" >Answer</text>
+<text x="80" y="1251" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >short answer with steps</text>
+<text x="80" y="1274" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ source links</text>
+<text x="80" y="1297" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >streamed to the user</text>
+<line x1="1610.0" y1="1059" x2="1610.0" y2="1179" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<text x="1622.0" y="1125.0" font-size="16" fill="#5cb3ff" font-weight="400" text-anchor="start" >top 40 pieces</text>
+<line x1="1456" y1="1270.0" x2="1416" y2="1270.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1106" y1="1270.0" x2="1066" y2="1270.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="756" y1="1270.0" x2="716" y2="1270.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="406" y1="1270.0" x2="366" y2="1270.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="395.0" y="1377" width="330" height="62" rx="31.0" fill="none" stroke="#d3e3f5" stroke-width="1.5"/>
+<text x="560.0" y="1403" font-size="14.5" fill="#ffffff" font-weight="400" text-anchor="middle" >not supported → &quot;I don&#x27;t have</text>
+<text x="560.0" y="1424" font-size="14.5" fill="#ffffff" font-weight="400" text-anchor="middle" >that information&quot;, no guessing</text>
+<line x1="560.0" y1="1357" x2="560.0" y2="1373" stroke="#d3e3f5" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#ahg)"/>
+<line x1="100" y1="1181" x2="100" y2="1061" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<text x="112" y="1125.0" font-size="16" fill="#5cb3ff" font-weight="400" text-anchor="start" >shown to the user</text>
+<text x="60" y="1466" font-size="17" fill="#d3e3f5" font-weight="400" text-anchor="start" >RAG = Retrieval-Augmented Generation: look the answer up in our own documents first, then let the AI write it.</text>
+<text x="1740" y="1466" font-size="17" fill="#ffffff" font-weight="600" text-anchor="end" >Tested on 129 questions: 95% find the right source · 0% made-up facts · 24/24 safety tests</text>
+</svg></body></html>
