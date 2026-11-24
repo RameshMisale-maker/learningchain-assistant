@@ -81,6 +81,33 @@ class LLMClient(ABC):
             return {}, result
 
 
+# (base_url, model) -> monotonic time until which that model is skipped after a rate-limit error (shared by all clients)
+_RATE_LIMITED_UNTIL: dict[tuple[str, str], float] = {}
+RATE_LIMIT_DEFAULT_WAIT = 30.0        # no retry hint from the provider
+RATE_LIMIT_MAX_WAIT = 3600.0          # re-check at least hourly, even after a daily-quota error
+_TRY_AGAIN_RE = re.compile(r"try again in\s*(?:(\d+)h)?\s*(?:(\d+)m(?!s))?\s*(?:([\d.]+)s)?", re.IGNORECASE)
+
+
+def rate_limit_wait_seconds(exc: Exception) -> float:
+    """How long to skip a rate-limited model: the provider's retry-after header, else the "try again in 2m29.9s"
+    hint in the error message (Groq), else a short default; capped at RATE_LIMIT_MAX_WAIT."""
+    wait = None
+    response = getattr(exc, "response", None)
+    header = response.headers.get("retry-after") if response is not None else None
+    try:
+        wait = float(header) if header else None
+    except ValueError:
+        wait = None
+    if wait is None:
+        match = _TRY_AGAIN_RE.search(str(exc))
+        if match and any(match.groups()):
+            h, m, s = (float(g) if g else 0.0 for g in match.groups())
+            wait = h * 3600 + m * 60 + s
+    if not wait or wait <= 0:
+        wait = RATE_LIMIT_DEFAULT_WAIT
+    return min(wait, RATE_LIMIT_MAX_WAIT)
+
+
 class OpenAIClient(LLMClient):
     provider = "openai"
 
@@ -95,18 +122,44 @@ class OpenAIClient(LLMClient):
         # second model keeps answers generated when the primary model's quota is used up.
         self.fallback_models = [m for m in settings.openai_fallback_models if m and m != self.model]
 
+    def _cooldown_key(self, model: str) -> tuple[str, str]:
+        return (self.settings.openai_base_url or "", model)
+
+    def _cooling_down(self, model: str) -> bool:
+        until = _RATE_LIMITED_UNTIL.get(self._cooldown_key(model), 0.0)
+        return until > time.monotonic()
+
+    def _models_to_try(self) -> list[str]:
+        """Primary first, then fallbacks; models still inside a rate-limit cool-down are skipped (the last model is
+        always tried, so a request never fails just because every model was recently limited)."""
+        models = [self.model, *self.fallback_models]
+        ready = [m for m in models if not self._cooling_down(m)]
+        return ready or models[-1:]
+
+    def _client_for(self, model: str, models: list[str]):
+        """Every model except the last one fails fast (no SDK retries): with a fallback available, waiting out the
+        SDK's retry back-off on a rate-limited model only adds seconds to the answer."""
+        if model == models[-1] or not hasattr(self.client, "with_options"):
+            return self.client
+        return self.client.with_options(max_retries=0)
+
     def complete(self, system, user, max_tokens=None, temperature=None, json_mode=False):
         from openai import APIConnectionError, APIStatusError, RateLimitError
 
         last_exc: Exception | None = None
-        for model in [self.model, *self.fallback_models]:
+        models = self._models_to_try()
+        for model in models:
             try:
-                result = self._complete(model, system, user, max_tokens, temperature, json_mode)
+                result = self._complete(model, system, user, max_tokens, temperature, json_mode,
+                                        client=self._client_for(model, models))
                 if model != self.model:
                     logger.warning("LLM answered by fallback model %s (primary %s unavailable)", model, self.model)
                 return result
             except RateLimitError as exc:
                 last_exc = exc
+                wait = rate_limit_wait_seconds(exc)
+                _RATE_LIMITED_UNTIL[self._cooldown_key(model)] = time.monotonic() + wait
+                logger.warning("LLM model %s rate-limited; skipping it for %.0f s", model, wait)
             except APIStatusError as exc:
                 if exc.status_code < 500:
                     raise          # bad request / auth: another model would fail the same way
@@ -114,10 +167,11 @@ class OpenAIClient(LLMClient):
             except APIConnectionError as exc:
                 last_exc = exc
             logger.warning("LLM model %s unavailable (%s)%s", model, type(last_exc).__name__,
-                           " - trying fallback model" if model != ([self.model, *self.fallback_models][-1]) else "")
+                           " - trying fallback model" if model != models[-1] else "")
         raise last_exc  # type: ignore[misc]
 
-    def _complete(self, model, system, user, max_tokens=None, temperature=None, json_mode=False):
+    def _complete(self, model, system, user, max_tokens=None, temperature=None, json_mode=False, client=None):
+        client = client or self.client
         started = time.perf_counter()
         kwargs = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
                   "max_completion_tokens": max_tokens or self.settings.llm_max_tokens,
@@ -127,12 +181,12 @@ class OpenAIClient(LLMClient):
         if self.settings.openai_reasoning_effort:          # reasoning models (e.g. gpt-oss on Groq)
             kwargs["reasoning_effort"] = self.settings.openai_reasoning_effort
         try:
-            response = self.client.chat.completions.create(**kwargs)
+            response = client.chat.completions.create(**kwargs)
         except Exception as exc:  # some (reasoning) models reject a custom temperature
             if "temperature" not in str(exc).lower():
                 raise
             kwargs.pop("temperature")
-            response = self.client.chat.completions.create(**kwargs)
+            response = client.chat.completions.create(**kwargs)
         usage = getattr(response, "usage", None)
         total = (time.perf_counter() - started) * 1000
         return LLMResult(text=(response.choices[0].message.content or "").strip(),

@@ -20,7 +20,7 @@ from backend.db import repository
 from backend.generation.extractive import extractive_answer
 from backend.generation.grounding import (REFUSAL_TEXT, GroundingReport, cited_ids, is_refusal, lexical_grounding,
                                           llm_grounding, normalize_citations, remove_invalid_citations,
-                                          remove_unknown_urls)
+                                          remove_unknown_urls, uncounted_numbers)
 from backend.generation.failover import AllProvidersDown, reset_dense_flag
 from backend.generation.structured import parse_reply
 from backend.services import response_cache
@@ -480,7 +480,8 @@ class ChatService:
                           "source_file": c.meta.get("source_file"), "section": c.meta.get("section"),
                           "qid": c.meta.get("qid", ""), "product_name": c.meta.get("product_name", ""),
                           "entity_name": c.meta.get("entity_name", "")}
-                         for c in reranked[:10]]
+                         # reported in context order (what the model reads first), then the rest of the re-ranking
+                         for c in (top + [r for r in reranked if r.id not in {t.id for t in top}])[:10]]
         kbs_used = sorted({c.kb for c in top}) or route.knowledge_bases
         clarify = self._broad_topic_clarification(convo.strip_social(original), history, top, reranked) \
             or self._broad_topic_clarification(query, history, top, reranked)
@@ -529,6 +530,11 @@ class ChatService:
                     # the question asks about something no indexed document mentions (e.g. "iOS", "Aadhaar") and the
                     # answer repeats it: that claim cannot come from the sources -> "no confirmed information"
                     warnings.append("answer asserts undocumented term(s): " + ", ".join(undocumented))
+                    answer, answer_type = REFUSAL_TEXT, "refusal"
+                uncounted = uncounted_numbers(f"{query} {standalone}", answer, refs)
+                if uncounted:
+                    # "How many universities use it?": the model counted a list itself - no stated total exists
+                    warnings.append("answer states a count the sources do not: " + ", ".join(uncounted))
                     answer, answer_type = REFUSAL_TEXT, "refusal"
                 with stage("grounding_ms"):
                     report = lexical_grounding(answer, refs, standalone, s.grounding_min_support)
@@ -708,7 +714,24 @@ class ChatService:
                 or w in PLATFORM_TERMS
             if name_like or not is_common_word(w):
                 terms[w] = None
-        return [w for w in terms if re.search(rf"\b{re.escape(w)}\b", low)]
+        return [w for w in terms if re.search(rf"\b{re.escape(w)}\b", low) and not self._only_corrected(w, low)]
+
+    @staticmethod
+    def _only_corrected(term: str, answer_low: str) -> bool:
+        """True when every mention of `term` in the answer corrects a wrong assumption of the question rather than
+        asserting something about it: "the data is stored on Microsoft Azure, not AWS [S1]", "only PDF files,
+        not Word documents", "offices in Hyderabad ..., not in Bangalore". The documented fact must be in the same
+        sentence (a source tag) - "it does not have an iOS app" still counts as an undocumented claim."""
+        hits = 0
+        for sentence in re.split(r"(?<=[.!?])\s+|\n+", answer_low):
+            if not re.search(rf"\b{re.escape(term)}\b", sentence):
+                continue
+            hits += 1
+            corrected = re.search(rf"(,|;|\(|—|-)\s*(and\s+)?not\s+(in\s+|on\s+|at\s+|an?\s+|the\s+)?{re.escape(term)}\b"
+                                  rf"|\b(instead of|rather than)\s+(an?\s+|the\s+)?{re.escape(term)}\b", sentence)
+            if not (corrected and re.search(r"\[s\d+\]", sentence)):
+                return False
+        return hits > 0
 
     @staticmethod
     def _broad_topic_clarification(query: str, history: list[dict], top: list[Candidate],
@@ -902,6 +925,7 @@ class ChatService:
         min_score = self.settings.min_rerank_score
         out, have = list(top), {c.id for c in top}
         by_id = {c.id: c for c in ranked}
+        added = 0
         for sq, pool in pools.items():
             if not pool:
                 continue
@@ -911,7 +935,10 @@ class ChatService:
             if not scored or any(c.id in have for c in scored[:2]):
                 continue
             best = by_id.get(scored[0].id, scored[0])
-            out.append(best)
+            # a leading slot, right after the best source: for "difference between revoking and recalling" the Revoke
+            # article answers half of the question, so it must not sit behind loosely related "difference" FAQs
+            out.insert(min(len(out), 1 + added), best)
+            added += 1
             have.add(best.id)
         return out
 

@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatbot Data Automation</title>
+<style>
+:root { --bg:#082a4d; --card:#0f4479; --head:#1d6fc2; --fg:#ffffff; --sub:#d3e3f5; --acc:#5cb3ff; --new:#ffb454; --line:#2a5f93; --red:#ff9b9b; }
+@page { size: 1800px 2560px; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: "Segoe UI", Calibri, Arial, sans-serif; }
+svg { display: block; width: 100%; height: auto; max-width: 1800px; margin: 0 auto; }
+.doc { max-width: 1500px; margin: 0 auto; padding: 24px 40px 60px; font-size: 18px; line-height: 1.55; color: var(--sub); }
+h2 { color: var(--fg); font-size: 32px; margin: 44px 0 10px; }
+h3.phase { color: var(--fg); font-size: 25px; margin: 34px 0 14px; padding-left: 14px; border-left: 6px solid var(--acc); }
+.lead { font-size: 20px; color: var(--sub); max-width: 1250px; }
+.step { display: flex; gap: 18px; background: var(--card); border-radius: 12px; padding: 18px 22px; margin: 0 0 14px; break-inside: avoid; }
+.step.isnew { outline: 2.5px dashed var(--new); outline-offset: -2px; }
+.num { flex: 0 0 46px; height: 46px; border-radius: 50%; background: var(--fg); color: var(--head); font-weight: 700; font-size: 19px; display: flex; align-items: center; justify-content: center; }
+.isnew .num { background: var(--new); color: #3a2400; }
+.body h4 { margin: 6px 0 8px; font-size: 22px; color: var(--fg); }
+.body p { margin: 6px 0; }
+.body b { color: var(--fg); }
+.built { color: #b6cde6; font-size: 16.5px; }
+.badge { font-size: 13px; font-weight: 600; border-radius: 20px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+.badge.new { border: 1.5px solid var(--new); color: var(--new); }
+.badge.have { border: 1.5px solid var(--acc); color: var(--acc); }
+table { width: 100%; border-collapse: collapse; margin: 10px 0 8px; background: var(--card); border-radius: 12px; overflow: hidden; break-inside: avoid; }
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--head); color: var(--fg); font-weight: 600; }
+td b { color: var(--fg); }
+code, pre { font-family: Consolas, "Cascadia Mono", monospace; }
+code { background: #0b3763; color: #cfe6ff; padding: 1px 6px; border-radius: 5px; font-size: 16px; }
+pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; font-size: 15.5px; line-height: 1.5; overflow-x: auto; break-inside: avoid; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.note { border-left: 5px solid var(--new); background: #0d3a66; padding: 12px 18px; border-radius: 6px; margin: 14px 0; }
+.timeline td:first-child { white-space: nowrap; color: var(--fg); font-family: Consolas, monospace; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } .doc { padding: 16px; font-size: 16px; } }
+</style></head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1560" width="1800" height="1560" font-family="Segoe UI, Calibri, Arial, sans-serif">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff"/></marker><marker id="ahr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ff7b7b"/></marker></defs>
+<rect width="1800" height="1560" fill="#082a4d"/>
+<text x="60" y="60" font-size="36" fill="#ffffff" font-weight="700" text-anchor="start" >Chatbot Data Automation Architecture</text>
+<text x="60" y="92" font-size="18" fill="#d3e3f5" font-weight="400" text-anchor="start" >PostgreSQL → Data API → scheduled sync (07:00 &amp; 19:00) → always up-to-date chatbot answers</text>
+<rect x="1230" y="40" width="34" height="22" rx="5" fill="#0f4479"/>
+<text x="1274" y="57" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >already in the chatbot</text>
+<rect x="1460" y="40" width="34" height="22" rx="5" fill="#0f4479" stroke="#ffb454" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="1504" y="57" font-size="15" fill="#ffb454" font-weight="400" text-anchor="start" >new: to build</text>
+<rect x="30" y="120" width="1740" height="310" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="60" y="164" font-size="27" fill="#ffffff" font-weight="600" text-anchor="start" >1 · Trigger</text>
+<text x="60" y="188" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >twice a day automatically, or on demand</text>
+<rect x="60" y="206" width="300" height="160" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
+<path d="M60,216 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="87" cy="231" r="14" fill="#ffb454"/>
+<text x="87" y="237" font-size="15" fill="#3a2400" font-weight="700" text-anchor="middle" >A</text>
+<text x="110" y="238" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Scheduled trigger</text>
+<circle cx="82" cy="282" r="3" fill="#5cb3ff"/>
+<text x="93" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Every day 07:00 and 19:00 IST</text>
+<circle cx="82" cy="306" r="3" fill="#5cb3ff"/>
+<text x="93" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Scheduler / cron job</text>
+<circle cx="82" cy="330" r="3" fill="#5cb3ff"/>
+<text x="93" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Times are configurable</text>
+<rect x="405" y="206" width="300" height="160" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M405,216 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="432" cy="231" r="14" fill="#ffffff"/>
+<text x="432" y="237" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >B</text>
+<text x="455" y="238" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Manual &quot;Sync now&quot;</text>
+<circle cx="427" cy="282" r="3" fill="#5cb3ff"/>
+<text x="438" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Admin button or API call</text>
+<circle cx="427" cy="306" r="3" fill="#5cb3ff"/>
+<text x="438" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >For urgent data fixes</text>
+<circle cx="427" cy="330" r="3" fill="#5cb3ff"/>
+<text x="438" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same job as the schedule</text>
+<rect x="750" y="206" width="300" height="160" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M750,216 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="777" cy="231" r="14" fill="#ffffff"/>
+<text x="777" y="237" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >C</text>
+<text x="800" y="238" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Change webhook</text>
+<circle cx="772" cy="282" r="3" fill="#5cb3ff"/>
+<text x="783" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Optional: the data team&#x27;s</text>
+<circle cx="772" cy="306" r="3" fill="#5cb3ff"/>
+<text x="783" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >app calls us after a change</text>
+<circle cx="772" cy="330" r="3" fill="#5cb3ff"/>
+<text x="783" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Signed, rate-limited</text>
+<rect x="1095" y="206" width="645" height="160" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M1095,216 a10,10 0 0 1 10,-10 h625 a10,10 0 0 1 10,10 v40 h-645 z" fill="#1d6fc2"/>
+<circle cx="1122" cy="231" r="14" fill="#ffffff"/>
+<text x="1122" y="237" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >1</text>
+<text x="1145" y="238" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Sync job (queue)</text>
+<circle cx="1117" cy="282" r="3" fill="#5cb3ff"/>
+<text x="1128" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Saved in the jobs table: one sync at a time</text>
+<circle cx="1117" cy="306" r="3" fill="#5cb3ff"/>
+<text x="1128" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Lease + automatic retries (3x, back-off)</text>
+<circle cx="1117" cy="330" r="3" fill="#5cb3ff"/>
+<text x="1128" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Survives restarts; status visible in admin</text>
+<line x1="210.0" y1="366" x2="210.0" y2="392" stroke="#ffffff" stroke-width="3"/>
+<line x1="555.0" y1="366" x2="555.0" y2="392" stroke="#ffffff" stroke-width="3"/>
+<line x1="900.0" y1="366" x2="900.0" y2="392" stroke="#ffffff" stroke-width="3"/>
+<polyline points="210.0,392 1215,392 1215,372" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="1004.8" y="377" width="105.4" height="24" fill="#082a4d"/>
+<text x="1057.5" y="394" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >any trigger</text>
+<rect x="30" y="475" width="1740" height="320" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="1740" y="519" font-size="27" fill="#ffffff" font-weight="600" text-anchor="end" >2 · Extract &amp; prepare</text>
+<text x="1740" y="543" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="end" >only what changed since the last successful sync</text>
+<path d="M60,593 v152 a150.0,22 0 0 0 300,0 v-152" fill="#0f4479" stroke="#5cb3ff" stroke-width="2"/>
+<ellipse cx="210.0" cy="593" rx="150.0" ry="22" fill="#1d6fc2" stroke="#5cb3ff" stroke-width="2"/>
+<circle cx="100" cy="641" r="14" fill="#ffffff"/>
+<text x="100" y="647" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >2</text>
+<text x="123" y="648" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >PostgreSQL</text>
+<text x="210.0" y="679" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Source of truth: products,</text>
+<text x="210.0" y="702" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >FAQs, articles, documents</text>
+<text x="210.0" y="725" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >updated_at + is_deleted</text>
+<text x="210.0" y="748" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >on every row</text>
+<rect x="405" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
+<path d="M405,581 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="432" cy="596" r="14" fill="#ffb454"/>
+<text x="432" y="602" font-size="15" fill="#3a2400" font-weight="700" text-anchor="middle" >3</text>
+<text x="455" y="603" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Data API (pull)</text>
+<circle cx="427" cy="647" r="3" fill="#5cb3ff"/>
+<text x="438" y="652" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >GET changes since watermark</text>
+<circle cx="427" cy="671" r="3" fill="#5cb3ff"/>
+<text x="438" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Page by page (e.g. 500 rows)</text>
+<circle cx="427" cy="695" r="3" fill="#5cb3ff"/>
+<text x="438" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >HTTPS + API key / OAuth</text>
+<circle cx="427" cy="719" r="3" fill="#5cb3ff"/>
+<text x="438" y="724" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Retry with back-off</text>
+<rect x="750" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
+<path d="M750,581 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="777" cy="596" r="14" fill="#ffb454"/>
+<text x="777" y="602" font-size="15" fill="#3a2400" font-weight="700" text-anchor="middle" >4</text>
+<text x="800" y="603" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Validate &amp; stage</text>
+<circle cx="772" cy="647" r="3" fill="#5cb3ff"/>
+<text x="783" y="652" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Check schema and row counts</text>
+<circle cx="772" cy="671" r="3" fill="#5cb3ff"/>
+<text x="783" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Mask personal data (PII)</text>
+<circle cx="772" cy="695" r="3" fill="#5cb3ff"/>
+<text x="783" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Save a raw snapshot</text>
+<circle cx="772" cy="719" r="3" fill="#5cb3ff"/>
+<text x="783" y="724" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Stop if data looks wrong</text>
+<rect x="1095" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M1095,581 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="1122" cy="596" r="14" fill="#ffffff"/>
+<text x="1122" y="602" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >5</text>
+<text x="1145" y="603" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Detect changes</text>
+<circle cx="1117" cy="647" r="3" fill="#5cb3ff"/>
+<text x="1128" y="652" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Hash each record, compare</text>
+<circle cx="1117" cy="671" r="3" fill="#5cb3ff"/>
+<text x="1128" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >New · changed · deleted</text>
+<circle cx="1117" cy="695" r="3" fill="#5cb3ff"/>
+<text x="1128" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Unchanged rows skipped</text>
+<circle cx="1117" cy="719" r="3" fill="#5cb3ff"/>
+<text x="1128" y="724" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >(no re-embedding cost)</text>
+<rect x="1440" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M1440,581 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="1467" cy="596" r="14" fill="#ffffff"/>
+<text x="1467" y="602" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >6</text>
+<text x="1490" y="603" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Preprocess</text>
+<circle cx="1462" cy="647" r="3" fill="#5cb3ff"/>
+<text x="1473" y="652" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Rows → clean documents</text>
+<circle cx="1462" cy="671" r="3" fill="#5cb3ff"/>
+<text x="1473" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Clean text, remove duplicates</text>
+<circle cx="1462" cy="695" r="3" fill="#5cb3ff"/>
+<text x="1473" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Metadata: id, product, access</text>
+<circle cx="1462" cy="719" r="3" fill="#5cb3ff"/>
+<text x="1473" y="724" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Prompt-injection scan</text>
+<line x1="364" y1="669.0" x2="399" y2="669.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="709" y1="662.0" x2="744" y2="662.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1054" y1="662.0" x2="1089" y2="662.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1399" y1="662.0" x2="1434" y2="662.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<polyline points="1590.0,368 1590.0,452 555.0,452 555.0,565" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="982.8" y="437" width="179.4" height="24" fill="#082a4d"/>
+<text x="1072.5" y="454" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >the job calls the API</text>
+<rect x="30" y="840" width="1740" height="320" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="60" y="884" font-size="27" fill="#ffffff" font-weight="600" text-anchor="start" >3 · Index &amp; quality gate</text>
+<text x="60" y="908" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >build a new version beside the live one; switch only if it passes</text>
+<rect x="1440" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M1440,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="1467" cy="961" r="14" fill="#ffffff"/>
+<text x="1467" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >7</text>
+<text x="1490" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Chunking</text>
+<circle cx="1462" cy="1012" r="3" fill="#5cb3ff"/>
+<text x="1473" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Split changed documents</text>
+<circle cx="1462" cy="1036" r="3" fill="#5cb3ff"/>
+<text x="1473" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >into small sections</text>
+<circle cx="1462" cy="1060" r="3" fill="#5cb3ff"/>
+<text x="1473" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Each keeps title + source</text>
+<circle cx="1462" cy="1084" r="3" fill="#5cb3ff"/>
+<text x="1473" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same method as today</text>
+<rect x="1095" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M1095,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="1122" cy="961" r="14" fill="#ffffff"/>
+<text x="1122" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >8</text>
+<text x="1145" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Embedding</text>
+<circle cx="1117" cy="1012" r="3" fill="#5cb3ff"/>
+<text x="1128" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Chunks → vectors</text>
+<circle cx="1117" cy="1036" r="3" fill="#5cb3ff"/>
+<text x="1128" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same model as the chatbot</text>
+<circle cx="1117" cy="1060" r="3" fill="#5cb3ff"/>
+<text x="1128" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Only new / changed chunks</text>
+<circle cx="1117" cy="1084" r="3" fill="#5cb3ff"/>
+<text x="1128" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Runs on our server</text>
+<rect x="750" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M750,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="777" cy="961" r="14" fill="#ffffff"/>
+<text x="777" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >9</text>
+<text x="800" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >New index version</text>
+<circle cx="772" cy="1012" r="3" fill="#5cb3ff"/>
+<text x="783" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Copy of the live index</text>
+<circle cx="772" cy="1036" r="3" fill="#5cb3ff"/>
+<text x="783" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ new / changed chunks</text>
+<circle cx="772" cy="1060" r="3" fill="#5cb3ff"/>
+<text x="783" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >− deleted records</text>
+<circle cx="772" cy="1084" r="3" fill="#5cb3ff"/>
+<text x="783" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Live chatbot untouched</text>
+<rect x="405" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M405,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="432" cy="961" r="14" fill="#ffffff"/>
+<text x="432" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >10</text>
+<text x="455" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Quality gate</text>
+<circle cx="427" cy="1012" r="3" fill="#5cb3ff"/>
+<text x="438" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Run golden test questions</text>
+<circle cx="427" cy="1036" r="3" fill="#5cb3ff"/>
+<text x="438" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Recall@5, hit rate, counts</text>
+<circle cx="427" cy="1060" r="3" fill="#5cb3ff"/>
+<text x="438" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Compare with live version</text>
+<circle cx="427" cy="1084" r="3" fill="#5cb3ff"/>
+<text x="438" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Pass / fail decision</text>
+<rect x="60" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M60,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
+<circle cx="87" cy="961" r="14" fill="#ffffff"/>
+<text x="87" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >11</text>
+<text x="110" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Promote or keep</text>
+<circle cx="82" cy="1012" r="3" fill="#5cb3ff"/>
+<text x="93" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Pass → switch live index</text>
+<circle cx="82" cy="1036" r="3" fill="#5cb3ff"/>
+<text x="93" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >(instant, no downtime)</text>
+<circle cx="82" cy="1060" r="3" fill="#5cb3ff"/>
+<text x="93" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Fail → keep current index</text>
+<circle cx="82" cy="1084" r="3" fill="#5cb3ff"/>
+<text x="93" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Last 5 versions kept</text>
+<line x1="1436" y1="1027.0" x2="1401" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1091" y1="1027.0" x2="1056" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="746" y1="1027.0" x2="711" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="401" y1="1027.0" x2="366" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<polyline points="1590.0,755 1590.0,930" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="1522.5" y="802" width="135.0" height="24" fill="#082a4d"/>
+<text x="1590.0" y="819" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >clean documents</text>
+<rect x="30" y="1205" width="1740" height="300" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
+<text x="900.0" y="1249" font-size="27" fill="#ffffff" font-weight="600" text-anchor="middle" >4 · Publish &amp; monitor</text>
+<text x="900.0" y="1273" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="middle" >users see new data; the team sees every run</text>
+<rect x="60.0" y="1301" width="386.25" height="172" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M60.0,1311 a10,10 0 0 1 10,-10 h366.25 a10,10 0 0 1 10,10 v40 h-386.25 z" fill="#1d6fc2"/>
+<circle cx="87.0" cy="1326" r="14" fill="#ffffff"/>
+<text x="87.0" y="1332" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >12</text>
+<text x="110.0" y="1333" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Refresh answers</text>
+<circle cx="82.0" cy="1377" r="3" fill="#5cb3ff"/>
+<text x="93.0" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Clear cached answers of that product</text>
+<circle cx="82.0" cy="1401" r="3" fill="#5cb3ff"/>
+<text x="93.0" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Re-check approved FAQ answers</text>
+<circle cx="82.0" cy="1425" r="3" fill="#5cb3ff"/>
+<text x="93.0" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >that cite a changed source</text>
+<rect x="491.25" y="1301" width="386.25" height="172" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M491.25,1311 a10,10 0 0 1 10,-10 h366.25 a10,10 0 0 1 10,10 v40 h-386.25 z" fill="#1d6fc2"/>
+<circle cx="518.25" cy="1326" r="14" fill="#ffffff"/>
+<text x="518.25" y="1332" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >13</text>
+<text x="541.25" y="1333" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Chatbot answers</text>
+<circle cx="513.25" cy="1377" r="3" fill="#5cb3ff"/>
+<text x="524.25" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Users get answers from the</text>
+<circle cx="513.25" cy="1401" r="3" fill="#5cb3ff"/>
+<text x="524.25" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >latest data, with source links</text>
+<circle cx="513.25" cy="1425" r="3" fill="#5cb3ff"/>
+<text x="524.25" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >No restart, no downtime</text>
+<rect x="922.5" y="1301" width="386.25" height="172" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
+<path d="M922.5,1311 a10,10 0 0 1 10,-10 h366.25 a10,10 0 0 1 10,10 v40 h-386.25 z" fill="#1d6fc2"/>
+<circle cx="949.5" cy="1326" r="14" fill="#ffb454"/>
+<text x="949.5" y="1332" font-size="15" fill="#3a2400" font-weight="700" text-anchor="middle" >14</text>
+<text x="972.5" y="1333" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Record the run</text>
+<circle cx="944.5" cy="1377" r="3" fill="#5cb3ff"/>
+<text x="955.5" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Save the new watermark</text>
+<circle cx="944.5" cy="1401" r="3" fill="#5cb3ff"/>
+<text x="955.5" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Report: added / changed / deleted</text>
+<circle cx="944.5" cy="1425" r="3" fill="#5cb3ff"/>
+<text x="955.5" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Audit log of every run</text>
+<rect x="1353.75" y="1301" width="386.25" height="172" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<path d="M1353.75,1311 a10,10 0 0 1 10,-10 h366.25 a10,10 0 0 1 10,10 v40 h-386.25 z" fill="#1d6fc2"/>
+<circle cx="1380.75" cy="1326" r="14" fill="#ffffff"/>
+<text x="1380.75" y="1332" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >15</text>
+<text x="1403.75" y="1333" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Notify &amp; monitor</text>
+<circle cx="1375.75" cy="1377" r="3" fill="#5cb3ff"/>
+<text x="1386.75" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Teams / Slack / email summary</text>
+<circle cx="1375.75" cy="1401" r="3" fill="#5cb3ff"/>
+<text x="1386.75" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Grafana dashboard</text>
+<circle cx="1375.75" cy="1425" r="3" fill="#5cb3ff"/>
+<text x="1386.75" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Alert: failure or no sync in 24 h</text>
+<line x1="450.25" y1="1387.0" x2="485.25" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="881.5" y1="1387.0" x2="916.5" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1312.75" y1="1387.0" x2="1347.75" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<polyline points="210.0,1120 210.0,1295" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<rect x="183.2" y="1167" width="53.6" height="24" fill="#082a4d"/>
+<text x="210.0" y="1184" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >pass</text>
+<polyline points="555.0,1120 555.0,1182 1546.875,1182 1546.875,1295" fill="none" stroke="#ff7b7b" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#ahr)"/>
+<rect x="883.5375" y="1167" width="334.8" height="24" fill="#082a4d"/>
+<text x="1050.9375" y="1184" font-size="15" fill="#ff9b9b" font-weight="400" text-anchor="middle" >fail → keep current index + alert the team</text>
+<text x="60" y="1534" font-size="16.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Every step is logged; a failed run never changes what users see - the chatbot keeps answering from the last good version.</text>
+</svg>
+<main class="doc">
+  <h2>What this automation does</h2>
+  <p class="lead">The chatbot's knowledge comes from a PostgreSQL database that people can update at any time.
+  This process keeps the chatbot in step with it automatically. <b>Twice a day, at 07:00 and 19:00</b>, a job pulls
+  everything that changed through a secure Data API. It prepares the changed records, adds them to a <b>new version</b>
+  of the search index, tests that version, and switches the chatbot over only if the tests pass. Urgent changes can be
+  pushed straight away with <b>Sync now</b> or a webhook. No step needs a person, and a failed run never affects what
+  users see.</p>
+  <div class="note"><b>Most of it already exists.</b> The job queue, change detection, chunking, embedding,
+  versioned indexes with a quality gate, cache refresh, notifications and dashboards are already in the chatbot.
+  The pieces marked <span style="color:var(--new)">new</span> are what we need to build: the Data API connector,
+  validation and safety limits, the twice-daily schedule, and the sync watermark and run report.</div>
+
+  <h2>Each step explained</h2>
+  <h3 class="phase p1">1 · Trigger</h3><article class="step isnew">
+  <div class="num">A</div>
+  <div class="body">
+    <h4>Scheduled trigger <span class="badge new">new</span></h4>
+    <p><b>What happens:</b> A scheduler starts a sync every day at 07:00 and 19:00 (India time). Both times are settings, so a third run or different hours need no code change. If the server was down at 07:00, the missed run starts as soon as it is back.</p>
+    <p><b>Why:</b> Data in PostgreSQL can change at any time. Two fixed runs mean the chatbot is never more than about 12 hours behind. 07:00 is before office hours (yesterday evening's edits are live when users arrive). 19:00 picks up the working day's edits.</p>
+    <p class="built"><b>Built on:</b> The chatbot already has a background scheduler (alerts, nightly evaluation). New: the two sync times and the catch-up rule.</p>
+  </div>
+</article><article class="step">
+  <div class="num">B</div>
+  <div class="body">
+    <h4>Manual "Sync now" <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> An administrator presses "Sync now" in the admin console, or calls the admin API.</p>
+    <p><b>Why:</b> For urgent corrections, such as a wrong price or a withdrawn product, that cannot wait for the next scheduled run.</p>
+    <p class="built"><b>Built on:</b> Existing: the admin console already queues sync jobs. The database sync becomes one more job type.</p>
+  </div>
+</article><article class="step">
+  <div class="num">C</div>
+  <div class="body">
+    <h4>Change webhook (optional) <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> If the team that owns the database can send a notification after a change, it calls our webhook and a sync starts within a minute.</p>
+    <p><b>Why:</b> Gives near-real-time updates without polling the database every few minutes. It is optional: the twice-daily schedule still catches everything if a webhook is missed.</p>
+    <p class="built"><b>Built on:</b> Existing: the signed, replay-protected webhook endpoint (/api/v1/webhooks/content-updated).</p>
+  </div>
+</article><article class="step">
+  <div class="num">1</div>
+  <div class="body">
+    <h4>Sync job (queue) <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Every trigger creates the same job in the jobs table. A background worker picks it up. Only one database sync runs at a time: a second trigger during a run is merged into it, not started twice. The job holds a lease, so if the server restarts mid-run, the job is picked up again. Failures are retried 3 times with increasing waits.</p>
+    <p><b>Why:</b> One entry point means the schedule, the button and the webhook all behave identically and are all visible in the admin console with their status and result.</p>
+    <p class="built"><b>Built on:</b> Existing: the ingestion job queue and worker (ingestion/jobs.py, ingestion/automation.py).</p>
+  </div>
+</article><h3 class="phase p2">2 · Extract &amp; prepare</h3><article class="step">
+  <div class="num">2</div>
+  <div class="body">
+    <h4>PostgreSQL (source of truth) <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> The client's database holds the content the chatbot must know: products, FAQs, help articles, documents. Each table used by the chatbot needs an updated_at timestamp and an is_deleted flag (or a deleted_records table).</p>
+    <p><b>Why:</b> updated_at lets us fetch only what changed. is_deleted lets us remove content that was deleted. Without these, every run would have to re-read and compare everything.</p>
+    <p class="built"><b>Built on:</b> Owned by the data team. The chatbot never connects to it directly: only the Data API does, with a read-only database user (ideally on a read replica).</p>
+  </div>
+</article><article class="step isnew">
+  <div class="num">3</div>
+  <div class="body">
+    <h4>Data API (pull) <span class="badge new">new</span></h4>
+    <p><b>What happens:</b> The sync job calls GET /kb-export/changes?updated_since=&lt;watermark&gt;&amp;page=N over HTTPS with an API key or OAuth token. The watermark is the time of the last successful sync minus a 5-minute overlap (to catch transactions that were still being saved). Results come page by page, for example 500 rows each. Network errors and 429/5xx responses are retried with back-off.</p>
+    <p><b>Why:</b> An API keeps database credentials and table structure away from the chatbot. Paging keeps memory small. The overlap guarantees nothing is missed, and step 5 removes any duplicates.</p>
+    <p class="built"><b>Built on:</b> New: a connector (a new source type next to page, sitemap, Zendesk and FAQ). The API itself is a small read-only service in front of PostgreSQL: either the data team's or a tiny one we deploy.</p>
+  </div>
+</article><article class="step isnew">
+  <div class="num">4</div>
+  <div class="body">
+    <h4>Validate &amp; stage <span class="badge new">new</span></h4>
+    <p><b>What happens:</b> Each row is checked: required fields present (id, title, body, updated_at), correct types, sensible length. Personal data such as phone numbers, emails of individuals and ID numbers is masked. The raw response is saved as a dated snapshot. Safety limits stop the run if something looks wrong, for example if more than 20% of all records would be deleted, or the API suddenly returns 0 rows.</p>
+    <p><b>Why:</b> Bad or partial data must never reach users. A broken export that looks like "everything was deleted" should stop the run and alert, not empty the chatbot. Snapshots let us see exactly what arrived in any run.</p>
+    <p class="built"><b>Built on:</b> New: schema check and safety limits. Existing: the sensitive-data redaction already used for chat messages.</p>
+  </div>
+</article><article class="step">
+  <div class="num">5</div>
+  <div class="body">
+    <h4>Detect changes <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> A content hash is computed for every record and compared with the hash stored at the last sync. Each record is sorted into new, changed, unchanged or deleted. Unchanged records are skipped.</p>
+    <p><b>Why:</b> Typically only a small share of records changes per run, so the run takes minutes, not hours, and costs no extra embedding work for unchanged content.</p>
+    <p class="built"><b>Built on:</b> Existing: hash-based change detection and the document registry (ingestion/registry.py).</p>
+  </div>
+</article><article class="step">
+  <div class="num">6</div>
+  <div class="body">
+    <h4>Preprocess <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Each record becomes a clean document: title, body text and structured fields written as readable text, HTML removed, whitespace and duplicates cleaned. Metadata is attached: record id, product, source table, last-updated date and who may see it (access roles). Text is scanned for hidden instructions (prompt injection).</p>
+    <p><b>Why:</b> The chatbot answers better from clean, well-labelled text. Access roles keep internal records away from public users. The injection scan stops a database field from smuggling instructions to the AI.</p>
+    <p class="built"><b>Built on:</b> Existing: text cleaning, metadata and injection scan used for files and web pages today.</p>
+  </div>
+</article><h3 class="phase p3">3 · Index &amp; quality gate</h3><article class="step">
+  <div class="num">7</div>
+  <div class="body">
+    <h4>Chunking <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Only new and changed documents are split into small sections. Each section keeps its document title and source, so answers can cite it.</p>
+    <p><b>Why:</b> Small pieces let search find the exact paragraph that answers a question.</p>
+    <p class="built"><b>Built on:</b> Existing: the same chunking used for all current documents, so database content behaves like everything else.</p>
+  </div>
+</article><article class="step">
+  <div class="num">8</div>
+  <div class="body">
+    <h4>Embedding <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Each new chunk is turned into a vector (a list of numbers that captures its meaning) with the same embedding model the chatbot uses for questions.</p>
+    <p><b>Why:</b> Search by meaning only works when documents and questions use the same model. Embedding only changed chunks keeps runs fast.</p>
+    <p class="built"><b>Built on:</b> Existing: the embedding model runs on our server; there is no per-use cost.</p>
+  </div>
+</article><article class="step">
+  <div class="num">9</div>
+  <div class="body">
+    <h4>New index version <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> A new version of the search index is built next to the live one: the live content, plus new and changed chunks, minus deleted records. Users keep using the live version during the whole run.</p>
+    <p><b>Why:</b> Users never see a half-updated index, and a bad update can be undone instantly.</p>
+    <p class="built"><b>Built on:</b> Existing: versioned indexes (INDEX_VERSIONING_ENABLED, backend/indexing/versions.py).</p>
+  </div>
+</article><article class="step">
+  <div class="num">10</div>
+  <div class="body">
+    <h4>Quality gate <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Before switching, the new version is tested automatically with the golden test questions: does the right source still appear in the top 5 (recall@5, hit rate)? Are chunk counts sensible? Is it at least as good as the live version?</p>
+    <p><b>Why:</b> A data change can accidentally break answers, for example a renamed product or a deleted FAQ. The gate catches this before users do.</p>
+    <p class="built"><b>Built on:</b> Existing: the evaluation gate in index versioning (up to EVAL_GATE_MAX_CASES test questions). It uses search only, no AI model calls, so it costs nothing.</p>
+  </div>
+</article><article class="step">
+  <div class="num">11</div>
+  <div class="body">
+    <h4>Promote or keep <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Pass: the live pointer switches to the new version instantly, with no restart or downtime. Fail: the live version stays as it was, and the team is alerted with the reason. The last 5 versions are kept, so an admin can roll back with one click.</p>
+    <p><b>Why:</b> Users only ever see data that passed the checks.</p>
+    <p class="built"><b>Built on:</b> Existing: promote / rollback and KEEP_INDEX_VERSIONS=5.</p>
+  </div>
+</article><h3 class="phase p4">4 · Publish &amp; monitor</h3><article class="step">
+  <div class="num">12</div>
+  <div class="body">
+    <h4>Refresh answers <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> Cached answers for the affected product are cleared. Approved FAQ answers that cite a changed or deleted record are flagged for re-check.</p>
+    <p><b>Why:</b> Without this, a cached answer could repeat old information for hours after the data changed.</p>
+    <p class="built"><b>Built on:</b> Existing: freshness handling and cache invalidation (ingestion/freshness.py).</p>
+  </div>
+</article><article class="step">
+  <div class="num">13</div>
+  <div class="body">
+    <h4>Chatbot answers <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> The next question is answered from the new data, with links to the source.</p>
+    <p><b>Why:</b> That is the goal of the whole process: users always get current information.</p>
+    <p class="built"><b>Built on:</b> Existing: no change to the chatbot itself. It always reads the live index version.</p>
+  </div>
+</article><article class="step isnew">
+  <div class="num">14</div>
+  <div class="body">
+    <h4>Record the run <span class="badge new">new</span></h4>
+    <p><b>What happens:</b> After a successful run, the watermark moves to this run's start time. A run report is stored: rows read, added, changed, deleted, skipped, duration, quality-gate score and index version. Every run, including failed ones, goes into the audit log.</p>
+    <p><b>Why:</b> The watermark makes the next run incremental. A failed run does not move it, so nothing is lost: the next run simply fetches the same changes again. Reports answer "when was this data last updated?".</p>
+    <p class="built"><b>Built on:</b> New: a sync_state table (watermark per source) and the run report. Existing: the audit log.</p>
+  </div>
+</article><article class="step">
+  <div class="num">15</div>
+  <div class="body">
+    <h4>Notify &amp; monitor <span class="badge have">already in the chatbot</span></h4>
+    <p><b>What happens:</b> A short summary goes to Teams, Slack or email (for example "07:00 sync: 12 changed, 1 deleted, gate passed, 4 min"). Grafana shows run history, duration and record counts. Alerts fire when a run fails, when the gate blocks a version, or when no successful sync has happened in 24 hours.</p>
+    <p><b>Why:</b> The team learns about problems before users do, and can show when the data was last refreshed.</p>
+    <p class="built"><b>Built on:</b> Existing: ADMIN_NOTIFY_WEBHOOK_URL, alerting (ALERTS_ENABLED), Prometheus + Grafana. New: the "no sync in 24 h" alert rule.</p>
+  </div>
+</article>
+
+  <h2>Schedule</h2>
+  <table>
+    <tr><th>Run</th><th>When</th><th>Picks up</th></tr>
+    <tr><td><b>Morning</b></td><td>Every day 07:00 IST</td><td>Changes made since 19:00 the evening before (overnight and late edits), live before office hours</td></tr>
+    <tr><td><b>Evening</b></td><td>Every day 19:00 IST</td><td>Changes made during the working day</td></tr>
+    <tr><td><b>On demand</b></td><td>Any time</td><td>"Sync now" button / admin API, or the optional webhook from the data team</td></tr>
+    <tr><td><b>Weekly check</b></td><td>Sunday 07:00 IST (suggested)</td><td>Full comparison of all record ids, to catch rows deleted outright (without the is_deleted flag)</td></tr>
+  </table>
+  <p>Only one sync runs at a time. If a trigger arrives during a run, it joins that run. Times, time zone and the
+  weekly check are settings.</p>
+
+  <h2>What if something goes wrong?</h2>
+  <table>
+    <tr><th>Situation</th><th>What the system does</th><th>What users see</th></tr>
+    <tr><td><b>Data API down or slow</b></td><td>Retries 3 times with increasing waits, then marks the run failed and alerts. The watermark does not move, so the next run fetches the same changes.</td><td>Answers from the last good data</td></tr>
+    <tr><td><b>Bad or suspicious data</b> (missing fields, 0 rows, more than 20% deletions)</td><td>Step 4 stops the run before anything is indexed and alerts with the reason. A snapshot is kept for checking.</td><td>Answers from the last good data</td></tr>
+    <tr><td><b>New version fails the quality gate</b></td><td>The live index is kept. An alert gives the gate score against the live version. An admin can inspect and promote manually after fixing the data.</td><td>Answers from the last good data</td></tr>
+    <tr><td><b>Server restarts mid-run</b></td><td>The job's lease expires and the worker picks the job up again.</td><td>No change</td></tr>
+    <tr><td><b>Server down at 07:00</b></td><td>The missed run starts as soon as the server is back.</td><td>Data refreshed a little later</td></tr>
+    <tr><td><b>Wrong data promoted</b></td><td>One-click rollback to any of the last 5 versions in the admin console.</td><td>Fixed within seconds</td></tr>
+    <tr><td><b>No successful sync for 24 hours</b></td><td>"Stale data" alert to the team.</td><td>No change</td></tr>
+  </table>
+
+  <h2>Data API contract (proposed)</h2>
+  <div class="two">
+  <div>
+  <p>A small, read-only API in front of PostgreSQL. It can be built by the data team, or by us as a tiny service
+  using a read-only database user on a read replica or a database view.</p>
+  <p><b>Request</b></p>
+<pre>GET /api/v1/kb-export/changes
+    ?updated_since=2026-11-24T01:25:00Z   (watermark minus 5 min)
+    &amp;page=1&amp;page_size=500
+Authorization: Bearer &lt;token&gt;</pre>
+  <p><b>Weekly id check</b></p>
+<pre>GET /api/v1/kb-export/ids?entity=faq&amp;page=1</pre>
+  <p><b>Database needs:</b> <code>updated_at</code> on every table used, kept current by the application or a
+  trigger; <code>is_deleted</code> (soft delete) or a deletions table; an index on <code>updated_at</code>.</p>
+  </div>
+  <div>
+  <p><b>Response</b></p>
+<pre>{
+  "records": [
+    {
+      "id": "faq-1042",
+      "entity": "faq",
+      "product": "learningchain",
+      "title": "How do I recall a certificate?",
+      "body": "Open Certificates, select ...",
+      "url": "https://.../faq/1042",
+      "access": "public",
+      "updated_at": "2026-11-24T05:12:44Z",
+      "is_deleted": false
+    }
+  ],
+  "page": 1,
+  "next_page": 2,
+  "total": 37
+}</pre>
+  </div></div>
+
+  <h2>Security</h2>
+  <table>
+    <tr><th>Area</th><th>Control</th></tr>
+    <tr><td><b>Database access</b></td><td>The chatbot never connects to PostgreSQL. Only the Data API does, with a read-only user, preferably on a read replica.</td></tr>
+    <tr><td><b>API access</b></td><td>HTTPS only. API key or OAuth client credentials kept in the secrets store (never in code or Git). IP allow-list where possible.</td></tr>
+    <tr><td><b>Personal data</b></td><td>The export sends only fields the chatbot needs. Step 4 masks personal data as a second line of defence.</td></tr>
+    <tr><td><b>Who sees what</b></td><td>Each record carries access roles. Internal records are never shown to public users.</td></tr>
+    <tr><td><b>Malicious content</b></td><td>Step 6 scans for prompt injection. The webhook is signed and replay-protected.</td></tr>
+    <tr><td><b>Traceability</b></td><td>Every run, its counts and its outcome are in the audit log. Raw snapshots are kept for a set period (e.g. 30 days).</td></tr>
+  </table>
+
+  <h2>Configuration (proposed settings)</h2>
+<pre># new - database sync
+DB_SYNC_ENABLED=true
+DB_SYNC_TIMES=07:00,19:00            # runs per day
+DB_SYNC_TIMEZONE=Asia/Kolkata
+DB_SYNC_FULL_CHECK=SUN 07:00         # weekly id comparison
+DATA_API_URL=https://&lt;data-api-host&gt;/api/v1/kb-export
+DATA_API_TOKEN=&lt;from the secrets store&gt;
+DB_SYNC_PAGE_SIZE=500
+DB_SYNC_OVERLAP_MINUTES=5
+DB_SYNC_MAX_DELETE_RATIO=0.20        # safety stop
+DB_SYNC_STALE_ALERT_HOURS=24
+
+# existing - turn on
+INDEX_VERSIONING_ENABLED=true        # build -&gt; quality gate -&gt; promote / rollback
+KEEP_INDEX_VERSIONS=5
+ALERTS_ENABLED=true
+ADMIN_NOTIFY_WEBHOOK_URL=&lt;Teams / Slack incoming webhook&gt;</pre>
+
+  <h2>Example: a morning run</h2>
+  <p>Illustrative timings for an incremental run. A first full load takes longer.</p>
+  <table class="timeline">
+    <tr><th>Time</th><th>Step</th></tr>
+    <tr><td>07:00:00</td><td>Scheduler creates the sync job; the worker picks it up</td></tr>
+    <tr><td>07:00:02</td><td>Data API: 1 page, 61 rows updated since 18:55 yesterday (5-minute overlap included)</td></tr>
+    <tr><td>07:00:10</td><td>Validation passed; 3 phone numbers masked; snapshot saved</td></tr>
+    <tr><td>07:00:12</td><td>Change detection: 21 new, 34 changed, 4 deleted, 2 unchanged (already synced in the overlap, skipped)</td></tr>
+    <tr><td>07:00:40</td><td>55 documents → 190 chunks → 190 vectors; new index version v42 built</td></tr>
+    <tr><td>07:01:30</td><td>Quality gate: recall@5 0.93 (live v41: 0.92) → passed</td></tr>
+    <tr><td>07:01:31</td><td>v42 promoted; product answer cache cleared; 2 approved answers flagged for re-check</td></tr>
+    <tr><td>07:01:32</td><td>Watermark saved; Teams: "07:00 sync OK - 21 new, 34 changed, 4 deleted, gate 0.93, 1 min 32 s"</td></tr>
+  </table>
+
+  <h2>What exists and what to build</h2>
+  <table>
+    <tr><th>Component</th><th>Status</th><th>Notes</th></tr>
+    <tr><td><b>Job queue, worker, retries, lease</b></td><td>Exists</td><td>ingestion/jobs.py, ingestion/automation.py</td></tr>
+    <tr><td><b>Change detection, cleaning, chunking, embedding</b></td><td>Exists</td><td>Same pipeline as files and web pages</td></tr>
+    <tr><td><b>Versioned index, quality gate, promote / rollback</b></td><td>Exists</td><td>Flag INDEX_VERSIONING_ENABLED, off today</td></tr>
+    <tr><td><b>Cache refresh, notifications, alerts, Grafana</b></td><td>Exists</td><td>Flags ALERTS_ENABLED, ADMIN_NOTIFY_WEBHOOK_URL</td></tr>
+    <tr><td><b>Webhook trigger</b></td><td>Exists</td><td>/api/v1/webhooks/content-updated</td></tr>
+    <tr><td style="color:var(--new)"><b>Data API</b> (if the data team has none)</td><td style="color:var(--new)">New</td><td>Small read-only service: two endpoints above</td></tr>
+    <tr><td style="color:var(--new)"><b>Database connector</b> (new source type)</td><td style="color:var(--new)">New</td><td>Paging, watermark with overlap, deletions, retries</td></tr>
+    <tr><td style="color:var(--new)"><b>Validation and safety limits</b></td><td style="color:var(--new)">New</td><td>Schema, counts, max-delete ratio, snapshot</td></tr>
+    <tr><td style="color:var(--new)"><b>Twice-daily schedule + catch-up + weekly id check</b></td><td style="color:var(--new)">New</td><td>Added to the existing scheduler</td></tr>
+    <tr><td style="color:var(--new)"><b>Sync state, run report, "stale data" alert</b></td><td style="color:var(--new)">New</td><td>sync_state table, admin page, alert rule</td></tr>
+  </table>
+  <p>Before building, we need from the data team: the tables and fields the chatbot should know, whether
+  <code>updated_at</code> and soft deletes exist, and whether they already have an API or want us to provide one.</p>
+</main>
+</body></html>

@@ -73,6 +73,27 @@ def remove_invalid_citations(text: str, valid: set[str]) -> str:
     return _CITATION_RE.sub(lambda m: m.group(0) if m.group(1) in valid else "", text)
 
 
+COUNT_QUESTION_RE = re.compile(r"\b(how many|how much of|number of|total (number|count) of|count of)\b", re.IGNORECASE)
+_COUNT_CLAIM_RE = re.compile(r"(?<![\w.,])(\d+(?:,\d{3})*)\s*\+?\s*\**\s*([A-Za-z]{3,})")
+
+
+def uncounted_numbers(question: str, answer: str, refs: list[SourceRef]) -> list[str]:
+    """For a "how many ..." question: counts in the answer ("**12** universities") that the sources do not state
+    in the same way ("12 universities"). The model must copy a stated total, never count list items itself; the
+    plain number check is not enough because the same digits often occur elsewhere (a date, a page number)."""
+    if not COUNT_QUESTION_RE.search(question or ""):
+        return []
+    text = _CITATION_RE.sub(" ", answer or "")
+    text = re.sub(r"(?im)^\s*(?:\d+[.)]|step\s*\d+\s*:?)\s+", " ", text)      # list / step numbering
+    corpus = re.sub(r"\s+", " ", _source_corpus(refs).replace("*", "")).lower()
+    bad = []
+    for num, word in _COUNT_CLAIM_RE.findall(text.replace("*", "")):
+        stem_ = word.lower()[:5]
+        if not re.search(rf"(?<![\d,.]){re.escape(num.lower())}\s*\+?\s*{re.escape(stem_)}", corpus):
+            bad.append(f"{num} {word}")
+    return bad
+
+
 def _source_corpus(refs: list[SourceRef]) -> str:
     parts = []
     for r in refs:
