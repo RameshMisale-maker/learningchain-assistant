@@ -139,10 +139,10 @@ class QueryRouter:
             return query, [], False
         if self.llm is not None:
             try:
-                from backend.generation.prompt_builder import format_history, load_prompt
+                from backend.generation.prompt_builder import format_chat_history, load_prompt
 
                 prompt = load_prompt("rewrite_prompt.txt").format(
-                    history=format_history(history, 3, last_answer_chars=1500 if force else None), question=query)
+                    history=format_chat_history(history, last_answer_chars=1500 if force else None), question=query)
                 result = self.llm.complete("You rewrite questions into search queries. Output only the query or "
                                            "queries.", prompt, max_tokens=200, temperature=0.0)
                 lines = [ln.strip().strip('"').lstrip("-*0123456789. ").strip() for ln in result.text.splitlines()]

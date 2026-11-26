@@ -20,7 +20,21 @@ From a real chat where three messages got the wrong fixed reply:
 - **Evaluation:** new expected behaviour `Engage` (a grounded answer or the tailored reply passes; the account reply,
   the bare fixed sentence or an error fails) and category `Conversational` with 3 questions (CV1-CV3) - the golden set
   is now 132 questions.
-- Tests: tests/test_opinion_and_follow_ups.py.
+- **"why?" after a reply:** after a decline (blocked, restricted, out-of-scope, no information, account, escalation)
+  it explains the reason for that decline (product `replies.why_declined`); after an answer it is a follow-up answered
+  from the sources about that topic. It no longer asks "which part of my previous answer" (`intent.why_reply`).
+- **"Is this worth using?" / "why should I use it?" / "what are the benefits?"** (`opinion_kind` = value): the search
+  looks for the documented key features and benefits (`value_search_query`, route `search_query`) while the model
+  still gets the user's own question; prompt rule 2b shapes the answer (one sentence on what it helps with, 3-5
+  benefit bullets with sources, an invitation to share the use case - no "worth it" verdict of its own). If nothing is
+  found: `replies.opinion_value` (what the product helps with, from `help_topics`).
+- **Conversation memory - the whole chat:** before, only the last 4 exchanges (8 messages, 400 characters each) reached
+  the model. Now the whole chat does (up to `CHAT_HISTORY_MESSAGES`=100): the last `CHAT_HISTORY_RECENT_TURNS`=4
+  exchanges in detail, the latest answer up to 1000 characters, older messages as a one-line gist (160 characters),
+  all within `CHAT_HISTORY_MAX_CHARS`=8000 (about 2,000 tokens; a very long chat drops its oldest lines first and says
+  so). Used for the answer and the follow-up rewrite, in Streamlit, the API and the Open WebUI route
+  (`prompt_builder.format_chat_history`).
+- Tests: tests/test_opinion_and_follow_ups.py, tests/test_chat_memory.py.
 
 ## 2026-11-26 (2) - Fairer fact-check, paced evaluation runs, closer-to-source answers
 

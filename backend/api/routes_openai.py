@@ -39,7 +39,6 @@ def api_models() -> dict[str, ProductConfig]:
 def default_model_id() -> str:
     return next(iter(api_models()), "assistant")
 SOURCES_MARKER = "\n\n---\n**Sources**"
-HISTORY_TURNS = 8
 
 _limiter: RateLimiter | None = None
 # Open WebUI chat id -> our session id, so one Open WebUI conversation maps to one stored session (bounded LRU).
@@ -125,7 +124,7 @@ def _history(messages: list[MessageIn]) -> list[dict]:
         content = _text(m.content).split(SOURCES_MARKER)[0].strip()
         if content and not content.startswith("### Task:"):
             turns.append({"role": m.role, "content": content})
-    return turns[-HISTORY_TURNS:]
+    return turns[-get_settings().chat_history_messages:]       # conversation memory (CHAT_HISTORY_MESSAGES)
 
 
 def _completion(content: str, created: int, cid: str, model: str = "") -> dict:

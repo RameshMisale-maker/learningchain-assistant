@@ -115,6 +115,29 @@ class Replies(_Strict):
                                 "give you a fair list of negatives. If you have a specific concern - for example "
                                 "setup, cost, security or a feature you need - tell me and I'll check what's "
                                 "documented, or talk to our team: {support}.")
+    # "why?" right after a decline: the reason, per answer_type of that decline ({product}, {support} filled in)
+    why_declined: dict[str, str] = Field(default_factory=lambda: {
+        "blocked": ("Because that message asked me to set aside my rules or reveal my internal instructions, which I "
+                    "can't do - they keep this chat safe and accurate for everyone. I'm happy to help with any "
+                    "question about {product}."),
+        "restricted": ("Because that topic needs a qualified professional (for example a doctor, financial adviser or "
+                       "lawyer), and a wrong answer from me could cause harm. I can help with questions about "
+                       "{product}."),
+        "out_of_scope": ("Because I'm set up to answer questions about {product} only, so I can't give reliable answers "
+                         "on other topics. Is there something about {product} I can help with?"),
+        "refusal": ("Because I only answer from {product}'s published information, so that I never give you a wrong "
+                    "answer - and that point isn't covered there. Our support team can confirm it for you: {support}."),
+        "account": ("Because, for your privacy and security, I can't see or change personal account records in this "
+                    "chat. You can see them after logging in to your account, or our support team can check: "
+                    "{support}."),
+        "escalation": ("Because refunds, complaints and similar issues need a person to look at your case, so our "
+                       "support team handles them directly: {support}."),
+        "access_denied": ("Because that information is restricted to authorised accounts. If you need access, please "
+                          "contact your administrator or our support team: {support}."),
+    })
+    opinion_value: str = ("{product} can help you with {help_topics}. Whether it's right for you depends on what you "
+                          "need - tell me your use case and I'll show you how {product} handles it, or talk to our "
+                          "team: {support}.")
     opinion_concern: str = ("I understand the concern. Tell me what you're trying to do or what's going wrong with "
                             "{product}, and I'll walk you through it step by step. You can also reach our support "
                             "team: {support}.")

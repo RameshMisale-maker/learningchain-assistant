@@ -124,6 +124,43 @@ def format_history(history: list[dict], max_turns: int = 4, max_chars: int = 400
         for i, t in enumerate(turns))
 
 
+OLDER_MESSAGE_CHARS = 160      # an older message is kept as a one-line gist
+RECENT_MESSAGE_CHARS = 400
+LAST_ANSWER_CHARS = 1000
+
+
+def format_chat_history(history: list[dict], last_answer_chars: int | None = None) -> str:
+    """The whole chat for a prompt (conversation memory): the last CHAT_HISTORY_RECENT_TURNS exchanges in detail
+    (the latest answer up to `last_answer_chars`), older messages as a one-line gist, everything within
+    CHAT_HISTORY_MAX_CHARS - in a very long chat the oldest lines are dropped first and the omission is noted."""
+    s = get_settings()
+    turns = [t for t in (history or [])[-max(2, s.chat_history_messages):]
+             if t.get("role") in ("user", "assistant") and str(t.get("content") or "").strip()]
+    if not turns:
+        return "(none)"
+    recent_from = len(turns) - max(1, s.chat_history_recent_turns) * 2
+    last_asst = max((i for i, t in enumerate(turns) if t["role"] == "assistant"), default=-1)
+    lines = []
+    for i, t in enumerate(turns):
+        text = str(t["content"])
+        if i == last_asst:
+            limit = last_answer_chars or LAST_ANSWER_CHARS
+        elif i >= recent_from:
+            limit = RECENT_MESSAGE_CHARS
+        else:
+            limit, text = OLDER_MESSAGE_CHARS, " ".join(text.split())
+        if len(text) > limit:
+            text = text[:limit].rstrip() + " ..."
+        lines.append(f"{t['role'].upper()}: {neutralize_for_prompt(text)}")
+    dropped = 0
+    while len(lines) > 2 and sum(len(ln) + 1 for ln in lines) > max(500, s.chat_history_max_chars):
+        lines.pop(0)
+        dropped += 1
+    if dropped:
+        lines.insert(0, f"(earlier in this chat: {dropped} more messages, omitted for length)")
+    return "\n".join(lines)
+
+
 def build_answer_prompt(question: str, refs: list[SourceRef], history: list[dict], comparison: bool = False,
                         entities: list[str] | None = None, original: str | None = None,
                         language: str = "English") -> tuple[str, str]:
@@ -135,7 +172,7 @@ def build_answer_prompt(question: str, refs: list[SourceRef], history: list[dict
                 "found in the sources, then a 1-2 sentence summary.")
     elif any(r.is_golden for r in refs):
         task = "An APPROVED ANSWER is available; prefer its wording and meaning."
-    user = load_prompt("answer_prompt.txt").format(history=format_history(history), sources=format_sources(refs),
+    user = load_prompt("answer_prompt.txt").format(history=format_chat_history(history), sources=format_sources(refs),
                                                     question=neutralize_for_prompt(question), task_instruction=task,
                                                     original=neutralize_for_prompt(original or question), language=language)
     system = load_prompt("system_prompt.txt").replace("{insufficient_text}", get_settings().insufficient_info_text)

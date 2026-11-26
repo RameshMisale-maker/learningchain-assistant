@@ -266,6 +266,12 @@ class Settings:
     # per-product overrides, e.g. "learningchain=120000,sapphirus=60000"
     token_budget_product_limits: str = field(default_factory=lambda: _env("TOKEN_BUDGET_PRODUCT_LIMITS", ""))
     token_budget_window_hours: float = field(default_factory=lambda: _env_float("TOKEN_BUDGET_WINDOW_HOURS", 24))
+    # conversation memory: the whole chat (up to CHAT_HISTORY_MESSAGES messages) goes to the model; the last
+    # CHAT_HISTORY_RECENT_TURNS exchanges in detail, older messages as a one-line gist, all within
+    # CHAT_HISTORY_MAX_CHARS characters (the oldest lines are dropped first in a very long chat)
+    chat_history_messages: int = field(default_factory=lambda: _env_int("CHAT_HISTORY_MESSAGES", 100))
+    chat_history_recent_turns: int = field(default_factory=lambda: _env_int("CHAT_HISTORY_RECENT_TURNS", 4))
+    chat_history_max_chars: int = field(default_factory=lambda: _env_int("CHAT_HISTORY_MAX_CHARS", 8000))
     # users never limited (e.g. the evaluation runner's service account), comma-separated usernames
     token_budget_exempt_users: list[str] = field(default_factory=lambda: [u.strip() for u in _env(
         "TOKEN_BUDGET_EXEMPT_USERS", "").split(",") if u.strip()])

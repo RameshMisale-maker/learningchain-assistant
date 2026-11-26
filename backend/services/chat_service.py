@@ -224,7 +224,7 @@ class ChatService:
             started = time.perf_counter()
             session_id = repository.ensure_session(session_id, user.username) if persist else (session_id or "eval")
             if history is None:
-                history = repository.get_history(session_id, user.username, limit=8) if persist else []
+                history = repository.get_history(session_id, user.username, limit=self.settings.chat_history_messages) if persist else []
             history = [h | {"content": redact_sensitive(str(h.get("content", "")))} for h in history]
             state = self._conversation_state(session_id, history, persist)
             if state in ("closing", "closed") and convo.is_acknowledgement(question):
@@ -369,6 +369,13 @@ class ChatService:
             standalone, extra_queries, tool_only = self.router.resolve_follow_up(
                 query, history, force=message.intent == convo.FOLLOW_UP)
             expanded = self.router.expand(standalone)
+            # "is it worth using?" / "why should I use it?": SEARCH for the documented features and benefits, so the
+            # answer can present them (prompt rule 2b) instead of finding nothing for the word "worth"; the model
+            # still gets the user's own question
+            value_query = ""
+            if convo.opinion_kind(original) == "value" or convo.opinion_kind(standalone) == "value":
+                value_query = convo.value_search_query(original, standalone)
+                expanded = self.router.expand(value_query)
         # the question needs this user's own account data (payment, receipt, status), not the help documentation:
         # there are no account tools, so explain where to find it instead of searching the documents
         # (only when the user talks about their OWN data - "my payment", "our verification status"; a general
@@ -402,7 +409,8 @@ class ChatService:
         elif route.intent == "greeting":
             info["conversation_intent"] = convo.SMALL_TALK
         base = dict(session_id=session_id, message_id=None,
-                    route=route.to_dict() | {"rewritten_query": standalone} | info)
+                    route=route.to_dict() | {"rewritten_query": standalone} | info
+                    | ({"search_query": value_query} if value_query else {}))
 
         if route.intent == "greeting":
             first = not any(h.get("role") == "assistant" for h in history)

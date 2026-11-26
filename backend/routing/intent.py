@@ -134,7 +134,37 @@ _CONCERN_RE = re.compile(
     r"not\s+sure)|i\s+am\s+(worried|afraid|concerned|scared|not\s+sure)|worried|concerned)\b.*\b(problems?|issues?|"
     r"difficult\w*|hard|complicated|complex|bugs?|errors?|troubles?|not\s+work\w*|doesn'?t\s+work|fail\w*|"
     r"unreliable|risky|unsafe|slow)\b", re.IGNORECASE)
-OPINION_KINDS = ("alternatives", "limitations", "concern")
+# "is it worth using?", "why should I use it?", "what are the benefits?" - answered with the documented features
+_VALUE_RE = re.compile(
+    r"\b(worth\s+(it|using|trying|buying|the\s+(money|price|cost)|my\s+time)|"
+    r"(should|would|must)\s+(i|we)\s+(use|buy|choose|try|go\s+for|adopt|pick)|"
+    r"why\s+(should|would|do|must)\s+(i|we|anyone|someone|people)\s+(use|choose|buy|pick|need)|"
+    r"why\s+(use|choose|pick)|benefits?|advantages?|pros|usp|value\s+(of|for)|"
+    r"(is|are)\s+(it|this|that|they|you)(\s+(app|application|platform|product|tool|software|chatbot|bot|"
+    r"assistant|service|system))?\s+(good|useful|helpful|any\s+good|reliable|valuable|effective)|"
+    r"how\s+(does|can|will|would)\s+(it|this|that|you)\s+help|"
+    r"what('?s|\s+is)\s+(good|special|great|unique)\s+about|what\s+makes\s+(it|this|you)\s+(good|special|different|better))\b",
+    re.IGNORECASE)
+_GENERIC_SUBJECT_WORDS = {"it", "this", "that", "they", "them", "you", "your", "app", "application", "platform",
+                          "product", "products", "tool", "software", "system", "service", "services", "chatbot", "bot",
+                          "assistant", "website", "site", "portal", "solution", "using", "use", "worth", "really",
+                          "good", "useful", "helpful", "benefit", "benefits", "advantage", "advantages", "pros",
+                          "should", "would", "why", "how", "help", "choose", "buy", "try", "value", "money", "time",
+                          "price", "cost", "special", "unique", "great", "reliable", "valuable", "effective", "makes",
+                          "different", "better", "anyone", "someone", "people", "need", "go", "adopt", "pick", "usp",
+                          "trying", "buying", "any", "me", "my", "we", "our", "us", "i"}
+OPINION_KINDS = ("alternatives", "limitations", "value", "concern")
+
+
+def value_search_query(text: str, standalone: str) -> str:
+    """Search query for a 'worth it / benefits' question: the product's key features and benefits, or - when the
+    question names its own subject ('is bulk upload worth using?') - that subject's features and benefits."""
+    from backend.products import current_product
+
+    own = [w for w in _words(text) if w not in STOPWORDS and w not in QUESTION_WORDS and w not in _GENERIC_SUBJECT_WORDS]
+    if own:
+        return f"{standalone} - key features and benefits"
+    return f"What are the key features and benefits of {current_product().covers_text('and')}?"
 
 
 def opinion_kind(text: str) -> str:
@@ -144,6 +174,8 @@ def opinion_kind(text: str) -> str:
         return "alternatives"
     if _LIMITATIONS_RE.search(t):
         return "limitations"
+    if _VALUE_RE.search(t):
+        return "value"
     if _CONCERN_RE.search(t):
         return "concern"
     return ""
@@ -155,8 +187,34 @@ def opinion_reply(kind: str) -> str:
 
     product = current_product()
     template = {"alternatives": product.replies.opinion_alternatives, "limitations": product.replies.opinion_limitations,
-                "concern": product.replies.opinion_concern}[kind]
-    return template.format(product=product.covers_text("and"), support=product.support_contact_markdown)
+                "value": product.replies.opinion_value, "concern": product.replies.opinion_concern}[kind]
+    return template.format(product=product.covers_text("and"), support=product.support_contact_markdown,
+                           help_topics=product.help_topics or ", ".join(product.topics))
+
+
+# "why?" / "why not?" / "how come?" - about the previous reply
+WHY_RE = re.compile(r"^\s*(but\s+)?(why|why\s+not|why\s+so|how\s+come|why\s+is\s+that|why\s+can'?t\s+you|"
+                    r"why\s+won'?t\s+you|why\s+don'?t\s+you)\s*[?!.]*\s*$", re.IGNORECASE)
+DECLINE_TYPES = ("blocked", "restricted", "out_of_scope", "refusal", "account", "escalation", "access_denied")
+
+
+def last_assistant_turn(history: list[dict] | None) -> dict:
+    """The previous assistant message, whatever its type ({} when there is none)."""
+    return next((h for h in reversed(history or []) if h.get("role") == "assistant"), {})
+
+
+def why_reply(text: str, history: list[dict] | None) -> str:
+    """'why?' right after a decline -> the reason for that decline; '' otherwise."""
+    if not WHY_RE.match(text or ""):
+        return ""
+    kind = str(last_assistant_turn(history).get("answer_type") or "")
+    if kind not in DECLINE_TYPES:
+        return ""
+    from backend.products import current_product
+
+    product = current_product()
+    template = product.replies.why_declined.get(kind, "")
+    return template.format(product=product.covers_text("and"), support=product.support_contact_markdown)         if template else ""
 
 
 # a short message that only makes sense with the previous turn: "any alternative?", "why?", "what else?"
@@ -591,6 +649,14 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
             return MessageIntent(FOLLOW_UP, uses_history=True, reason="elaboration request")
         return MessageIntent(CLARIFICATION, reason="elaboration without a previous topic",
                              reply="Sure - which topic would you like me to explain?")
+
+    # 3b. "why?" after a reply: explain a decline; after an answer, answer "why" about that topic from the sources
+    if WHY_RE.match(t) and last_assistant_turn(history):
+        reason = why_reply(t, history)
+        if reason:
+            return MessageIntent(CLARIFICATION, reply=reason, uses_history=True, reason="why after a decline")
+        if has_history:
+            return MessageIntent(FOLLOW_UP, uses_history=True, reason="why about the previous answer")
 
     # 4. a bare interrogative: "What?", "Which one?", "When?"
     if CLARIFY_ONLY_RE.match(t):

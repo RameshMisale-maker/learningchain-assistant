@@ -159,7 +159,7 @@ def _ask(question: str, service) -> None:
             st.session_state.messages.append({"role": "assistant", "content": text, "answer_type": "rate_limited"})
             return
         history = [{"role": m["role"], "content": m["content"], "answer_type": m.get("answer_type", "generated")}
-                   for m in st.session_state.messages[:-1]][-8:]
+                   for m in st.session_state.messages[:-1]][-service.settings.chat_history_messages:]
         with st.spinner(PRODUCT.ui.spinner):
             resp = service.answer(question, _user(), session_id=st.session_state.session_id, persist=False,
                                   history=history, allowed_kbs=ASSISTANT_KBS, channel="streamlit",
