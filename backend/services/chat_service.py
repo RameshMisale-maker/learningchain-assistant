@@ -23,7 +23,7 @@ from backend.generation.grounding import (REFUSAL_TEXT, GroundingReport, cited_i
                                           remove_unknown_urls, uncounted_numbers)
 from backend.generation.failover import AllProvidersDown, reset_dense_flag
 from backend.generation.structured import parse_reply
-from backend.services import response_cache
+from backend.services import response_cache, token_budget
 from backend.generation.llm_client import LLMClient, LLMRefusal, LLMResult, get_llm
 from backend.generation.prompt_builder import SourceRef, build_answer_prompt, select_context
 from backend.retrieval.golden_matcher import GoldenMatch, GoldenMatcher
@@ -112,7 +112,7 @@ BROAD_TOPIC_CONFIDENT = 0.8       # "tell me about <topic>": answer directly onl
 PLATFORM_TERMS = frozenset({"ios", "android", "iphone", "ipad", "macos", "windows", "linux", "whatsapp", "telegram",
                             "aadhaar", "upi", "paytm", "gpay", "sla", "uptime"})
 GOLDEN_MAX_MISSING_INTENT = 0.35   # max IDF share of query terms absent from the approved question side
-REFUSED_ANSWER_TYPES = ("refusal", "out_of_scope", "blocked", "access_denied", "error", "restricted")
+REFUSED_ANSWER_TYPES = ("refusal", "out_of_scope", "blocked", "access_denied", "error", "restricted", "budget_exceeded")
 GOLDEN_COMPARISON_MIN = 0.92   # golden match score needed to answer a comparison question with an approved answer
 GOLDEN_EXTRA_ASSISTS = 2       # approved answers (>= assist threshold) added as candidates besides the best match
 SUB_QUESTION_TOP_N = 12        # candidates retrieved per sub-question of a multi-part question
@@ -194,6 +194,15 @@ class ChatService:
         self.golden = golden or GoldenMatcher(self.embedder)
         self.router = router or QueryRouter(self.settings, self.embedder, llm=self.llm)
 
+    @property
+    def llm(self) -> LLMClient | None:
+        """The AI model client - None for a request that is over its token budget (token_budget.suspend_llm)."""
+        return None if token_budget.llm_suspended() else self._llm
+
+    @llm.setter
+    def llm(self, value: LLMClient | None) -> None:
+        self._llm = value
+
     # ================================================================== public API
     def answer(self, question: str, user: AuthenticatedUser, session_id: str | None = None,
                persist: bool = True, ip_address: str = "", history: list[dict] | None = None,
@@ -229,7 +238,8 @@ class ChatService:
                 response.versions = self._versions(response)
                 return response
             error = ""
-            with request_timings() as timings:
+            budget = token_budget.check(user.username, current_product().product_id)
+            with request_timings() as timings, token_budget.suspend_llm(not budget.allowed):
                 try:
                     response = self._answer(question, user, session_id, history, allowed_kbs, timings)
                 except Exception as exc:   # never leak internals; record the failure for the dashboard
@@ -237,6 +247,20 @@ class ChatService:
                     error = f"{type(exc).__name__}: {str(exc)[:300]}"
                     response = ChatResponse(answer=self.settings.insufficient_info_text, session_id=session_id,
                                             message_id=None, answer_type="error", warnings=["internal_error"])
+            if not budget.allowed:
+                response.route["token_budget"] = budget.to_dict()
+                if response.answer_type in ("extractive", "extractive_fallback"):
+                    # this question needed the AI model: say the limit is reached instead of quoting raw passages
+                    response.answer = token_budget.budget_reply(budget, current_product().support_contact)
+                    response.answer_type, response.citations = token_budget.BUDGET_ANSWER_TYPE, []
+                    response.warnings.append(f"token budget exceeded ({budget.scope}: {budget.used}/{budget.limit})")
+                if self.settings.metrics_enabled:
+                    try:
+                        from backend.observability.metrics import record_budget_block
+
+                        record_budget_block(current_product().product_id, budget.scope)
+                    except Exception:
+                        logger.exception("Could not update Prometheus metrics")
             if response.answer_type in ("refusal", "error"):
                 # in scope, but no verified evidence: the fixed "insufficient information" reply, no sources
                 response.answer, response.citations = self.settings.insufficient_info_text, []

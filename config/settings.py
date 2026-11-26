@@ -256,6 +256,19 @@ class Settings:
     chat_retention_days: int = field(default_factory=lambda: _env_int("CHAT_RETENTION_DAYS", 90))
     block_prompt_injection: bool = field(default_factory=lambda: _env_bool("BLOCK_PROMPT_INJECTION", True))
     rate_limit_per_minute: int = field(default_factory=lambda: _env_int("RATE_LIMIT_PER_MINUTE", 30))
+    # ---- Token budget (backend/services/token_budget.py): AI tokens per user and per product over a rolling window.
+    # RATE_LIMIT_PER_MINUTE counts requests; a long question can cost many times a short one, so the shared provider
+    # quota (e.g. Groq's tokens per day) is protected by counting tokens. Over budget: no AI call for that request -
+    # approved answers still work, anything else gets a clear "limit reached" reply. 0 = no limit for that scope.
+    token_budget_enabled: bool = field(default_factory=lambda: _env_bool("TOKEN_BUDGET_ENABLED", False))
+    token_budget_user_tokens: int = field(default_factory=lambda: _env_int("TOKEN_BUDGET_USER_TOKENS", 40000))
+    token_budget_product_tokens: int = field(default_factory=lambda: _env_int("TOKEN_BUDGET_PRODUCT_TOKENS", 150000))
+    # per-product overrides, e.g. "learningchain=120000,sapphirus=60000"
+    token_budget_product_limits: str = field(default_factory=lambda: _env("TOKEN_BUDGET_PRODUCT_LIMITS", ""))
+    token_budget_window_hours: float = field(default_factory=lambda: _env_float("TOKEN_BUDGET_WINDOW_HOURS", 24))
+    # users never limited (e.g. the evaluation runner's service account), comma-separated usernames
+    token_budget_exempt_users: list[str] = field(default_factory=lambda: [u.strip() for u in _env(
+        "TOKEN_BUDGET_EXEMPT_USERS", "").split(",") if u.strip()])
 
     # ---- OCR ----
     ocr_enabled: bool = field(default_factory=lambda: _env_bool("OCR_ENABLED", False))

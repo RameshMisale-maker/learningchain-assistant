@@ -35,7 +35,7 @@ ROLE_SETS = {"public": {"public"}, "employee": {"employee"}, "hr": {"employee", 
 # How the chatbot's own answer_type values map onto expected behaviours (read from ChatService, not changed).
 BEHAVIOR_BY_ANSWER_TYPE = {
     "generated": "Answer", "golden_direct": "Answer", "golden_semantic": "Answer", "extractive": "Answer",
-    "extractive_fallback": "Answer",
+    "extractive_fallback": "Answer", "budget_exceeded": "Error",
     "refusal": "Abstain", "clarification": "Abstain",
     "out_of_scope": "Reject", "blocked": "Reject", "access_denied": "Reject", "restricted": "Reject",
     "greeting": "Reject", "closing": "Reject", "sensitive": "Reject", "account": "Abstain", "escalation": "Abstain", "frustration": "Abstain",

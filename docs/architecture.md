@@ -199,7 +199,7 @@ answers can also be imported from CSV (`POST /api/v1/admin/golden-qa/import`).
 
 | Piece | Flag | What |
 |---|---|---|
-| `/metrics` | `METRICS_ENABLED` (+ optional `METRICS_TOKEN`) | Prometheus text format, no extra dependency: requests by product / channel / answer type, refusals, cache and golden hits, errors, tokens, cost, feedback, latency histogram; gauges for breakers, live index versions, open review items, cache size |
+| `/metrics` | `METRICS_ENABLED` (+ optional `METRICS_TOKEN`) | Prometheus text format, no extra dependency: requests by product / channel / answer type, refusals, cache and golden hits, errors, tokens per product / provider / model (provider quotas are per model), cost, token-budget blocks, feedback, latency histogram; gauges for tokens used per product in the budget window and each product's budget; gauges for breakers, live index versions, open review items, cache size |
 | Alerts | `ALERTS_ENABLED` | rules in `config/alerts.yaml` (refusal rate, error rate, p95 latency, thumbs-down rate, LLM unavailable, eval score drop) checked every `ALERT_CHECK_MINUTES`; stored in `alert_events`; sent to `ALERT_SLACK_WEBHOOK_URL` and / or e-mail (`ALERT_EMAIL_TO`, `SMTP_*`); cool-down per rule |
 | Nightly eval | `NIGHTLY_EVAL_ENABLED` | retrieval eval of every live index **and an end-to-end answer check** per product (`NIGHTLY_ANSWER_EVAL`: each case in `evals/<id>.jsonl` must be answered, cited, from the expected source and contain its key facts; off-topic probes must be refused) at `NIGHTLY_EVAL_HOUR` (UTC); saved as `<DATA_DIR>/evals/nightly_<timestamp>.json` (never overwritten); a drop above the threshold fires an alert |
 | Dashboards | - | `ops/grafana/assistant-dashboard.json`, `ops/prometheus/prometheus.yml`, `ops/prometheus/alerts.yml` (self-hosted, free) |
@@ -252,6 +252,7 @@ The order for switching them on (one at a time, evaluation re-run after each) is
 | `RESPONSE_CACHE_ENABLED` | 4 | false | no cache |
 | `LLM_FAILOVER_ENABLED` | 5 | false | one provider (+ its fallback model); LLM errors give the extractive answer |
 | `REVIEW_QUEUE_ENABLED` | 6 | false | nothing is queued (approved-answer import and admin APIs still work) |
+| `TOKEN_BUDGET_ENABLED` | - | false | no token budget (only `RATE_LIMIT_PER_MINUTE`, which counts requests, not tokens). On: AI tokens per user (`TOKEN_BUDGET_USER_TOKENS`, all products) and per product (`TOKEN_BUDGET_PRODUCT_TOKENS` / `TOKEN_BUDGET_PRODUCT_LIMITS`) are summed from `request_metrics` over `TOKEN_BUDGET_WINDOW_HOURS`; over budget the request runs without the AI model (approved and cached answers still work, other questions get a "limit reached" reply); `TOKEN_BUDGET_EXEMPT_USERS` are never limited (`backend/services/token_budget.py`) |
 | `METRICS_ENABLED` / `ALERTS_ENABLED` / `NIGHTLY_EVAL_ENABLED` | 7 | false | `/metrics` returns 404; no alert checks; no nightly eval |
 
 Full request logging (Phase 2 columns) is always on: it only adds columns to the existing metrics row.

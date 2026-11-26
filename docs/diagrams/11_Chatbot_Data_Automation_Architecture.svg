@@ -16,11 +16,11 @@
 <text x="87" y="237" font-size="15" fill="#3a2400" font-weight="700" text-anchor="middle" >A</text>
 <text x="110" y="238" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Scheduled trigger</text>
 <circle cx="82" cy="282" r="3" fill="#5cb3ff"/>
-<text x="93" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Every day 07:00 and 19:00 IST</text>
+<text x="93" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Daily 07:00 + 19:00 IST: sync</text>
 <circle cx="82" cy="306" r="3" fill="#5cb3ff"/>
-<text x="93" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Scheduler / cron job</text>
+<text x="93" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Sundays: deleted-records check</text>
 <circle cx="82" cy="330" r="3" fill="#5cb3ff"/>
-<text x="93" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Times are configurable</text>
+<text x="93" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Monthly: full rebuild from scratch</text>
 <rect x="405" y="206" width="300" height="160" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M405,216 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="432" cy="231" r="14" fill="#ffffff"/>
@@ -68,10 +68,10 @@
 <circle cx="100" cy="641" r="14" fill="#ffffff"/>
 <text x="100" y="647" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >2</text>
 <text x="123" y="648" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >PostgreSQL</text>
-<text x="210.0" y="679" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Source of truth: products,</text>
-<text x="210.0" y="702" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >FAQs, articles, documents</text>
-<text x="210.0" y="725" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >updated_at + is_deleted</text>
-<text x="210.0" y="748" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >on every row</text>
+<text x="210.0" y="679" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Content: FAQs, articles, docs</text>
+<text x="210.0" y="702" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >→ synced into the index</text>
+<text x="210.0" y="725" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Live values: prices, fees</text>
+<text x="210.0" y="748" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >→ read live, never indexed</text>
 <rect x="405" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
 <path d="M405,581 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="432" cy="596" r="14" fill="#ffb454"/>
@@ -93,9 +93,9 @@
 <circle cx="772" cy="647" r="3" fill="#5cb3ff"/>
 <text x="783" y="652" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Check schema and row counts</text>
 <circle cx="772" cy="671" r="3" fill="#5cb3ff"/>
-<text x="783" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Mask personal data (PII)</text>
+<text x="783" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >1st: mask personal data (PII)</text>
 <circle cx="772" cy="695" r="3" fill="#5cb3ff"/>
-<text x="783" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Save a raw snapshot</text>
+<text x="783" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >2nd: save the masked snapshot</text>
 <circle cx="772" cy="719" r="3" fill="#5cb3ff"/>
 <text x="783" y="724" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Stop if data looks wrong</text>
 <rect x="1095" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
@@ -134,7 +134,7 @@
 <rect x="30" y="840" width="1740" height="320" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
 <text x="60" y="884" font-size="27" fill="#ffffff" font-weight="600" text-anchor="start" >3 · Index &amp; quality gate</text>
 <text x="60" y="908" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >build a new version beside the live one; switch only if it passes</text>
-<rect x="1440" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<rect x="1440" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M1440,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="1467" cy="961" r="14" fill="#ffffff"/>
 <text x="1467" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >7</text>
@@ -147,20 +147,24 @@
 <text x="1473" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Each keeps title + source</text>
 <circle cx="1462" cy="1084" r="3" fill="#5cb3ff"/>
 <text x="1473" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same method as today</text>
-<rect x="1095" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<circle cx="1462" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="1473" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Monthly: all documents</text>
+<rect x="1095" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M1095,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="1122" cy="961" r="14" fill="#ffffff"/>
 <text x="1122" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >8</text>
 <text x="1145" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Embedding</text>
 <circle cx="1117" cy="1012" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Chunks → vectors</text>
+<text x="1128" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Chunks → vectors (our server)</text>
 <circle cx="1117" cy="1036" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same model as the chatbot</text>
+<text x="1128" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Only new / changed chunks</text>
 <circle cx="1117" cy="1060" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Only new / changed chunks</text>
+<text x="1128" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Model pinned to the version</text>
 <circle cx="1117" cy="1084" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Runs on our server</text>
-<rect x="750" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="1128" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Model changed → no patch,</text>
+<circle cx="1117" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="1128" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >full rebuild instead</text>
+<rect x="750" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M750,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="777" cy="961" r="14" fill="#ffffff"/>
 <text x="777" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >9</text>
@@ -168,25 +172,29 @@
 <circle cx="772" cy="1012" r="3" fill="#5cb3ff"/>
 <text x="783" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Copy of the live index</text>
 <circle cx="772" cy="1036" r="3" fill="#5cb3ff"/>
-<text x="783" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ new / changed chunks</text>
+<text x="783" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ new / changed − deleted</text>
 <circle cx="772" cy="1060" r="3" fill="#5cb3ff"/>
-<text x="783" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >− deleted records</text>
+<text x="783" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Monthly: rebuilt from scratch</text>
 <circle cx="772" cy="1084" r="3" fill="#5cb3ff"/>
-<text x="783" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Live chatbot untouched</text>
-<rect x="405" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="783" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Records its embedding model</text>
+<circle cx="772" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="783" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Live chatbot untouched</text>
+<rect x="405" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M405,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="432" cy="961" r="14" fill="#ffffff"/>
 <text x="432" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >10</text>
-<text x="455" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Quality gate</text>
+<text x="455" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Quality gate (4 checks)</text>
 <circle cx="427" cy="1012" r="3" fill="#5cb3ff"/>
-<text x="438" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Run golden test questions</text>
+<text x="438" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Not empty, ≥ 5 test cases</text>
 <circle cx="427" cy="1036" r="3" fill="#5cb3ff"/>
-<text x="438" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Recall@5, hit rate, counts</text>
+<text x="438" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Score ≥ floor (0.85)</text>
 <circle cx="427" cy="1060" r="3" fill="#5cb3ff"/>
-<text x="438" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Compare with live version</text>
+<text x="438" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >≥ live version − 0.02</text>
 <circle cx="427" cy="1084" r="3" fill="#5cb3ff"/>
-<text x="438" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Pass / fail decision</text>
-<rect x="60" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="438" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >≥ best ever − 0.05</text>
+<circle cx="427" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="438" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >No score → fail (fails closed)</text>
+<rect x="60" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M60,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="87" cy="961" r="14" fill="#ffffff"/>
 <text x="87" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >11</text>
@@ -199,10 +207,12 @@
 <text x="93" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Fail → keep current index</text>
 <circle cx="82" cy="1084" r="3" fill="#5cb3ff"/>
 <text x="93" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Last 5 versions kept</text>
-<line x1="1436" y1="1027.0" x2="1401" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<line x1="1091" y1="1027.0" x2="1056" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<line x1="746" y1="1027.0" x2="711" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<line x1="401" y1="1027.0" x2="366" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<circle cx="82" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="93" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >One-click rollback</text>
+<line x1="1436" y1="1039.0" x2="1401" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1091" y1="1039.0" x2="1056" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="746" y1="1039.0" x2="711" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="401" y1="1039.0" x2="366" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <polyline points="1590.0,755 1590.0,930" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <rect x="1522.5" y="802" width="135.0" height="24" fill="#082a4d"/>
 <text x="1590.0" y="819" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >clean documents</text>
@@ -226,11 +236,11 @@
 <text x="518.25" y="1332" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >13</text>
 <text x="541.25" y="1333" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Chatbot answers</text>
 <circle cx="513.25" cy="1377" r="3" fill="#5cb3ff"/>
-<text x="524.25" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Users get answers from the</text>
+<text x="524.25" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Content answers from the index</text>
 <circle cx="513.25" cy="1401" r="3" fill="#5cb3ff"/>
-<text x="524.25" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >latest data, with source links</text>
+<text x="524.25" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Prices / live values read from the</text>
 <circle cx="513.25" cy="1425" r="3" fill="#5cb3ff"/>
-<text x="524.25" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >No restart, no downtime</text>
+<text x="524.25" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Data API when asked (new)</text>
 <rect x="922.5" y="1301" width="386.25" height="172" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
 <path d="M922.5,1311 a10,10 0 0 1 10,-10 h366.25 a10,10 0 0 1 10,10 v40 h-386.25 z" fill="#1d6fc2"/>
 <circle cx="949.5" cy="1326" r="14" fill="#ffb454"/>
@@ -256,10 +266,10 @@
 <line x1="450.25" y1="1387.0" x2="485.25" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <line x1="881.5" y1="1387.0" x2="916.5" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <line x1="1312.75" y1="1387.0" x2="1347.75" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<polyline points="210.0,1120 210.0,1295" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<polyline points="210.0,1144 210.0,1295" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <rect x="183.2" y="1167" width="53.6" height="24" fill="#082a4d"/>
 <text x="210.0" y="1184" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >pass</text>
-<polyline points="555.0,1120 555.0,1182 1546.875,1182 1546.875,1295" fill="none" stroke="#ff7b7b" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#ahr)"/>
+<polyline points="555.0,1144 555.0,1182 1546.875,1182 1546.875,1295" fill="none" stroke="#ff7b7b" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#ahr)"/>
 <rect x="883.5375" y="1167" width="334.8" height="24" fill="#082a4d"/>
 <text x="1050.9375" y="1184" font-size="15" fill="#ff9b9b" font-weight="400" text-anchor="middle" >fail → keep current index + alert the team</text>
 <text x="60" y="1534" font-size="16.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Every step is logged; a failed run never changes what users see - the chatbot keeps answering from the last good version.</text>

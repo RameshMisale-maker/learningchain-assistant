@@ -57,6 +57,8 @@ def workspace(tmp_path_factory):
         "RATE_LIMIT_PER_MINUTE": "1000", "DATABASE_URL": "", "LOG_LEVEL": "WARNING",
         "INGEST_WORKER_ENABLED": "false", "WEB_MONITOR_ENABLED": "false", "INGEST_RETRY_BASE_SECONDS": "0",
         "WEBHOOK_SECRET": "test-webhook-secret",
+        # tests assume the shipped defaults; a developer's .env may switch these on (tests turn them on themselves)
+        "METRICS_ENABLED": "false", "TOKEN_BUDGET_ENABLED": "false",
     }
     old = {k: os.environ.get(k) for k in env}
     os.environ.update(env)

@@ -53,11 +53,11 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <text x="87" y="237" font-size="15" fill="#3a2400" font-weight="700" text-anchor="middle" >A</text>
 <text x="110" y="238" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Scheduled trigger</text>
 <circle cx="82" cy="282" r="3" fill="#5cb3ff"/>
-<text x="93" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Every day 07:00 and 19:00 IST</text>
+<text x="93" y="287" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Daily 07:00 + 19:00 IST: sync</text>
 <circle cx="82" cy="306" r="3" fill="#5cb3ff"/>
-<text x="93" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Scheduler / cron job</text>
+<text x="93" y="311" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Sundays: deleted-records check</text>
 <circle cx="82" cy="330" r="3" fill="#5cb3ff"/>
-<text x="93" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Times are configurable</text>
+<text x="93" y="335" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Monthly: full rebuild from scratch</text>
 <rect x="405" y="206" width="300" height="160" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M405,216 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="432" cy="231" r="14" fill="#ffffff"/>
@@ -105,10 +105,10 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <circle cx="100" cy="641" r="14" fill="#ffffff"/>
 <text x="100" y="647" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >2</text>
 <text x="123" y="648" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >PostgreSQL</text>
-<text x="210.0" y="679" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Source of truth: products,</text>
-<text x="210.0" y="702" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >FAQs, articles, documents</text>
-<text x="210.0" y="725" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >updated_at + is_deleted</text>
-<text x="210.0" y="748" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >on every row</text>
+<text x="210.0" y="679" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Content: FAQs, articles, docs</text>
+<text x="210.0" y="702" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >→ synced into the index</text>
+<text x="210.0" y="725" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >Live values: prices, fees</text>
+<text x="210.0" y="748" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="middle" >→ read live, never indexed</text>
 <rect x="405" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
 <path d="M405,581 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="432" cy="596" r="14" fill="#ffb454"/>
@@ -130,9 +130,9 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <circle cx="772" cy="647" r="3" fill="#5cb3ff"/>
 <text x="783" y="652" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Check schema and row counts</text>
 <circle cx="772" cy="671" r="3" fill="#5cb3ff"/>
-<text x="783" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Mask personal data (PII)</text>
+<text x="783" y="676" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >1st: mask personal data (PII)</text>
 <circle cx="772" cy="695" r="3" fill="#5cb3ff"/>
-<text x="783" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Save a raw snapshot</text>
+<text x="783" y="700" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >2nd: save the masked snapshot</text>
 <circle cx="772" cy="719" r="3" fill="#5cb3ff"/>
 <text x="783" y="724" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Stop if data looks wrong</text>
 <rect x="1095" y="571" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
@@ -171,7 +171,7 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <rect x="30" y="840" width="1740" height="320" rx="16" fill="none" stroke="#7fa6cc" stroke-width="2" stroke-dasharray="12 9"/>
 <text x="60" y="884" font-size="27" fill="#ffffff" font-weight="600" text-anchor="start" >3 · Index &amp; quality gate</text>
 <text x="60" y="908" font-size="15.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >build a new version beside the live one; switch only if it passes</text>
-<rect x="1440" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<rect x="1440" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M1440,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="1467" cy="961" r="14" fill="#ffffff"/>
 <text x="1467" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >7</text>
@@ -184,20 +184,24 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <text x="1473" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Each keeps title + source</text>
 <circle cx="1462" cy="1084" r="3" fill="#5cb3ff"/>
 <text x="1473" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same method as today</text>
-<rect x="1095" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<circle cx="1462" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="1473" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Monthly: all documents</text>
+<rect x="1095" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M1095,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="1122" cy="961" r="14" fill="#ffffff"/>
 <text x="1122" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >8</text>
 <text x="1145" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Embedding</text>
 <circle cx="1117" cy="1012" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Chunks → vectors</text>
+<text x="1128" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Chunks → vectors (our server)</text>
 <circle cx="1117" cy="1036" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Same model as the chatbot</text>
+<text x="1128" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Only new / changed chunks</text>
 <circle cx="1117" cy="1060" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Only new / changed chunks</text>
+<text x="1128" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Model pinned to the version</text>
 <circle cx="1117" cy="1084" r="3" fill="#5cb3ff"/>
-<text x="1128" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Runs on our server</text>
-<rect x="750" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="1128" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Model changed → no patch,</text>
+<circle cx="1117" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="1128" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >full rebuild instead</text>
+<rect x="750" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M750,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="777" cy="961" r="14" fill="#ffffff"/>
 <text x="777" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >9</text>
@@ -205,25 +209,29 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <circle cx="772" cy="1012" r="3" fill="#5cb3ff"/>
 <text x="783" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Copy of the live index</text>
 <circle cx="772" cy="1036" r="3" fill="#5cb3ff"/>
-<text x="783" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ new / changed chunks</text>
+<text x="783" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >+ new / changed − deleted</text>
 <circle cx="772" cy="1060" r="3" fill="#5cb3ff"/>
-<text x="783" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >− deleted records</text>
+<text x="783" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Monthly: rebuilt from scratch</text>
 <circle cx="772" cy="1084" r="3" fill="#5cb3ff"/>
-<text x="783" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Live chatbot untouched</text>
-<rect x="405" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="783" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Records its embedding model</text>
+<circle cx="772" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="783" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Live chatbot untouched</text>
+<rect x="405" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M405,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="432" cy="961" r="14" fill="#ffffff"/>
 <text x="432" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >10</text>
-<text x="455" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Quality gate</text>
+<text x="455" y="968" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Quality gate (4 checks)</text>
 <circle cx="427" cy="1012" r="3" fill="#5cb3ff"/>
-<text x="438" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Run golden test questions</text>
+<text x="438" y="1017" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Not empty, ≥ 5 test cases</text>
 <circle cx="427" cy="1036" r="3" fill="#5cb3ff"/>
-<text x="438" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Recall@5, hit rate, counts</text>
+<text x="438" y="1041" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Score ≥ floor (0.85)</text>
 <circle cx="427" cy="1060" r="3" fill="#5cb3ff"/>
-<text x="438" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Compare with live version</text>
+<text x="438" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >≥ live version − 0.02</text>
 <circle cx="427" cy="1084" r="3" fill="#5cb3ff"/>
-<text x="438" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Pass / fail decision</text>
-<rect x="60" y="936" width="300" height="182" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
+<text x="438" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >≥ best ever − 0.05</text>
+<circle cx="427" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="438" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >No score → fail (fails closed)</text>
+<rect x="60" y="936" width="300" height="206" rx="10" fill="#0f4479" stroke="none" stroke-width="2.5"/>
 <path d="M60,946 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v40 h-300 z" fill="#1d6fc2"/>
 <circle cx="87" cy="961" r="14" fill="#ffffff"/>
 <text x="87" y="967" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >11</text>
@@ -236,10 +244,12 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <text x="93" y="1065" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Fail → keep current index</text>
 <circle cx="82" cy="1084" r="3" fill="#5cb3ff"/>
 <text x="93" y="1089" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Last 5 versions kept</text>
-<line x1="1436" y1="1027.0" x2="1401" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<line x1="1091" y1="1027.0" x2="1056" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<line x1="746" y1="1027.0" x2="711" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<line x1="401" y1="1027.0" x2="366" y2="1027.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<circle cx="82" cy="1108" r="3" fill="#5cb3ff"/>
+<text x="93" y="1113" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >One-click rollback</text>
+<line x1="1436" y1="1039.0" x2="1401" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="1091" y1="1039.0" x2="1056" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="746" y1="1039.0" x2="711" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="401" y1="1039.0" x2="366" y2="1039.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <polyline points="1590.0,755 1590.0,930" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <rect x="1522.5" y="802" width="135.0" height="24" fill="#082a4d"/>
 <text x="1590.0" y="819" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >clean documents</text>
@@ -263,11 +273,11 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <text x="518.25" y="1332" font-size="15" fill="#1d6fc2" font-weight="700" text-anchor="middle" >13</text>
 <text x="541.25" y="1333" font-size="19" fill="#ffffff" font-weight="600" text-anchor="start" >Chatbot answers</text>
 <circle cx="513.25" cy="1377" r="3" fill="#5cb3ff"/>
-<text x="524.25" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Users get answers from the</text>
+<text x="524.25" y="1382" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Content answers from the index</text>
 <circle cx="513.25" cy="1401" r="3" fill="#5cb3ff"/>
-<text x="524.25" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >latest data, with source links</text>
+<text x="524.25" y="1406" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Prices / live values read from the</text>
 <circle cx="513.25" cy="1425" r="3" fill="#5cb3ff"/>
-<text x="524.25" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >No restart, no downtime</text>
+<text x="524.25" y="1430" font-size="15" fill="#d3e3f5" font-weight="400" text-anchor="start" >Data API when asked (new)</text>
 <rect x="922.5" y="1301" width="386.25" height="172" rx="10" fill="#0f4479" stroke="#ffb454" stroke-width="2.5" stroke-dasharray="9 6"/>
 <path d="M922.5,1311 a10,10 0 0 1 10,-10 h366.25 a10,10 0 0 1 10,10 v40 h-386.25 z" fill="#1d6fc2"/>
 <circle cx="949.5" cy="1326" r="14" fill="#ffb454"/>
@@ -293,10 +303,10 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
 <line x1="450.25" y1="1387.0" x2="485.25" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <line x1="881.5" y1="1387.0" x2="916.5" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <line x1="1312.75" y1="1387.0" x2="1347.75" y2="1387.0" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
-<polyline points="210.0,1120 210.0,1295" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
+<polyline points="210.0,1144 210.0,1295" fill="none" stroke="#ffffff" stroke-width="3" marker-end="url(#ah)"/>
 <rect x="183.2" y="1167" width="53.6" height="24" fill="#082a4d"/>
 <text x="210.0" y="1184" font-size="15" fill="#5cb3ff" font-weight="400" text-anchor="middle" >pass</text>
-<polyline points="555.0,1120 555.0,1182 1546.875,1182 1546.875,1295" fill="none" stroke="#ff7b7b" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#ahr)"/>
+<polyline points="555.0,1144 555.0,1182 1546.875,1182 1546.875,1295" fill="none" stroke="#ff7b7b" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#ahr)"/>
 <rect x="883.5375" y="1167" width="334.8" height="24" fill="#082a4d"/>
 <text x="1050.9375" y="1184" font-size="15" fill="#ff9b9b" font-weight="400" text-anchor="middle" >fail → keep current index + alert the team</text>
 <text x="60" y="1534" font-size="16.5" fill="#d3e3f5" font-weight="400" text-anchor="start" >Every step is logged; a failed run never changes what users see - the chatbot keeps answering from the last good version.</text>
@@ -312,16 +322,16 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
   <div class="note"><b>Most of it already exists.</b> The job queue, change detection, chunking, embedding,
   versioned indexes with a quality gate, cache refresh, notifications and dashboards are already in the chatbot.
   The pieces marked <span style="color:var(--new)">new</span> are what we need to build: the Data API connector,
-  validation and safety limits, the twice-daily schedule, and the sync watermark and run report.</div>
+  validation and safety limits, the twice-daily schedule with a monthly full rebuild, the embedding-model check, the live-value lookup for prices and other changing numbers, and the sync watermark and run report.</div>
 
   <h2>Each step explained</h2>
   <h3 class="phase p1">1 · Trigger</h3><article class="step isnew">
   <div class="num">A</div>
   <div class="body">
     <h4>Scheduled trigger <span class="badge new">new</span></h4>
-    <p><b>What happens:</b> A scheduler starts a sync every day at 07:00 and 19:00 (India time). Both times are settings, so a third run or different hours need no code change. If the server was down at 07:00, the missed run starts as soon as it is back.</p>
+    <p><b>What happens:</b> A scheduler starts a sync every day at 07:00 and 19:00 (India time). Every Sunday it also compares all record ids to find rows deleted outright, and once a month it rebuilds the whole index from scratch (step 9). All times are settings. If the server was down at a scheduled time, the missed run starts as soon as it is back.</p>
     <p><b>Why:</b> Data in PostgreSQL can change at any time. Two fixed runs mean the chatbot is never more than about 12 hours behind. 07:00 is before office hours (yesterday evening's edits are live when users arrive). 19:00 picks up the working day's edits.</p>
-    <p class="built"><b>Built on:</b> The chatbot already has a background scheduler (alerts, nightly evaluation). New: the two sync times and the catch-up rule.</p>
+    <p class="built"><b>Built on:</b> The chatbot already has a background scheduler (alerts, nightly evaluation). New: the two sync times, the weekly check, the monthly rebuild and the catch-up rule.</p>
   </div>
 </article><article class="step">
   <div class="num">B</div>
@@ -351,8 +361,8 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
   <div class="num">2</div>
   <div class="body">
     <h4>PostgreSQL (source of truth) <span class="badge have">already in the chatbot</span></h4>
-    <p><b>What happens:</b> The client's database holds the content the chatbot must know: products, FAQs, help articles, documents. Each table used by the chatbot needs an updated_at timestamp and an is_deleted flag (or a deleted_records table).</p>
-    <p><b>Why:</b> updated_at lets us fetch only what changed. is_deleted lets us remove content that was deleted. Without these, every run would have to re-read and compare everything.</p>
+    <p><b>What happens:</b> The client's database holds two kinds of data. Content (FAQs, help articles, product descriptions, documents) changes rarely and is synced into the index. Live values (prices, fees, stock, seats, dates) can change at any time and are never indexed: when a user asks for one, the chatbot reads it from the Data API at that moment (see "Content or live value?" below). Each content table needs an updated_at timestamp and an is_deleted flag (or a deleted_records table).</p>
+    <p><b>Why:</b> A twice-daily index can be up to 12 hours old: fine for an article, wrong for a price. updated_at lets us fetch only what changed; is_deleted lets us remove deleted content.</p>
     <p class="built"><b>Built on:</b> Owned by the data team. The chatbot never connects to it directly: only the Data API does, with a read-only database user (ideally on a read replica).</p>
   </div>
 </article><article class="step isnew">
@@ -367,8 +377,8 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
   <div class="num">4</div>
   <div class="body">
     <h4>Validate &amp; stage <span class="badge new">new</span></h4>
-    <p><b>What happens:</b> Each row is checked: required fields present (id, title, body, updated_at), correct types, sensible length. Personal data such as phone numbers, emails of individuals and ID numbers is masked. The raw response is saved as a dated snapshot. Safety limits stop the run if something looks wrong, for example if more than 20% of all records would be deleted, or the API suddenly returns 0 rows.</p>
-    <p><b>Why:</b> Bad or partial data must never reach users. A broken export that looks like "everything was deleted" should stop the run and alert, not empty the chatbot. Snapshots let us see exactly what arrived in any run.</p>
+    <p><b>What happens:</b> Each row is checked: required fields present (id, title, body, updated_at), correct types, sensible length. Order matters: personal data (phone numbers, individuals' emails, ID numbers) is masked first, in memory, and only then is the response saved as a dated snapshot. An unmasked copy is never written to disk. Safety limits stop the run if something looks wrong, for example if more than 20% of all records would be deleted, or the API suddenly returns 0 rows.</p>
+    <p><b>Why:</b> Bad or partial data must never reach users. A broken export that looks like "everything was deleted" should stop the run and alert, not empty the chatbot. Masking before saving means the 30-day snapshots never hold personal data; they still show exactly what arrived in any run.</p>
     <p class="built"><b>Built on:</b> New: schema check and safety limits. Existing: the sensitive-data redaction already used for chat messages.</p>
   </div>
 </article><article class="step">
@@ -399,25 +409,25 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
   <div class="num">8</div>
   <div class="body">
     <h4>Embedding <span class="badge have">already in the chatbot</span></h4>
-    <p><b>What happens:</b> Each new chunk is turned into a vector (a list of numbers that captures its meaning) with the same embedding model the chatbot uses for questions.</p>
-    <p><b>Why:</b> Search by meaning only works when documents and questions use the same model. Embedding only changed chunks keeps runs fast.</p>
-    <p class="built"><b>Built on:</b> Existing: the embedding model runs on our server; there is no per-use cost.</p>
+    <p><b>What happens:</b> Each new chunk is turned into a vector (a list of numbers that captures its meaning) with the same embedding model the chatbot uses for questions. The model name and version are pinned to the index version. Before an incremental sync, the configured model is compared with the live version's model: if they differ, the sync does not patch the index but starts a full rebuild with the new model.</p>
+    <p><b>Why:</b> Vectors from two different models cannot be compared. If the model changed mid-way and only new chunks used it, the index would silently mix two sets of numbers and answers would get worse with no error.</p>
+    <p class="built"><b>Built on:</b> Existing: the embedding model runs on our server (no per-use cost) and every index version records its embedding model. New: the check that refuses an incremental patch when the model differs.</p>
   </div>
 </article><article class="step">
   <div class="num">9</div>
   <div class="body">
     <h4>New index version <span class="badge have">already in the chatbot</span></h4>
-    <p><b>What happens:</b> A new version of the search index is built next to the live one: the live content, plus new and changed chunks, minus deleted records. Users keep using the live version during the whole run.</p>
-    <p><b>Why:</b> Users never see a half-updated index, and a bad update can be undone instantly.</p>
+    <p><b>What happens:</b> A new version of the search index is built next to the live one: the live content, plus new and changed chunks, minus deleted records. Once a month (and whenever the embedding model changes) the version is built from scratch from all current records instead. Users keep using the live version during the whole run.</p>
+    <p><b>Why:</b> Users never see a half-updated index, and a bad update can be undone instantly. The monthly rebuild stops months of small patches from leaving an untidy index (leftover fragments, uneven chunking); it goes through the same quality gate.</p>
     <p class="built"><b>Built on:</b> Existing: versioned indexes (INDEX_VERSIONING_ENABLED, backend/indexing/versions.py).</p>
   </div>
 </article><article class="step">
   <div class="num">10</div>
   <div class="body">
     <h4>Quality gate <span class="badge have">already in the chatbot</span></h4>
-    <p><b>What happens:</b> Before switching, the new version is tested automatically with the golden test questions: does the right source still appear in the top 5 (recall@5, hit rate)? Are chunk counts sensible? Is it at least as good as the live version?</p>
-    <p><b>Why:</b> A data change can accidentally break answers, for example a renamed product or a deleted FAQ. The gate catches this before users do.</p>
-    <p class="built"><b>Built on:</b> Existing: the evaluation gate in index versioning (up to EVAL_GATE_MAX_CASES test questions). It uses search only, no AI model calls, so it costs nothing.</p>
+    <p><b>What happens:</b> Before switching, the new version is scored on the golden test questions (does the right source appear in the top 5?) and must pass four checks: (1) the index is not empty and at least 5 test questions were scored (EVAL_MIN_CASES); (2) the score is at least the floor of 0.85 (EVAL_MIN_SCORE); (3) it is no more than 0.02 below the live version (EVAL_TOLERANCE) - no big step down; (4) it is no more than 0.05 below the best score any version ever reached (EVAL_MAX_DRIFT) - no slow slide through many small steps. The gate fails closed: if the score cannot be computed, the version is rejected, never passed.</p>
+    <p><b>Why:</b> A data change can accidentally break answers, for example a renamed product or a deleted FAQ. Check 3 catches a sudden drop; check 4 catches a series of small drops that each look harmless; failing closed means a broken evaluation can never wave a bad index through.</p>
+    <p class="built"><b>Built on:</b> Existing: gate_decision() in backend/indexing/versions.py (up to EVAL_GATE_MAX_CASES test questions). It uses search only, no AI model calls, so it costs nothing.</p>
   </div>
 </article><article class="step">
   <div class="num">11</div>
@@ -439,9 +449,9 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
   <div class="num">13</div>
   <div class="body">
     <h4>Chatbot answers <span class="badge have">already in the chatbot</span></h4>
-    <p><b>What happens:</b> The next question is answered from the new data, with links to the source.</p>
-    <p><b>Why:</b> That is the goal of the whole process: users always get current information.</p>
-    <p class="built"><b>Built on:</b> Existing: no change to the chatbot itself. It always reads the live index version.</p>
+    <p><b>What happens:</b> The next question is answered from the new data, with links to the source. A question about a live value ("What is the verification fee?") is answered from the Data API at that moment, not from the index.</p>
+    <p><b>Why:</b> That is the goal of the whole process: content within 12 hours, live values always current.</p>
+    <p class="built"><b>Built on:</b> Existing: the chatbot always reads the live index version. New: a live-value lookup (a read-only Data API endpoint the chatbot calls for prices and other changing numbers).</p>
   </div>
 </article><article class="step isnew">
   <div class="num">14</div>
@@ -461,6 +471,17 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
   </div>
 </article>
 
+  <h2>Content or live value?</h2>
+  <p>Decide this for every table and field before building, because it changes where the data flows.</p>
+  <table>
+    <tr><th>Kind of data</th><th>Examples</th><th>How the chatbot gets it</th><th>Why</th></tr>
+    <tr><td><b>Content</b> (paragraphs, explanations)</td><td>FAQs, help articles, product descriptions, policies, how-to steps</td><td>Synced into the index twice a day (steps 1-15)</td><td>Changes rarely; search by meaning needs it indexed</td></tr>
+    <tr><td><b>Live values</b> (changing numbers and states)</td><td>Prices, fees, discounts, stock or seats, dates and deadlines, order or certificate status</td><td>Read from the Data API when the user asks; never indexed</td><td>An index can be up to 12 hours old - a stale price is worse than no answer</td></tr>
+  </table>
+  <p>Content that mentions a live value ("the fee is shown at checkout") keeps the wording but not the number.
+  Personal records (one user's orders or certificates) are neither: they need the user to be logged in and go
+  through the existing account check.</p>
+
   <h2>Schedule</h2>
   <table>
     <tr><th>Run</th><th>When</th><th>Picks up</th></tr>
@@ -468,6 +489,7 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
     <tr><td><b>Evening</b></td><td>Every day 19:00 IST</td><td>Changes made during the working day</td></tr>
     <tr><td><b>On demand</b></td><td>Any time</td><td>"Sync now" button / admin API, or the optional webhook from the data team</td></tr>
     <tr><td><b>Weekly check</b></td><td>Sunday 07:00 IST (suggested)</td><td>Full comparison of all record ids, to catch rows deleted outright (without the is_deleted flag)</td></tr>
+    <tr><td><b>Monthly rebuild</b></td><td>1st of the month, 06:00 IST (suggested)</td><td>The whole index rebuilt from scratch from all current records, then the same quality gate. Also runs automatically when the embedding model changes.</td></tr>
   </table>
   <p>Only one sync runs at a time. If a trigger arrives during a run, it joins that run. Times, time zone and the
   weekly check are settings.</p>
@@ -480,6 +502,8 @@ pre { background: #061f3a; color: #cfe6ff; border: 1px solid var(--line); border
     <tr><td><b>New version fails the quality gate</b></td><td>The live index is kept. An alert gives the gate score against the live version. An admin can inspect and promote manually after fixing the data.</td><td>Answers from the last good data</td></tr>
     <tr><td><b>Server restarts mid-run</b></td><td>The job's lease expires and the worker picks the job up again.</td><td>No change</td></tr>
     <tr><td><b>Server down at 07:00</b></td><td>The missed run starts as soon as the server is back.</td><td>Data refreshed a little later</td></tr>
+    <tr><td><b>Embedding model changed</b></td><td>The incremental sync refuses to patch; a full rebuild with the new model runs and must pass the gate.</td><td>Answers from the last good version until the rebuild passes</td></tr>
+    <tr><td><b>Live-value lookup fails</b> (Data API down)</td><td>The chatbot does not guess a price: it says the figure is not available right now and gives the support contact.</td><td>No stale or invented number</td></tr>
     <tr><td><b>Wrong data promoted</b></td><td>One-click rollback to any of the last 5 versions in the admin console.</td><td>Fixed within seconds</td></tr>
     <tr><td><b>No successful sync for 24 hours</b></td><td>"Stale data" alert to the team.</td><td>No change</td></tr>
   </table>
@@ -538,6 +562,9 @@ DB_SYNC_ENABLED=true
 DB_SYNC_TIMES=07:00,19:00            # runs per day
 DB_SYNC_TIMEZONE=Asia/Kolkata
 DB_SYNC_FULL_CHECK=SUN 07:00         # weekly id comparison
+DB_SYNC_FULL_REBUILD=MONTHLY 1 06:00 # monthly rebuild from scratch
+DB_SYNC_LIVE_FIELDS=price,fee,stock  # never indexed: read live at question time
+DB_SYNC_SNAPSHOT_DAYS=30             # masked snapshots only
 DATA_API_URL=https://&lt;data-api-host&gt;/api/v1/kb-export
 DATA_API_TOKEN=&lt;from the secrets store&gt;
 DB_SYNC_PAGE_SIZE=500
@@ -577,6 +604,8 @@ ADMIN_NOTIFY_WEBHOOK_URL=&lt;Teams / Slack incoming webhook&gt;</pre>
     <tr><td style="color:var(--new)"><b>Database connector</b> (new source type)</td><td style="color:var(--new)">New</td><td>Paging, watermark with overlap, deletions, retries</td></tr>
     <tr><td style="color:var(--new)"><b>Validation and safety limits</b></td><td style="color:var(--new)">New</td><td>Schema, counts, max-delete ratio, snapshot</td></tr>
     <tr><td style="color:var(--new)"><b>Twice-daily schedule + catch-up + weekly id check</b></td><td style="color:var(--new)">New</td><td>Added to the existing scheduler</td></tr>
+    <tr><td style="color:var(--new)"><b>Live-value lookup</b> (prices, fees at question time)</td><td style="color:var(--new)">New</td><td>Read-only Data API endpoint + a chatbot tool; never indexed</td></tr>
+    <tr><td style="color:var(--new)"><b>Monthly full rebuild + embedding-model check</b></td><td style="color:var(--new)">New</td><td>Model recorded per version already exists; refuse incremental patch when it differs</td></tr>
     <tr><td style="color:var(--new)"><b>Sync state, run report, "stale data" alert</b></td><td style="color:var(--new)">New</td><td>sync_state table, admin page, alert rule</td></tr>
   </table>
   <p>Before building, we need from the data team: the tables and fields the chatbot should know, whether

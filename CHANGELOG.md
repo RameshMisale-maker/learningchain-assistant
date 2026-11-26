@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-26 - Token budgets, metrics on, automation architecture review
+
+- **Metrics on (rollout step 1):** `METRICS_ENABLED=true` in the local `.env` (Streamlit Secrets must be set
+  separately). `/metrics` token counters now also carry the model label - Groq's daily quota is per model.
+- **Token budget per user and per product (`TOKEN_BUDGET_ENABLED`):** `RATE_LIMIT_PER_MINUTE` counts requests, but a
+  long question costs many times a short one. The AI tokens already stored per request (`request_metrics`, with
+  username and product) are summed over a rolling window (24 h). Over budget, the request runs without the AI model:
+  approved / cached answers and greetings still work, other questions get a clear "limit reached" reply with the
+  support contact instead of using the shared Groq quota. Defaults 40,000 tokens per user (all products), 150,000 per
+  product (`TOKEN_BUDGET_PRODUCT_LIMITS` overrides one product); evaluation accounts are exempt. New metrics:
+  `assistant_token_budget_blocks_total`, `assistant_tokens_window`, `assistant_token_budget_product`. Evaluation runs
+  (`record_metrics=False`) are not counted - run them on a separate key or watch the provider dashboard.
+- **Automation architecture (diagram 11) - senior review:** content vs live values (prices and fees are read live,
+  never indexed); the quality gate's four checks and fail-closed rule written in; monthly full rebuild; embedding
+  model pinned to the index version (model change = full rebuild, never a mixed index); personal data masked
+  before the snapshot is saved.
+- Tests: tests/test_token_budget.py (13).
+
 ## 2026-11-24 (2) - Toward 95%: wrong assumptions corrected, no counted totals, multi-part coverage, test-set fixes
 
 - **Wrong assumptions are corrected, not declined:** "Since LearningChain stores data on AWS, which region?" was

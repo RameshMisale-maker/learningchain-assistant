@@ -27,6 +27,8 @@ HELP = {
     "assistant_llm_tokens_total": ("counter", "LLM tokens used"),
     "assistant_llm_cost_usd_total": ("counter", "Estimated LLM cost in USD"),
     "assistant_feedback_total": ("counter", "User ratings"),
+    "assistant_token_budget_blocks_total": ("counter", "Requests answered without the AI model because a token "
+                                                       "budget (user or product) was used up"),
     "assistant_request_latency_ms": ("histogram", "End-to-end request latency in milliseconds"),
 }
 
@@ -66,10 +68,18 @@ def record_request(resp, channel: str, product_id: str, error: str = "") -> None
         _inc("assistant_errors_total", base)
     provider = str((resp.route or {}).get("provider") or "")
     if resp.prompt_tokens or resp.completion_tokens:
-        _inc("assistant_llm_tokens_total", base | {"provider": provider, "kind": "input"}, resp.prompt_tokens)
-        _inc("assistant_llm_tokens_total", base | {"provider": provider, "kind": "output"}, resp.completion_tokens)
+        model = str(resp.model or "")       # provider quotas are per model (Groq: tokens per day per model)
+        _inc("assistant_llm_tokens_total", base | {"provider": provider, "model": model, "kind": "input"},
+             resp.prompt_tokens)
+        _inc("assistant_llm_tokens_total", base | {"provider": provider, "model": model, "kind": "output"},
+             resp.completion_tokens)
         _inc("assistant_llm_cost_usd_total", base | {"provider": provider}, resp.cost_usd)
     _observe("assistant_request_latency_ms", base, resp.latency_ms)
+
+
+def record_budget_block(product_id: str, scope: str) -> None:
+    if get_settings().metrics_enabled:
+        _inc("assistant_token_budget_blocks_total", {"product": product_id, "scope": scope})
 
 
 def record_feedback(rating: str, product_id: str = "") -> None:
@@ -110,6 +120,27 @@ def _gauges() -> list[tuple[str, str, list[tuple[tuple, float]]]]:
         kbs = get_index_manager().kb_names()
         out.append(("assistant_index_live_version", "Live index version per knowledge base (0 = classic index)",
                     [((("kb", kb),), float(live_version_id(kb) or 0)) for kb in kbs]))
+    except Exception:
+        pass
+    try:
+        from sqlalchemy import func, select
+
+        from backend.db.models import RequestMetric
+        from backend.db.session import db_session
+        from backend.services.token_budget import product_limit
+        from datetime import datetime, timedelta, timezone
+
+        s_ = get_settings()
+        since = datetime.now(timezone.utc) - timedelta(hours=s_.token_budget_window_hours)
+        with db_session() as s:
+            rows = s.execute(select(RequestMetric.product_id, func.sum(RequestMetric.input_tokens
+                                                                         + RequestMetric.output_tokens))
+                             .where(RequestMetric.created_at >= since).group_by(RequestMetric.product_id)).all()
+        used = {pid or "": float(n or 0) for pid, n in rows}
+        out.append(("assistant_tokens_window", "AI tokens used per product in the token-budget window "
+                    "(TOKEN_BUDGET_WINDOW_HOURS)", [((("product", pid),), n) for pid, n in sorted(used.items())]))
+        out.append(("assistant_token_budget_product", "Token budget per product for the window (0 = no limit)",
+                    [((("product", pid),), float(product_limit(pid))) for pid in sorted(used)]))
     except Exception:
         pass
     try:

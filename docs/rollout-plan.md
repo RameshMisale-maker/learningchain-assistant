@@ -26,7 +26,8 @@ Safest first (no effect on answers), then the features that change what users se
 
 | Step | Flag(s) | What users notice | Pass criteria after the eval re-run |
 |---|---|---|---|
-| 1 | `METRICS_ENABLED` | nothing - monitoring only | scores equal to the baseline; `/metrics` returns data |
+| 1 | `METRICS_ENABLED` | nothing - monitoring only | scores equal to the baseline; `/metrics` returns data - **on since 26 Nov 2026** (local `.env`; set it in Streamlit Secrets too) |
+| 1b | `TOKEN_BUDGET_ENABLED` (+ `TOKEN_BUDGET_USER_TOKENS`, `TOKEN_BUDGET_PRODUCT_TOKENS`, `TOKEN_BUDGET_PRODUCT_LIMITS`, `TOKEN_BUDGET_EXEMPT_USERS`) | only a user or product over its daily token budget: approved answers still work, other questions get a "limit reached" reply instead of using the shared Groq quota | scores equal (evaluation accounts are exempt); `assistant_tokens_window` on `/metrics` stays under the budget; size the budgets from a week of that gauge - **on since 26 Nov 2026** with 40k per user / 150k per product |
 | 2 | `REVIEW_QUEUE_ENABLED` | nothing - 👎, refusals and low ratings are queued for admins | scores equal; items appear in the admin "Review queue" tab |
 | 3 | `LLM_FAILOVER_ENABLED` | only when Groq fails: 15 s timeout, backup provider (if `LLM_SECONDARY_*` is set) or a support reply | scores equal; error rate 0; p95 latency not higher |
 | 4 | `RESPONSE_CACHE_ENABLED` | repeated questions answered instantly | scores equal; run the eval twice - the second run's cached answers must match the first; latency drops |

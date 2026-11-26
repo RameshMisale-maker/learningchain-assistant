@@ -90,6 +90,17 @@ class QueryRouter:
         self.llm = llm
         self._example_vecs: dict[str, np.ndarray] = {}
 
+    @property
+    def llm(self):
+        """The AI model client - None for a request that is over its token budget."""
+        from backend.services.token_budget import llm_suspended
+
+        return None if llm_suspended() else self._llm
+
+    @llm.setter
+    def llm(self, value) -> None:
+        self._llm = value
+
     # ------------------------------------------------------------------ config
     @property
     def config(self) -> dict:
