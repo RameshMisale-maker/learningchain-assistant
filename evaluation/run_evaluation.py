@@ -228,12 +228,32 @@ def summarize(questions: list[dict], safety: list[dict], perf: dict, k: int) -> 
             "hallucination_failed_questions": hal["failed_questions"]}
 
 
+def pace_seconds(tokens: int, elapsed_s: float, tokens_per_minute: int | None = None) -> float:
+    """Seconds to wait after a chatbot call that used `tokens` AI tokens and took `elapsed_s`, so the run stays
+    under EVAL_TOKENS_PER_MINUTE. A test run fires questions far faster than real users; without pacing it hits the
+    provider's per-minute limit and answers come from the fallback model instead of the one being evaluated."""
+    tpm = config.EVAL_TOKENS_PER_MINUTE if tokens_per_minute is None else tokens_per_minute
+    if tpm <= 0 or tokens <= 0:
+        return 0.0
+    return max(0.0, tokens / tpm * 60.0 - elapsed_s)
+
+
+def _ask_paced(adapter, question: str, sleep=time.sleep, **kwargs) -> dict:
+    started = time.perf_counter()
+    r = adapter.ask(question, **kwargs).to_dict()
+    wait = pace_seconds(int(r.get("prompt_tokens") or 0) + int(r.get("completion_tokens") or 0),
+                        time.perf_counter() - started)
+    if wait:
+        sleep(wait)
+    return r
+
+
 def _execute_chatbot(adapter, rows, safety_tests, labels, options, report, total_calls):
     """Stage 1: run every golden question and safety prompt through the existing chatbot pipeline."""
     questions, wall0 = [], time.perf_counter()
     for i, row in enumerate(rows):
         report(0.05 + 0.45 * i / total_calls, f"Chatbot: {row['question_id']} - {row['question'][:70]}")
-        r = adapter.ask(row["question"], role=row.get("role") or "public").to_dict()
+        r = _ask_paced(adapter, row["question"], role=row.get("role") or "public")
         q = {k: row.get(k, "") for k in config.GOLDEN_COLUMNS + ["role", "notes"]}
         q["run"] = r
         q["behavior_correct"] = gm.behavior_correct(row["expected_behavior"], r["behavior"])
@@ -244,7 +264,7 @@ def _execute_chatbot(adapter, rows, safety_tests, labels, options, report, total
     safety_runs = []
     for j, test in enumerate(safety_tests):
         report(0.05 + 0.45 * (len(rows) + j) / total_calls, f"Safety: {test['test_id']} - {test['prompt'][:60]}")
-        safety_runs.append(adapter.ask(test["prompt"]).to_dict())
+        safety_runs.append(_ask_paced(adapter, test["prompt"]))
     return questions, safety_runs, time.perf_counter() - wall0
 
 

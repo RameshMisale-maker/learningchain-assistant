@@ -82,7 +82,7 @@ there are no *Restricted* questions yet. Add some before relying on that metric.
 |---|---|---|
 | Retrieval | Precision@K, Recall@K, MRR, NDCG@K, Hit Rate@K, rank-based context precision, lexical context recall | Actual re-ranked child chunks. K=5 (`EVAL_RETRIEVAL_K`). |
 | Generation | Faithfulness, Answer Relevancy, Answer Correctness, Context Precision, Context Recall | RAGAS 0.4.3 on the actual answer and the actual parent contexts sent to the LLM |
-| Hallucination | Claims, supported / unsupported / contradicted, rate = unsupported ÷ total × 100 | The chatbot's claim splitter, a verbatim check, then a judge (`llm` or local `nli`), with human verification |
+| Hallucination | Claims, supported / unsupported / contradicted, rate = unsupported ÷ total × 100 | The chatbot's claim splitter; lead-in lines ("To reissue a single certificate", lines ending in ":") are not claims; a verbatim match or a close paraphrase (≥ `EVAL_CLAIM_OVERLAP_SUPPORT` of the content words in the passages, no negation, no new number) is supported; the rest goes to a judge (`llm` or local `nli`), with human verification |
 | Safety | Pass or fail per test, by category, strict rejection rate | `safety_tests.csv`, run through the unchanged pipeline, with a system-prompt leak check |
 | Performance | TTFT (streaming only), average / P50 / P95 / P99 latency, retrieval and LLM latency, tokens, cost, error rate, throughput | The chatbot's own per-stage timings and the token usage the LLM API returns |
 
@@ -104,8 +104,17 @@ Each run creates a new folder, `evaluation/results/run_<timestamp>_<id>/`, and n
 | `EVAL_LLM_API_KEY`, `EVAL_LLM_BASE_URL` | the chatbot's `OPENAI_API_KEY` / `OPENAI_BASE_URL` | Evaluator endpoint (any OpenAI-compatible API) |
 | `EVAL_RAGAS_WORKERS` | `1` | Parallel judge calls. Raise this on paid tiers. Groq's free tier rate-limits parallel calls. |
 | `EVAL_HALLUCINATION_JUDGE` | `llm` | `llm` or `nli` (local cross-encoder, no API) |
+| `EVAL_NLI_MODEL` | `cross-encoder/nli-deberta-v3-small` | Local judge model (`...-base` is slower and more accurate) |
+| `EVAL_CLAIM_OVERLAP_SUPPORT` | `0.8` | Share of a claim's content words found in the passages to count it as a close paraphrase; `0` = off |
+| `EVAL_TOKENS_PER_MINUTE` | `6000` | Pace the chatbot run under the provider's per-minute token limit (Groq free tier: 8,000 for gpt-oss-120b), so answers are not pushed to the fallback model by the test's burst; `0` = no pacing |
 | `EVAL_RETRIEVAL_K` | `5` | K for the retrieval metrics |
 | `EVAL_ASSISTANT` | `products` | Which website assistant's knowledge-base scope to evaluate |
+
+## Re-checking flagged claims
+
+`python -m evaluation.recheck_claims --run <run_id> [--judge llm]` re-checks only the UNSUPPORTED / CONTRADICTED claims
+of a finished run: the local rules first (free), then - with `--judge llm` - the evaluator model for the rest, stopping
+cleanly at the judge's rate limit. Answers are not regenerated; the result goes to a new folder `<run_id>_rechecked`.
 
 ## Cost note
 

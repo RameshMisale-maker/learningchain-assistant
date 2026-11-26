@@ -19,6 +19,43 @@ from typing import Any
 from evaluation import config
 
 SUPPORTED, UNSUPPORTED, CONTRADICTED = "SUPPORTED", "UNSUPPORTED", "CONTRADICTED"
+NOT_A_CLAIM = "NOT_A_CLAIM"
+_LEAD_IN_START = re.compile(r"^(to|for|as an?|here (is|are)|follow these|the (following )?steps?)\b", re.IGNORECASE)
+_LEAD_IN_END = re.compile(r"\b(should|must|can|will|need to|needs to|has to|have to)$", re.IGNORECASE)
+_NEGATION = re.compile(r"\b(not|no|never|cannot|can't|isn't|aren't|doesn't|don't|won't|without|unless|only)\b|n't\b",
+                       re.IGNORECASE)
+
+
+def is_lead_in(claim: str) -> bool:
+    """A lead-in line, not a factual claim: "To reissue a single certificate", "To register new users, an admin
+    should", "Follow these steps:". Judges mark these unsupported or contradicted although they state nothing."""
+    text = (claim or "").strip().rstrip(".").strip()
+    words = re.findall(r"[A-Za-z0-9]+", text)
+    if not words or text.endswith(":"):
+        return True
+    if len(words) > 8:
+        return False
+    if _LEAD_IN_END.search(text):
+        return True
+    return bool(_LEAD_IN_START.match(text)) and "," not in text      # "To verify, scan the QR code" is a claim
+
+
+def overlap_supported(claim: str, passages: list[str], threshold: float | None = None) -> bool:
+    """The claim's content words (stemmed, stopwords removed) are at least `threshold` present in the passages:
+    a close paraphrase of the source ("Enter your Current Password, then the New Password and re-enter it").
+    Never for a claim with a negation (meaning can flip) or with a number the passages do not contain."""
+    from backend.common.text_utils import content_terms
+
+    threshold = config.EVAL_CLAIM_OVERLAP_SUPPORT if threshold is None else threshold
+    if threshold <= 0 or _NEGATION.search(claim or ""):
+        return False
+    corpus = " ".join(passages)
+    if any(n not in corpus for n in re.findall(r"\d+(?:[.,]\d+)*", claim or "")):
+        return False
+    terms = content_terms(claim)
+    if len(terms) < 3:
+        return False
+    return len(terms & content_terms(corpus)) / len(terms) >= threshold
 
 
 def claim_key(claim: str) -> str:
@@ -101,7 +138,7 @@ class NLIClaimJudge:
 
 @lru_cache(maxsize=2)
 def get_judge(kind: str = config.HALLUCINATION_JUDGE):
-    return NLIClaimJudge() if kind == "nli" else LLMClaimJudge()
+    return NLIClaimJudge(config.EVAL_NLI_MODEL) if kind == "nli" else LLMClaimJudge()
 
 
 def analyse(answer: str, contexts: list[str], behavior: str, judge=None) -> dict[str, Any]:
@@ -122,8 +159,12 @@ def analyse(answer: str, contexts: list[str], behavior: str, judge=None) -> dict
     for claim in claims:
         if not contexts:
             verdict, evidence, by = UNSUPPORTED, "", "no-context"
+        elif is_lead_in(claim):
+            verdict, evidence, by = NOT_A_CLAIM, "lead-in line, states no fact", "lead-in"
         elif _norm(claim) and _norm(claim) in corpus:
             verdict, evidence, by = SUPPORTED, "verbatim match in retrieved context", "verbatim"
+        elif overlap_supported(claim, contexts):
+            verdict, evidence, by = SUPPORTED, "close paraphrase: key words found in retrieved context", "word-overlap"
         else:
             try:
                 verdict, evidence = judge.judge(claim, contexts)
@@ -134,7 +175,7 @@ def analyse(answer: str, contexts: list[str], behavior: str, judge=None) -> dict
         result["claims"].append({"claim": claim, "claim_key": claim_key(claim), "verdict": verdict,
                                  "evidence": evidence, "judged_by": by,
                                  "needs_human_review": verdict in (UNSUPPORTED, CONTRADICTED)})
-    judged = [c for c in result["claims"] if c["verdict"] != "JUDGE_ERROR"]
+    judged = [c for c in result["claims"] if c["verdict"] not in ("JUDGE_ERROR", NOT_A_CLAIM)]
     result["total_claims"] = len(judged)
     result["supported"] = sum(c["verdict"] == SUPPORTED for c in judged)
     result["contradicted"] = sum(c["verdict"] == CONTRADICTED for c in judged)

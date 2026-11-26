@@ -60,6 +60,13 @@ EVAL_RAGAS_MAX_MINUTES = float(os.getenv("EVAL_RAGAS_MAX_MINUTES", "60"))     # 
 EVAL_RAGAS_CONTEXT_CHARS = int(os.getenv("EVAL_RAGAS_CONTEXT_CHARS", "6000"))  # judge context (cited sources first)
 EVAL_EMBEDDINGS = os.getenv("EVAL_EMBEDDINGS", "chatbot")   # "chatbot": reuse the chatbot's embedder (read-only)
 HALLUCINATION_JUDGE = os.getenv("EVAL_HALLUCINATION_JUDGE", "llm")   # llm | nli
+EVAL_NLI_MODEL = os.getenv("EVAL_NLI_MODEL", "cross-encoder/nli-deberta-v3-small")   # e.g. ...-base: slower, better
+# A claim whose content words are at least this share present in the retrieved passages counts as supported without
+# calling a judge (never when it holds a negation or a number the passages lack). 0 = off.
+EVAL_CLAIM_OVERLAP_SUPPORT = float(os.getenv("EVAL_CLAIM_OVERLAP_SUPPORT", "0.8"))
+# Pace the chatbot run under the provider's per-minute token limit, so answers are not pushed to the fallback model by
+# a burst no real user would cause (Groq free tier: 8,000 tokens/min for gpt-oss-120b). 0 = no pacing.
+EVAL_TOKENS_PER_MINUTE = int(os.getenv("EVAL_TOKENS_PER_MINUTE", "6000"))
 
 
 def evaluator_credentials() -> tuple[str, str]:

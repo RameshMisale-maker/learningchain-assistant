@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-26 (2) - Fairer fact-check, paced evaluation runs, closer-to-source answers
+
+- **Local fact-checker:** lead-in lines ("To reissue a single certificate", "To register new users, an admin should",
+  lines ending in ":") are no longer judged as claims; a close paraphrase of the passages (>= 80% of its content words
+  present, no negation, no number the passages lack) counts as supported without a judge call. On the 26 Nov run this
+  alone clears 28 of 66 flags (95 -> 105 of 129 questions pass; Product-related 33 -> 42 of 51). `EVAL_NLI_MODEL` selects
+  the local judge model.
+- **Re-check a finished run:** `python -m evaluation.recheck_claims --run <id> [--judge llm]` re-checks only the flagged
+  claims (local rules, then optionally the AI judge, stopping at its rate limit) into `<id>_rechecked`.
+- **Paced evaluation:** `EVAL_TOKENS_PER_MINUTE` (default 6000) waits after each AI-generated answer so the test stays
+  under the provider's per-minute limit; on 26 Nov the unpaced burst pushed 28 of 57 answers to the fallback model.
+- **Prompt rule 7a:** stay close to the sources' wording (menu, button, field and step names), add no descriptions or
+  details they do not state, prefer a short complete answer.
+- Tests: tests/test_eval_checker_and_pacing.py (20).
+
 ## 2026-11-26 - Token budgets, metrics on, automation architecture review
 
 - **Metrics on (rollout step 1):** `METRICS_ENABLED=true` in the local `.env` (Streamlit Secrets must be set
