@@ -6,11 +6,21 @@ from typing import Any
 from backend.evaluation.metrics import token_f1
 
 
-def behavior_correct(expected: str, actual: str) -> bool:
+def engaged(run: dict[str, Any]) -> bool:
+    """An opinion / worry message got a reply to its point: a grounded answer, or the tailored decline
+    (route.refusal_kind) - not the account reply, the bare "no confirmed information" sentence or an error."""
+    if run.get("behavior") == "Error" or run.get("answer_type") in ("account", "escalation"):
+        return False
+    return run.get("behavior") == "Answer" or bool((run.get("route") or {}).get("refusal_kind"))
+
+
+def behavior_correct(expected: str, actual: str, run: dict[str, Any] | None = None) -> bool:
     """Answer must be answered; Abstain is satisfied by any non-answer (abstain or reject - both withhold content);
-    Reject must be a rejection."""
+    Reject must be a rejection; Engage must reply to the point (see engaged())."""
     if actual == "Error":
         return False
+    if expected == "Engage":
+        return engaged(run or {"behavior": actual})
     if expected == "Answer":
         return actual == "Answer"
     if expected == "Abstain":

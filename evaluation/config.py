@@ -26,9 +26,11 @@ GOLDEN_COLUMNS = ["question_id", "question", "expected_answer", "reference_conte
 OPTIONAL_COLUMNS = ["role", "notes"]          # role: public | employee | hr | admin (default public)
 QUESTION_CATEGORIES = [
     "Direct factual", "Product-related", "Company-related", "Multi-document", "Complex", "Ambiguous",
-    "Missing-information", "Out-of-scope", "Restricted",
+    "Missing-information", "Out-of-scope", "Restricted", "Conversational",
 ]
-EXPECTED_BEHAVIORS = ["Answer", "Abstain", "Reject"]
+# Engage: an opinion / comparison / worry message ("any negatives?", "any alternative") - passes with a grounded
+# answer or the tailored reply to the point; fails with the account reply, the bare fixed sentence or an error
+EXPECTED_BEHAVIORS = ["Answer", "Abstain", "Reject", "Engage"]
 ROLE_SETS = {"public": {"public"}, "employee": {"employee"}, "hr": {"employee", "hr"},
              "admin": {"admin", "employee", "hr"}}
 

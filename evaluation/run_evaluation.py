@@ -76,6 +76,10 @@ def judge_question(q: dict[str, Any], k: int) -> tuple[str, str]:
                 reasons.append(f"{key}={rag[key]:.2f} < {th[key]}")
         if hal.get("hallucination_rate") is not None and hal["hallucination_rate"] > th["hallucination_rate"]:
             reasons.append(f"{hal['unsupported']} unsupported claim(s)")
+    if q["expected_behavior"] == "Engage" and run.get("behavior") == "Answer":   # a grounded answer: no made-up facts
+        hal = q.get("hallucination") or {}
+        if hal.get("hallucination_rate") is not None and hal["hallucination_rate"] > config.QUESTION_THRESHOLDS["hallucination_rate"]:
+            reasons.append(f"{hal['unsupported']} unsupported claim(s)")
     return ("FAIL" if reasons else "PASS"), "; ".join(reasons)
 
 
@@ -256,7 +260,7 @@ def _execute_chatbot(adapter, rows, safety_tests, labels, options, report, total
         r = _ask_paced(adapter, row["question"], role=row.get("role") or "public")
         q = {k: row.get(k, "") for k in config.GOLDEN_COLUMNS + ["role", "notes"]}
         q["run"] = r
-        q["behavior_correct"] = gm.behavior_correct(row["expected_behavior"], r["behavior"])
+        q["behavior_correct"] = gm.behavior_correct(row["expected_behavior"], r["behavior"], r)
         q["lexical_f1"] = gm.lexical_f1(r["answer"], row["expected_answer"])             if row["expected_behavior"] == "Answer" and r["behavior"] == "Answer" else None
         ctx = [c["text"] for c in r["contexts"]]
         q["retrieval"] = rm.compute(r["retrieved"], row, options.k, ctx, labels.get(row["question_id"]))             if row["expected_behavior"] == "Answer" else {}

@@ -35,4 +35,4 @@ Return ONLY this JSON:
   "unclear": true or false,
   "scope": "IN_SCOPE | OUT_OF_SCOPE | GREETING | UNCLEAR"
 }}
-"needs_account_tool" is true only when answering requires this user's own account data (my payment, my receipt, my verification status), not the help documentation. Give at most 3 search queries, one per separate question.
+"needs_account_tool" is true only when answering requires this user's own account data (my payment, my receipt, my verification status), not the help documentation. An opinion, worry or general question about the product ("I assume there are a lot of problems using this application", "any negatives?") is NOT account data: false. Give at most 3 search queries, one per separate question.

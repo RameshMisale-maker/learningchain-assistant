@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-26 (3) - Understanding the user: opinions, worries and short follow-ups
+
+From a real chat where three messages got the wrong fixed reply:
+- **"i assume lot of problems using this application" got the account-details reply.** The account check fired on any
+  "I" / "me"; it now also needs an account object (payment, receipt, status, refund, certificate ...) -
+  `intent.mentions_own_account`. The normalize prompt says an opinion or worry is not account data.
+- **"any alternative" (after a question) lost the topic.** A short message with no subject of its own ("any
+  alternative", "any negatives", "what else", "any other option") now counts as a follow-up and is rewritten with the
+  previous question - `intent.is_elliptical_follow_up`.
+- **Opinion / comparison / worry questions got the bare "I don't have confirmed information" sentence.** When nothing
+  documented answers them (refusal or out-of-scope), they get a reply to their point instead (`intent.opinion_kind` ->
+  `opinion_alternatives` / `opinion_limitations` / `opinion_concern`, overridable per product under `replies:`). The
+  replies never claim "there are no alternatives / problems" - the sources do not say so. The answer type stays
+  refusal / out_of_scope (route `refusal_kind`), so abstention metrics are unchanged.
+- **Prompt:** new UNDERSTANDING THE USER section (U1 read short messages in context, U2 a worry is not an account
+  question, U3 never the same sentence twice) and rule 2b (opinion / comparison questions: acknowledge, say what the
+  sources do say, next step; never claim something does not exist).
+- **Evaluation:** new expected behaviour `Engage` (a grounded answer or the tailored reply passes; the account reply,
+  the bare fixed sentence or an error fails) and category `Conversational` with 3 questions (CV1-CV3) - the golden set
+  is now 132 questions.
+- Tests: tests/test_opinion_and_follow_ups.py.
+
 ## 2026-11-26 (2) - Fairer fact-check, paced evaluation runs, closer-to-source answers
 
 - **Local fact-checker:** lead-in lines ("To reissue a single certificate", "To register new users, an admin should",

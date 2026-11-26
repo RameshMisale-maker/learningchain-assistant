@@ -104,6 +104,73 @@ def mentions_own_data(text: str) -> bool:
     return bool(_OWN_DATA_RE.search(text or ""))
 
 
+# what a user's own ACCOUNT record is about - "I", "me" alone is not enough ("I assume there are a lot of problems
+# using this application" is an opinion, not a request for account data)
+_ACCOUNT_OBJECT_RE = re.compile(
+    r"\b(payments?|paid|pay|charged|transactions?|refunds?|receipts?|invoices?|bills?|orders?|subscriptions?|"
+    r"verification\s+status|status|profile|account|login|log\s+in|password|money|deducted|fees?|balance|"
+    r"certificates?|records?|registration|enrol+ment|purchase\w*)\b", re.IGNORECASE)
+
+
+def mentions_own_account(text: str) -> bool:
+    """The user refers to their own account record: a first-person word AND an account object ("my payment",
+    "I paid twice", "our verification status") - an opinion or worry that merely says "I" is not one."""
+    return mentions_own_data(text) and bool(_ACCOUNT_OBJECT_RE.search(text or ""))
+
+
+# Opinion / comparison / worry messages. The help content rarely covers them, so instead of the bare "no confirmed
+# information" sentence the user gets a reply that answers the point they raised (see opinion_reply()).
+_ALTERNATIVES_RE = re.compile(
+    r"\b(alternatives?|alternate\s+(options?|tools?|products?|apps?|platforms?|solutions?)|competitors?|competition|"
+    r"substitutes?|replacements?|instead\s+of\s+(it|this|that|using)|"
+    r"(other|similar|better|another|different)\s+(options?|tools?|products?|apps?|applications?|platforms?|"
+    r"software|solutions?|companies|providers?|vendors?))\b", re.IGNORECASE)
+_LIMITATIONS_RE = re.compile(
+    r"\b(negatives?|negative\s+(points?|sides?|aspects?)|disadvantages?|drawbacks?|downsides?|down\s+sides?|cons|"
+    r"limitations?|weakness(es)?|demerits?|shortcomings?|flaws?|pitfalls?|bad\s+(points?|sides?|things?)|"
+    r"risks?\s+of\s+using)\b", re.IGNORECASE)
+_CONCERN_RE = re.compile(
+    r"\b(i\s+(assume|think|feel|guess|suspect|believe|heard|fear|expect)|i'?m\s+(worried|afraid|concerned|scared|"
+    r"not\s+sure)|i\s+am\s+(worried|afraid|concerned|scared|not\s+sure)|worried|concerned)\b.*\b(problems?|issues?|"
+    r"difficult\w*|hard|complicated|complex|bugs?|errors?|troubles?|not\s+work\w*|doesn'?t\s+work|fail\w*|"
+    r"unreliable|risky|unsafe|slow)\b", re.IGNORECASE)
+OPINION_KINDS = ("alternatives", "limitations", "concern")
+
+
+def opinion_kind(text: str) -> str:
+    """'alternatives' / 'limitations' / 'concern' for an opinion, comparison or worry message, else ''."""
+    t = text or ""
+    if _ALTERNATIVES_RE.search(t):
+        return "alternatives"
+    if _LIMITATIONS_RE.search(t):
+        return "limitations"
+    if _CONCERN_RE.search(t):
+        return "concern"
+    return ""
+
+
+def opinion_reply(kind: str) -> str:
+    """The reply for an opinion / comparison / worry message the help content does not answer."""
+    from backend.products import current_product
+
+    product = current_product()
+    template = {"alternatives": product.replies.opinion_alternatives, "limitations": product.replies.opinion_limitations,
+                "concern": product.replies.opinion_concern}[kind]
+    return template.format(product=product.covers_text("and"), support=product.support_contact_markdown)
+
+
+# a short message that only makes sense with the previous turn: "any alternative?", "why?", "what else?"
+_ELLIPTICAL_RE = re.compile(
+    r"^\s*(why(\s+not)?|how\s+come|what\s+else|anything\s+else\s+like\s+(it|this|that)|such\s+as|like\s+what|"
+    r"for\s+example|which\s+ones?|really|are\s+you\s+sure|any\s+(other|more)(\s+\w+)?)\s*[?.!]*\s*$", re.IGNORECASE)
+
+
+def is_elliptical_follow_up(text: str) -> bool:
+    """A short message whose subject is the previous turn ("any alternative", "any negatives?", "why?")."""
+    words = _words(text)
+    return bool(words) and len(words) <= 4 and (bool(_ELLIPTICAL_RE.match(text or "")) or bool(opinion_kind(text)))
+
+
 def is_vague_pronoun_question(text: str, history: list[dict] | None) -> bool:
     """A short question whose only subject is a pronoun with nothing to refer to ("How do I configure it?",
     "What is this?") - the topic is unknown, so ask instead of guessing."""
@@ -563,6 +630,9 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     # 9. short message referring back to the conversation: "What about its features?", "And them?"
     if has_history and len(words) <= 8 and FOLLOW_UP_RE.search(t):
         return MessageIntent(FOLLOW_UP, uses_history=True, reason="reference to the previous turn")
+    # ... or one with no subject of its own: "any alternative?", "any negatives", "why?" -> about the previous topic
+    if has_history and is_elliptical_follow_up(t):
+        return MessageIntent(FOLLOW_UP, uses_history=True, reason="short message about the previous topic")
 
     # 10. short message with words the rules can't place -> ask the LLM (if any); otherwise treat as a question
     # (a question word followed by a subject - "What is <Product>?" - is already a well-formed question)

@@ -261,10 +261,10 @@ class ChatService:
                         record_budget_block(current_product().product_id, budget.scope)
                     except Exception:
                         logger.exception("Could not update Prometheus metrics")
-            if response.answer_type in ("refusal", "error"):
+            if response.answer_type in ("refusal", "error") and not response.route.get("refusal_kind"):
                 # in scope, but no verified evidence: the fixed "insufficient information" reply, no sources
                 response.answer, response.citations = self.settings.insufficient_info_text, []
-            elif response.answer_type == "out_of_scope":
+            elif response.answer_type == "out_of_scope" and not response.route.get("refusal_kind"):
                 response.answer, response.citations = self.settings.out_of_scope_text, []
             # never send exactly the same reply twice in a row
             previous = next((h for h in reversed(history) if h.get("role") == "assistant"), None)
@@ -374,7 +374,7 @@ class ChatService:
         # (only when the user talks about their OWN data - "my payment", "our verification status"; a general
         # troubleshooting question such as "the verification result shows Invalid" is answered from the documents)
         if (tool_only or (understanding and understanding.needs_account_tool and s.conversation_layer)) \
-                and convo.mentions_own_data(query):
+                and convo.mentions_own_account(query):
             account = convo.MessageIntent(convo.ACCOUNT, reply=convo.account_reply(),
                                           reason="needs account data (LLM)", method="llm")
             direct = self._conversational_response(account, query, user, session_id)
@@ -410,6 +410,11 @@ class ChatService:
                                 answer_type="closing" if is_closing(query) else "greeting", confidence=1.0,
                                 **base)
         if route.intent == "out_of_scope":
+            # "any alternative?" / "who are your competitors?": answer that point rather than the generic decline
+            kind = convo.opinion_kind(original) or convo.opinion_kind(standalone)
+            if kind and not route.reason.startswith("not in this assistant's knowledge bases"):
+                base["route"]["refusal_kind"] = kind
+                return ChatResponse(answer=convo.opinion_reply(kind), answer_type="out_of_scope", **base)
             return ChatResponse(answer=s.out_of_scope_text, answer_type="out_of_scope", **base)
         if route.intent == "clarify":
             return ChatResponse(answer=route.clarification, answer_type="clarification", **base)
@@ -519,6 +524,13 @@ class ChatService:
         if route.ambiguous and top:
             kbs_used = sorted({c.kb for c in top[:3]})
         if not top or self._insufficient(expanded, top):
+            # an opinion / comparison / worry ("any negatives?", "any alternative", "I assume lots of problems"):
+            # answer the point the user raised instead of the bare "no confirmed information" sentence
+            kind = convo.opinion_kind(original) or convo.opinion_kind(standalone)
+            if kind:
+                base["route"]["refusal_kind"] = kind
+                return ChatResponse(answer=convo.opinion_reply(kind), answer_type="refusal", knowledge_bases=kbs_used,
+                                    golden_match=golden_info, retrieved=retrieved_dbg, **base)
             return ChatResponse(answer=REFUSAL_TEXT, answer_type="refusal", knowledge_bases=kbs_used,
                                 golden_match=golden_info, retrieved=retrieved_dbg, **base)
 
@@ -597,7 +609,13 @@ class ChatService:
             report = lexical_grounding(answer, refs, standalone, s.grounding_min_support)
         if is_refusal(answer):
             answer_type = "refusal"
-        used = cited_ids(answer) or ([refs[0].sid] if answer_type != "refusal" else [])
+            # the model (or the undocumented-term guard) declined an opinion / comparison / worry question:
+            # reply to its point, as when nothing was retrieved
+            kind = convo.opinion_kind(original) or convo.opinion_kind(standalone)
+            if kind:
+                answer = convo.opinion_reply(kind)
+                base["route"]["refusal_kind"] = kind
+        used =cited_ids(answer) or ([refs[0].sid] if answer_type != "refusal" else [])
         citations = self._citations(refs, used)
         confidence = round(min(1.0, top[0].rerank_score * (0.5 + 0.5 * report.faithfulness)), 3)
         resp = ChatResponse(answer=answer, answer_type=answer_type, knowledge_bases=kbs_used, citations=citations,

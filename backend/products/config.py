@@ -106,6 +106,18 @@ class Replies(_Strict):
     access_denied_user: str = ("This question relates to {names}, which your account is not authorised to access. "
                                "Please contact HR/IT if you need access.")
     repeat_alternatives: dict[str, str] = Field(default_factory=dict)   # answer_type -> second wording
+    # opinion / comparison / worry messages the help content does not answer ({product}, {support} filled in);
+    # they answer the point the user raised without inventing facts (no "there are no alternatives" claims)
+    opinion_alternatives: str = ("I can only help with {product}, so I can't compare other products or recommend "
+                                 "alternatives. If you tell me what you need, I'll check whether {product} covers it - "
+                                 "or our team can advise you: {support}.")
+    opinion_limitations: str = ("I don't have a published list of drawbacks or limitations for {product}, so I can't "
+                                "give you a fair list of negatives. If you have a specific concern - for example "
+                                "setup, cost, security or a feature you need - tell me and I'll check what's "
+                                "documented, or talk to our team: {support}.")
+    opinion_concern: str = ("I understand the concern. Tell me what you're trying to do or what's going wrong with "
+                            "{product}, and I'll walk you through it step by step. You can also reach our support "
+                            "team: {support}.")
     # every LLM provider down (LLM_FAILOVER_ENABLED): {support} = support contact, {faqs} = common questions
     service_unavailable: str = ("I can't put together a full answer right now - our AI service is temporarily busy. "
                                 "Please try again in a minute, ask one of the common questions ({faqs}), or contact "

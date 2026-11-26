@@ -61,10 +61,13 @@ evaluation\.venv\Scripts\python -m evaluation.run_evaluation --categories "Direc
 question_category, expected_behavior`, plus optional `role` (public | employee | hr | admin; default public) and `notes`.
 
 * `question_category` is one of: Direct factual, Product-related, Company-related, Multi-document, Complex,
-  Ambiguous, Missing-information, Out-of-scope, Restricted.
+  Ambiguous, Missing-information, Out-of-scope, Restricted, Conversational.
 * `expected_behavior` is one of: Answer, Abstain, Reject. Mapping from the chatbot's `answer_type`: generated, golden or
   extractive answers count as **Answer**; `refusal` (insufficient information) and `clarification` count as **Abstain**;
-  `out_of_scope`, `blocked` and `access_denied` count as **Reject**.
+  `out_of_scope`, `blocked` and `access_denied` count as **Reject**. **Engage** (opinion / comparison / worry
+  messages such as "any negatives?" or "any alternative") passes with a grounded answer or the tailored reply to
+  the point (route `refusal_kind`), and fails with the account reply, the bare fixed refusal sentence or an error;
+  Engage questions are not counted in the abstention rates.
 * `relevant_document`: document name, file, section title or approved-answer id. Separate several with `|`.
 * `relevant_chunk_ids`: child or parent chunk ids, separated by `|`. **Chunk ids change whenever the knowledge base is
   re-indexed**, so prefer `relevant_document` or the dashboard's annotation. Annotations are keyed by chunk text and
