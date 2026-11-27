@@ -19,6 +19,7 @@ from backend.common.timing import Timings, request_timings, stage
 from backend.db import repository
 from backend.generation.extractive import extractive_answer
 from backend.generation.grounding import (REFUSAL_TEXT, GroundingReport, cited_ids, is_refusal, lexical_grounding,
+                                          trim_unsupported,
                                           llm_grounding, normalize_citations, remove_invalid_citations,
                                           remove_unknown_urls, uncounted_numbers)
 from backend.generation.failover import AllProvidersDown, reset_dense_flag
@@ -112,6 +113,15 @@ BROAD_TOPIC_CONFIDENT = 0.8       # "tell me about <topic>": answer directly onl
 PLATFORM_TERMS = frozenset({"ios", "android", "iphone", "ipad", "macos", "windows", "linux", "whatsapp", "telegram",
                             "aadhaar", "upi", "paytm", "gpay", "sla", "uptime"})
 GOLDEN_MAX_MISSING_INTENT = 0.35   # max IDF share of query terms absent from the approved question side
+PREMISE_NOTE = ("\n\nNOTE: the question assumes \"{terms}\", which no SOURCE mentions. Apply rule 2a: if the SOURCES "
+                "state the actual fact on that point (for example the list of locations, formats or providers), correct "
+                "the assumption with it - \"<fact from the SOURCES>, not <the assumption>\" with its source tag, in one "
+                "sentence. Only if the SOURCES say nothing about that point, reply with the sentence of rule 2.")
+PREMISE_NOTE_GENERIC = ("\n\nNOTE: the question takes something for granted (\"since ...\", \"which of ... in ...\"). Apply "
+                        "rule 2a: if the SOURCES state the actual fact on that point (for example the list of "
+                        "locations, formats or providers), correct the assumption with it - \"<fact from the SOURCES>, "
+                        "not <the assumption>\" with its source tag, in one sentence. Only if the SOURCES say nothing "
+                        "about that point, reply with the sentence of rule 2.")
 REFUSED_ANSWER_TYPES = ("refusal", "out_of_scope", "blocked", "access_denied", "error", "restricted", "budget_exceeded")
 GOLDEN_COMPARISON_MIN = 0.92   # golden match score needed to answer a comparison question with an approved answer
 GOLDEN_EXTRA_ASSISTS = 2       # approved answers (>= assist threshold) added as candidates besides the best match
@@ -193,6 +203,10 @@ class ChatService:
         self.reranker = reranker or get_reranker()
         self.golden = golden or GoldenMatcher(self.embedder)
         self.router = router or QueryRouter(self.settings, self.embedder, llm=self.llm)
+        if self.settings.golden_warmup:
+            # embed the approved questions in the background now, so the first user question does not wait for it
+            import threading
+            threading.Thread(target=self.golden.warm, name="golden-warmup", daemon=True).start()
 
     @property
     def llm(self) -> LLMClient | None:
@@ -569,6 +583,23 @@ class ChatService:
                 answer = remove_invalid_citations(normalize_citations(llm_result.text), {r.sid for r in refs})
                 answer = remove_unknown_urls(answer, {str(r.metadata.get("source_url") or "") for r in refs})
                 answer_type = "generated"
+                if is_refusal(answer) and convo.has_premise(original):
+                    # the question presupposes something no source mentions ("which of your offices in <city>"):
+                    # ask once more, naming the assumption, so the model corrects it from the facts the sources do
+                    # state (rule 2a) instead of declining; still declines when the sources say nothing on that point
+                    # (the presupposition itself is the trigger - plain yes/no questions never match it)
+                    assumed = self._terms_missing_from(original, refs)
+                    note = PREMISE_NOTE.format(terms=", ".join(assumed)) if assumed else PREMISE_NOTE_GENERIC
+                    retried = self.llm.complete(system, user_prompt + note, json_mode=s.structured_reply)
+                    parsed = parse_reply(retried.text) if s.structured_reply else None
+                    text = parsed.reply if parsed is not None else retried.text
+                    text = remove_invalid_citations(normalize_citations(text), {r.sid for r in refs})
+                    if text.strip() and not is_refusal(text):
+                        warnings.append("wrong assumption corrected on retry"
+                                        + (": " + ", ".join(assumed) if assumed else ""))
+                        answer = remove_unknown_urls(text, {str(r.metadata.get("source_url") or "") for r in refs})
+                        llm_result.prompt_tokens += retried.prompt_tokens
+                        llm_result.completion_tokens += retried.completion_tokens
                 undocumented = self._undocumented_terms(f"{query} {standalone}", answer)
                 if undocumented:
                     # the question asks about something no indexed document mentions (e.g. "iOS", "Aadhaar") and the
@@ -584,6 +615,13 @@ class ChatService:
                     report = lexical_grounding(answer, refs, standalone, s.grounding_min_support)
                     if s.grounding_mode == "llm" and not report.is_refusal and report.supported:
                         report = llm_grounding(self.llm, answer, refs)
+                if s.grounding_mode != "off" and not report.supported and report.unsupported_sentences                         and not report.unsupported_numbers:
+                    # drop only the sentences the sources do not back; keep the answer if the rest passes the check
+                    trimmed = trim_unsupported(answer, report)
+                    trimmed_report = lexical_grounding(trimmed, refs, standalone, s.grounding_min_support)                         if trimmed else None
+                    if trimmed_report is not None and trimmed_report.supported and not trimmed_report.is_refusal:
+                        warnings.append(f"removed {len(report.unsupported_sentences)} unsupported sentence(s)")
+                        answer, report = trimmed, trimmed_report
                 if s.grounding_mode != "off" and not report.supported:
                     warnings.append("Generated answer failed grounding check; extractive fallback used")
                     answer = extractive_answer(expanded, refs, comparison, route.entities) + UNVERIFIED_NOTE
@@ -766,6 +804,19 @@ class ChatService:
                 terms[w] = None
         return [w for w in terms if re.search(rf"\b{re.escape(w)}\b", low) and not self._only_corrected(w, low)]
 
+    def _terms_missing_from(self, question: str, refs) -> list[str]:
+        """Name-like words of the question ("Bangalore", "AWS") that the retrieved SOURCES do not contain - what a
+        presupposing question takes for granted that the model cannot find in front of it."""
+        corpus = " ".join(str(getattr(r, "text", "") or "") for r in refs).lower()
+        out: list[str] = []
+        for m in re.finditer(r"[A-Za-z][A-Za-z0-9]{2,}", question or ""):
+            raw, w = m.group(0), m.group(0).lower()
+            before = (question or "")[: m.start()].rstrip()
+            name_like = (raw[0].isupper() and before and before[-1:] not in ".?!:") or any(c.isupper() for c in raw[1:])
+            if name_like and w not in out and not re.search(rf"\b{re.escape(w)}", corpus):
+                out.append(w)
+        return out
+
     @staticmethod
     def _only_corrected(term: str, answer_low: str) -> bool:
         """True when every mention of `term` in the answer corrects a wrong assumption of the question rather than
@@ -777,8 +828,13 @@ class ChatService:
             if not re.search(rf"\b{re.escape(term)}\b", sentence):
                 continue
             hits += 1
-            corrected = re.search(rf"(,|;|\(|—|-)\s*(and\s+)?not\s+(in\s+|on\s+|at\s+|an?\s+|the\s+)?{re.escape(term)}\b"
-                                  rf"|\b(instead of|rather than)\s+(an?\s+|the\s+)?{re.escape(term)}\b", sentence)
+            t = re.escape(term)
+            corrected = re.search(rf"(,|;|\(|—|-)\s*(and\s+)?not\s+(in\s+|on\s+|at\s+|an?\s+|the\s+)?{t}\b"
+                                  rf"|\b(instead of|rather than)\s+(an?\s+|the\s+)?{t}\b"
+                                  # "Bangalore is not among them / not listed": points to a list the sources give.
+                                  # ("there is no X" / "X is not supported" stay unaccepted - they would let a made-up
+                                  # negative answer a plain yes/no question that must be declined)
+                                  rf"|\b{t}\b\s+(is|are)\s+not\s+(among|listed|one of|in the list|part of)", sentence)
             if not (corrected and re.search(r"\[s\d+\]", sentence)):
                 return False
         return hits > 0
@@ -880,7 +936,8 @@ class ChatService:
             route.intent, route.knowledge_bases = "kb_query", kbs
             route.reason = f"scope check: {'llm in scope' if verdict == 'IN_SCOPE' else 'relevant documents found'}"
             return "llm_in_scope" if verdict == "IN_SCOPE" else "retrieval_in_scope"
-        if verdict == "UNCLEAR":
+        if verdict == "UNCLEAR" and not convo.opinion_kind(query):
+            # ("any alternative" stays out of scope: the out-of-scope path replies to that point, never "clarify?")
             route.intent, route.reason = "clarify", "scope check: unclear"
             route.clarification = convo.INCOMPLETE_REPLY
             return "unclear"

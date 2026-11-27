@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-11-27 - Evaluation 114/132 and fixes toward 132/132
+
+Run `run_20261127_111955_4a06` (132 questions): 114 pass (86%, was 105/129); 1.6 s average answer time; all 57 AI
+answers from the main model; 3% of answer sentences not backed by sources (was 14%). Each of the 18 failures was
+checked against the sources - 9 were scoring problems (correct answer), 9 chatbot problems:
+- **Correct answers no longer thrown away:** the grounding check accepts other word forms of a source word
+  ("recalling" / "recall", "verifiable" / "verification"); when one sentence is not backed by the sources, only that
+  sentence is removed (`grounding.trim_unsupported`) instead of replacing the whole answer with raw source text.
+- **Wrong assumptions:** a question that takes something for granted ("Since ...", "Which of your offices in X ...",
+  `intent.has_premise`) and is declined is asked once more, naming what the retrieved sources do not contain, so the
+  model corrects it from the facts they state; plain yes/no questions about undocumented things are still declined.
+  "X is not among / not listed" (with a source tag) now counts as a correction. A named file type ("Word documents",
+  "docx", "jpg") also searches the supported file formats (`query_expansions`).
+- **Prompt:** rule 2a checked before declining, with neutral examples; 7b no closing summary sentence and no step the
+  sources do not list; 7c two-part questions answered part by part.
+- **"any alternative" on its own** gets the reply to the point (was "could you clarify?").
+- **Start-up:** the approved-answer warm-up thread and the first request no longer run the database migrations at
+  the same time (`session.get_engine` lock; the warm-up had failed with `KeyError: 'config'`).
+- **Evaluation:** comparison tables are fact-checked one cell at a time (a row mixed both products); full documented
+  reference answers for C01, CP1, MA2, MA3, F012; the F012 approved answer leads with the answer (LC-012, also in the
+  FAQ source CSV); the claim re-check waits out per-minute limits and retries a cut-off JSON verdict.
+- Tests: tests/test_answer_quality_1127.py, tests/test_eval_checker_and_pacing.py.
+
+## 2026-11-26 (4) - Faster first question
+
+- **First question after a start took up to 107 s** ("Is this worth using?"): the first approved-answer match embedded
+  all 543 approved questions and alternate wordings (12 s on an idle CPU, up to 90 s under load). The chat service
+  now embeds them in a background thread as soon as it starts (`GoldenMatcher.warm`, `GOLDEN_WARMUP`, default on);
+  the same first question now takes 7.4 s (approved-answer matching 0.5 s instead of 90 s).
+- Tests: tests/test_chat_memory.py.
+
 ## 2026-11-26 (3) - Understanding the user: opinions, worries and short follow-ups
 
 From a real chat where three messages got the wrong fixed reply:

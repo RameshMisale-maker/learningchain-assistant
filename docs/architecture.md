@@ -154,6 +154,9 @@ prompt version + normalised standalone question, so a new index or prompt versio
 Because the key includes the user's roles and the allowed knowledge bases, a cached answer can never be served
 across an access boundary, even though the lookup runs before the router. Only `generated` and `golden_*` answers with confidence >= `CACHE_MIN_CONFIDENCE` and no warnings are stored -
 never refusals, out-of-scope, account / escalation / clarification replies or service-unavailable replies.
+Grounding (27 Nov): other word forms of a source word count as found, and a single unsupported sentence is removed
+instead of replacing the answer with raw source text. A declined question that presupposes something ("Since ...",
+"Which of your offices in X") is retried once so the model corrects the assumption from the sources.
 Opinion / comparison / worry questions that nothing documented answers ("any negatives?", "any alternative", "I assume
 lots of problems") get a reply to their point instead of the bare refusal sentence (`intent.opinion_kind`,
 product `replies.opinion_*`); it never claims that alternatives or problems do not exist.

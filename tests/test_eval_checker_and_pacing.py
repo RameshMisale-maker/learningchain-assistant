@@ -151,3 +151,59 @@ def test_recheck_keeps_old_verdicts_after_a_rate_limit():
     out, counts = recheck_question(hal, [SOURCE], LimitedJudge())
     assert LimitedJudge.calls == 1 and counts["not_rechecked"] == 2          # stops calling after the first 429
     assert out["unsupported"] == 2                                            # old verdicts kept, never dropped
+
+
+def test_recheck_waits_out_a_per_minute_limit():
+    from evaluation.recheck_claims import recheck_question
+
+    class MinuteLimitedJudge:
+        name = "llm:test"
+        calls = 0
+
+        def judge(self, claim, passages):
+            MinuteLimitedJudge.calls += 1
+            if MinuteLimitedJudge.calls == 1:
+                raise RuntimeError("Error code: 429 - Rate limit reached on tokens per minute (TPM). "
+                                   "Please try again in 7.5s.")
+            return hm.SUPPORTED, "quote"
+
+    waits = []
+    hal = _hal(("The password is emailed to your manager for approval", hm.UNSUPPORTED))
+    out, counts = recheck_question(hal, [SOURCE], MinuteLimitedJudge(), sleep=waits.append)
+    assert waits and 7 <= waits[0] <= 10 and counts["judge_supported"] == 1 and out["unsupported"] == 0
+
+
+def test_recheck_stops_at_a_daily_limit():
+    from evaluation.recheck_claims import recheck_question
+
+    class DayLimitedJudge:
+        name = "llm:test"
+
+        def judge(self, claim, passages):
+            raise RuntimeError("Error code: 429 - Rate limit reached on tokens per day (TPD). Please try again in 1m10s.")
+
+    waits = []
+    hal = _hal(("Admins receive a weekly summary by post", hm.UNSUPPORTED))
+    out, counts = recheck_question(hal, [SOURCE], DayLimitedJudge(), sleep=waits.append)
+    assert not waits and counts["not_rechecked"] == 1
+
+
+def test_llm_judge_retries_without_json_mode_when_the_json_is_cut_off(monkeypatch):
+    from types import SimpleNamespace
+
+    calls = []
+
+    class Completions:
+        def create(self, **kw):
+            calls.append(kw)
+            if "response_format" in kw:
+                raise RuntimeError("Error code: 400 - Failed to validate JSON. Please adjust your prompt.")
+            msg = SimpleNamespace(content='Checked. {"verdict": "SUPPORTED", "evidence": "Change Password"}')
+            return SimpleNamespace(choices=[SimpleNamespace(message=msg)])
+
+    judge = hm.LLMClaimJudge.__new__(hm.LLMClaimJudge)
+    judge.client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    judge.model, judge.name = "test", "llm:test"
+    monkeypatch.setattr(hm.config, "evaluator_extra_body", lambda: None)
+    assert judge.judge("Click on Change Password", [SOURCE]) == (hm.SUPPORTED, "Change Password")
+    assert len(calls) == 2 and "response_format" not in calls[1] and calls[1]["max_tokens"] > calls[0]["max_tokens"]

@@ -67,6 +67,26 @@ class GoldenMatcher:
                     self._vec_cache[k] = v
         return np.vstack([self._vec_cache[k] for k in keys])
 
+    def warm(self) -> int:
+        """Embed every approved question and alternate wording now, so the first user question after a start does
+        not wait for it (543 wordings took 12-90 s on CPU). Returns how many were embedded; never raises."""
+        try:
+            texts: list[str] = []
+            manager = get_index_manager()
+            for kb in manager.kb_names():
+                for chunk in manager.get(kb).golden or []:
+                    meta = chunk.metadata
+                    texts += [str(meta.get("question", ""))] + [a for a in str(meta.get("alternates", "")).split(" || ")
+                                                                if a.strip()]
+            todo = [t for t in dict.fromkeys(texts) if hashlib.sha1(t.encode()).hexdigest() not in self._vec_cache]
+            for i in range(0, len(todo), 64):
+                self._vectors(todo[i:i + 64])
+            return len(todo)
+        except Exception:      # warm-up is an optimisation only: matching still embeds on demand
+            import logging
+            logging.getLogger(__name__).exception("Approved-answer warm-up failed")
+            return 0
+
     def match(self, query: str, kb: str, roles: set[str], query_vector: np.ndarray | None = None,
               top_n: int = 3) -> list[GoldenMatch]:
         entries = [c for c in self.indexes.get(kb).golden if can_access(c.metadata, roles)]

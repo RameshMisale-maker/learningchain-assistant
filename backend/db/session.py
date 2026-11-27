@@ -1,6 +1,7 @@
 """Database engine / session factory. Works with PostgreSQL (DATABASE_URL) or SQLite (default)."""
 from __future__ import annotations
 
+import threading
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -13,25 +14,32 @@ from config.settings import get_settings
 
 _engine: Engine | None = None
 _SessionLocal: sessionmaker | None = None
+_ENGINE_LOCK = threading.Lock()   # the approved-answer warm-up thread and the first request may start together
 
 
 def get_engine() -> Engine:
     global _engine, _SessionLocal
-    if _engine is None:
+    if _engine is not None:
+        return _engine
+    with _ENGINE_LOCK:
+        if _engine is not None:          # another thread finished the set-up while this one waited
+            return _engine
         url = get_settings().database_url
         kwargs: dict = {"pool_pre_ping": True, "future": True}
         if url.startswith("sqlite"):
             kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
-        _engine = create_engine(url, **kwargs)
+        engine = create_engine(url, **kwargs)
         if url.startswith("sqlite"):
-            @event.listens_for(_engine, "connect")
+            @event.listens_for(engine, "connect")
             def _sqlite_pragmas(dbapi_conn, _record):  # pragma: no cover - driver hook
                 cursor = dbapi_conn.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.execute("PRAGMA journal_mode=WAL")
                 cursor.close()
-        migrate(_engine)
-        _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False, future=True)
+        migrate(engine)
+        # published only when fully migrated, so no thread ever uses a half-set-up engine
+        _SessionLocal = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+        _engine = engine
     return _engine
 
 

@@ -40,14 +40,30 @@ def split_claims(answer: str) -> list[str]:
     for boiler in BOILERPLATE:
         text = text.replace(boiler, " ")
     claims: list[str] = []
-    for line in text.split("\n"):
+    headers: list[str] = []          # column headers of the current Markdown table
+    lines = text.split("\n")
+    for idx, line in enumerate(lines):
         line = line.strip()
+        if not line.startswith("|"):
+            headers = []
         if not line or _META_LINE.match(line) or line.startswith("#") or set(line) <= set("|-: "):
             continue
         line = re.sub(r"^\s*(?:[-*•]|\d+[.)]|Step \d+:)\s*", "", line).strip("* ")
         if line.startswith("|"):
-            cells = [c.strip() for c in line.strip("|").split("|") if c.strip()]
-            line = ": ".join(cells)
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            nxt = lines[idx + 1].strip() if idx + 1 < len(lines) else ""
+            if not headers and nxt.startswith("|") and set(nxt) <= set("|-: "):
+                headers = cells               # the header row names the columns; it states no fact itself
+                continue
+            # one claim per cell, "<column> - <row label>: <value>": a row mixes several subjects (e.g. the two products
+            # of a comparison), so joining its cells made one claim no single passage could support
+            if headers and len(cells) >= 2:
+                for j, cell in enumerate(cells[1:], start=1):
+                    if cell and len(content_terms(cell)) >= 2:
+                        col = headers[j] if j < len(headers) else ""
+                        claims.append(f"{col} - {cells[0]}: {cell}" if col else f"{cells[0]}: {cell}")
+                continue
+            line = ": ".join(c for c in cells if c)
         for sent in split_sentences(line) or [line]:
             sent = URL_RE.sub("", sent).strip(" .;:")
             if len(content_terms(sent)) >= 3:

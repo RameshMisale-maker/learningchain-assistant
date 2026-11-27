@@ -192,6 +192,19 @@ def opinion_reply(kind: str) -> str:
                            help_topics=product.help_topics or ", ".join(product.topics))
 
 
+# A question that takes something for granted: "Since it stores data on AWS, ...", "As you can edit our data, ...",
+# "Which of your offices in Bangalore ...". Only these get the wrong-assumption retry (ChatService) - a plain yes/no
+# question about something undocumented ("Does it support Aadhaar?") must still be declined.
+PREMISE_RE = re.compile(r"^\s*(since|because|given\s+that|now\s+that|considering)\b|"
+                        r"^\s*as\s+\w+(\s+\w+)?\s+(is|are|can|does|do|has|have|will|stores|uses|supports|offers)\b|"
+                        r"\bwhich\s+(of\s+)?(your|the|its|their|\w+'s)\s+\w+\s+(in|at|on|from)\b", re.IGNORECASE)
+
+
+def has_premise(text: str) -> bool:
+    """The question presupposes a fact (see PREMISE_RE)."""
+    return bool(PREMISE_RE.search(text or ""))
+
+
 # "why?" / "why not?" / "how come?" - about the previous reply
 WHY_RE = re.compile(r"^\s*(but\s+)?(why|why\s+not|why\s+so|how\s+come|why\s+is\s+that|why\s+can'?t\s+you|"
                     r"why\s+won'?t\s+you|why\s+don'?t\s+you)\s*[?!.]*\s*$", re.IGNORECASE)
@@ -662,6 +675,12 @@ def classify_message(text: str, history: list[dict] | None = None, known_word: C
     if CLARIFY_ONLY_RE.match(t):
         reply, used = _clarify_reply(history, t)
         return MessageIntent(CLARIFICATION, reply=reply, uses_history=used, reason="bare interrogative")
+
+    # 4a. an opinion / comparison / worry question ("any alternative", "is it worth it?", "any negatives?") is a
+    #     question about the product even with no earlier topic ("it" = the product): it goes to the answer path,
+    #     which replies to its point - never "could you clarify?". With history, short ones are follow-ups (step 9).
+    if opinion_kind(t) and not (has_history and is_elliptical_follow_up(t)):
+        return MessageIntent(KNOWLEDGE, reason=f"opinion question ({opinion_kind(t)})")
 
     # 4b. "How do I configure it?" as the first message: nothing for "it" to refer to -> ask which feature
     if is_vague_pronoun_question(t, history):

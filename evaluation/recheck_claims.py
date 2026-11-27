@@ -15,6 +15,7 @@ import argparse
 import json
 import shutil
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -22,7 +23,22 @@ from evaluation import config
 from evaluation import hallucination_metrics as hm
 
 
-def recheck_question(hal: dict[str, Any], contexts: list[str], judge=None) -> tuple[dict[str, Any], dict[str, int]]:
+MAX_RETRY_WAIT_S = 120      # a per-minute limit ("try again in 7s") is waited out; a daily one stops the judge
+
+
+def _short_wait(exc: Exception) -> float | None:
+    """Seconds to wait when the provider asks to retry soon (per-minute limit); None for a long / daily limit."""
+    text = str(exc)
+    if "try again in" not in text.lower() or "per day" in text.lower():
+        return None
+    from backend.generation.llm_client import rate_limit_wait_seconds
+
+    wait = rate_limit_wait_seconds(exc)
+    return wait if wait <= MAX_RETRY_WAIT_S else None
+
+
+def recheck_question(hal: dict[str, Any], contexts: list[str], judge=None, sleep=time.sleep
+                     ) -> tuple[dict[str, Any], dict[str, int]]:
     """Re-check one question's flagged claims. Returns (updated hallucination dict, counts by outcome)."""
     counts = {"lead_in": 0, "overlap": 0, "judge_supported": 0, "judge_flagged": 0, "not_rechecked": 0}
     claims = []
@@ -40,7 +56,14 @@ def recheck_question(hal: dict[str, Any], contexts: list[str], judge=None) -> tu
                 counts["overlap"] += 1
             elif judge is not None and not stop_judge:
                 try:
-                    verdict, evidence = judge.judge(c["claim"], contexts)
+                    try:
+                        verdict, evidence = judge.judge(c["claim"], contexts)
+                    except Exception as first:      # per-minute limit: wait as asked, then one retry
+                        wait = _short_wait(first)
+                        if wait is None:
+                            raise
+                        sleep(wait + 1)
+                        verdict, evidence = judge.judge(c["claim"], contexts)
                     c.update(verdict=verdict, evidence=evidence, judged_by=getattr(judge, "name", "judge"),
                              needs_human_review=verdict in (hm.UNSUPPORTED, hm.CONTRADICTED))
                     counts["judge_supported" if verdict == hm.SUPPORTED else "judge_flagged"] += 1

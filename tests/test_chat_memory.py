@@ -57,3 +57,24 @@ def test_streamlit_and_api_use_the_setting():
     assert "chat_history_messages" in (root / "streamlit_cloud" / "streamlit_app.py").read_text(encoding="utf-8")
     assert "chat_history_messages" in (root / "backend" / "api" / "routes_openai.py").read_text(encoding="utf-8")
     assert "chat_history_messages" in (root / "backend" / "services" / "chat_service.py").read_text(encoding="utf-8")
+
+
+# ------------------------------------------------------------------------------------------------ first-question speed
+def test_golden_warm_up_embeds_every_approved_wording_once(workspace):
+    from backend.retrieval.golden_matcher import GoldenMatcher
+    from backend.retrieval.kb_index import get_index_manager
+
+    if not any(get_index_manager().get(kb).golden for kb in get_index_manager().kb_names()):
+        import pytest
+        pytest.skip("no approved answers in the test workspace")
+    m = GoldenMatcher()
+    assert m.warm() > 0
+    assert m.warm() == 0                         # cached: a second warm-up (or the first user question) embeds nothing
+
+
+def test_warm_up_is_on_by_default_and_off_in_tests(workspace, monkeypatch):
+    from config.settings import Settings, get_settings
+
+    assert get_settings().golden_warmup is False              # tests/conftest.py: no background threads in tests
+    monkeypatch.delenv("GOLDEN_WARMUP", raising=False)
+    assert Settings().golden_warmup is True

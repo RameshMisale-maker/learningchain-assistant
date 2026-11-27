@@ -145,6 +145,17 @@ query_expansions:
   specs: "specifications"
   cost: "price pricing"
   costs: "price pricing"
+  # a named file type -> also search the supported file formats (so a wrong assumption can be corrected)
+  word document: "file formats supported"
+  word documents: "file formats supported"
+  word file: "file formats supported"
+  word files: "file formats supported"
+  docx: "file formats supported"
+  excel file: "file formats supported"
+  excel files: "file formats supported"
+  image files: "file formats supported"
+  jpg: "file formats supported"
+  png: "file formats supported"
 
 # Suggested questions displayed in the UI, filtered by the user's role.
 suggested_questions:

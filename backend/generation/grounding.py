@@ -12,7 +12,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from backend.common.text_utils import content_terms, extract_numbers, split_sentences
+from backend.common.text_utils import content_terms, extract_numbers, split_sentences, stem
 from backend.generation.prompt_builder import SourceRef, format_sources, load_prompt
 
 logger = logging.getLogger(__name__)
@@ -115,10 +115,18 @@ def lexical_grounding(answer: str, refs: list[SourceRef], question: str = "", mi
     sentences = [s for s in split_sentences(clean) if len(content_terms(s)) >= 3]
     # table rows count as sentences too
     sentences += [ln for ln in clean.split("\n") if ln.strip().startswith("|") and "---" not in ln and ln not in sentences]
+    # other word forms of a source word count ("recalling" / "recall", "verifiable" / "verification"), so a correct
+    # paraphrase is not thrown away for the raw source text; the per-sentence 0.5 bar itself is unchanged
+    corpus_stems = {stem(w) for w in corpus_terms}
+    corpus_prefixes = {w[:6] for w in corpus_terms if len(w) >= 7}
+
+    def found(word: str) -> bool:
+        return word in corpus_terms or stem(word) in corpus_stems or (len(word) >= 7 and word[:6] in corpus_prefixes)
+
     unsupported = []
     for sent in sentences:
         terms = content_terms(sent)
-        if terms and len(terms & corpus_terms) / len(terms) < 0.5:
+        if terms and sum(found(w) for w in terms) / len(terms) < 0.5:
             unsupported.append(sent.strip())
     numbers = {n for n in extract_numbers(clean) if not re.fullmatch(r"[1-9]", n)}  # ignore list numbering 1-9
     bad_numbers = sorted(n for n in numbers if n not in corpus_numbers)
@@ -127,6 +135,22 @@ def lexical_grounding(answer: str, refs: list[SourceRef], question: str = "", mi
     supported = faithfulness >= min_support and not bad_numbers
     return GroundingReport(faithfulness=faithfulness, supported=supported, unsupported_sentences=unsupported,
                            unsupported_numbers=bad_numbers)
+
+
+def trim_unsupported(answer: str, report: GroundingReport) -> str:
+    """The answer without the sentences the grounding check could not match to the sources ("" when nothing useful
+    is left). One unsupported sentence - typically advice the model added - no longer discards a correct answer."""
+    drop = {re.sub(r"\s+", " ", strip_citations(s)).strip(" .") for s in report.unsupported_sentences}
+    if not drop:
+        return answer
+    kept_lines = []
+    for line in answer.split("\n"):
+        parts = split_sentences(line) if line.strip() and not line.strip().startswith("|") else [line]
+        kept = [p for p in parts if re.sub(r"\s+", " ", strip_citations(p)).strip(" .") not in drop]
+        if kept or not line.strip():
+            kept_lines.append(" ".join(kept) if parts != [line] else line)
+    out = re.sub(r"\n{3,}", "\n\n", "\n".join(kept_lines)).strip()
+    return out if len(content_terms(strip_citations(out))) >= 4 else ""
 
 
 def llm_grounding(llm, answer: str, refs: list[SourceRef]) -> GroundingReport:

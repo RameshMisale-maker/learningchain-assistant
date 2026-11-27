@@ -269,6 +269,8 @@ class Settings:
     # conversation memory: the whole chat (up to CHAT_HISTORY_MESSAGES messages) goes to the model; the last
     # CHAT_HISTORY_RECENT_TURNS exchanges in detail, older messages as a one-line gist, all within
     # CHAT_HISTORY_MAX_CHARS characters (the oldest lines are dropped first in a very long chat)
+    # embed the approved questions in the background when the chat service starts (the first question is fast)
+    golden_warmup: bool = field(default_factory=lambda: _env_bool("GOLDEN_WARMUP", True))
     chat_history_messages: int = field(default_factory=lambda: _env_int("CHAT_HISTORY_MESSAGES", 100))
     chat_history_recent_turns: int = field(default_factory=lambda: _env_int("CHAT_HISTORY_RECENT_TURNS", 4))
     chat_history_max_chars: int = field(default_factory=lambda: _env_int("CHAT_HISTORY_MAX_CHARS", 8000))

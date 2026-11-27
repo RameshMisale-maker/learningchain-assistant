@@ -88,11 +88,20 @@ class LLMClaimJudge:
 
     def judge(self, claim: str, passages: list[str]) -> tuple[str, str]:
         context = "\n\n".join(f"<passage id={i + 1}>\n{p[:3500]}\n</passage>" for i, p in enumerate(passages[:8]))
-        resp = self.client.chat.completions.create(
-            model=self.model, temperature=0, max_tokens=300, response_format={"type": "json_object"},
-            extra_body=config.evaluator_extra_body(),
-            messages=[{"role": "system", "content": self.SYSTEM},
-                      {"role": "user", "content": f"PASSAGES:\n{context}\n\nCLAIM: {claim}"}])
+        messages = [{"role": "system", "content": self.SYSTEM},
+                    {"role": "user", "content": f"PASSAGES:\n{context}\n\nCLAIM: {claim}"}]
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model, temperature=0, max_tokens=300, response_format={"type": "json_object"},
+                extra_body=config.evaluator_extra_body(), messages=messages)
+        except Exception as exc:
+            # a reasoning model (gpt-oss) can run out of room before the JSON closes; the provider then rejects it
+            # ("Failed to validate JSON") - retry once without strict JSON mode, with more room, and parse the text
+            if "failed to validate json" not in str(exc).lower():
+                raise
+            resp = self.client.chat.completions.create(
+                model=self.model, temperature=0, max_tokens=800, extra_body=config.evaluator_extra_body(),
+                messages=messages)
         raw = resp.choices[0].message.content or "{}"
         try:
             data = json.loads(raw)
